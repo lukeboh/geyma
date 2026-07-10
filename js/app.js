@@ -2,10 +2,17 @@ import * as db from './db.js';
 import { requestAccessToken, pickPhotos } from './google.js';
 import { scanDirectoryHandle, scanFileList } from './apple.js';
 import { compare, toCsv } from './match.js';
+import { buildPlans, estimateSeconds, formatDuration, formatBytes } from './estimate.js';
 
 const $ = (selector) => document.querySelector(selector);
 
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const RING_CIRCUMFERENCE = 2 * Math.PI * 62;
+
 let lastResult = null;
+let lastPlans = null;
+let lastTotals = null;
+let direction = 'bi';
 
 function setStatus(element, message, kind = '') {
   element.textContent = message;
@@ -160,7 +167,127 @@ function initApple() {
   toggleHelp($('#link-help-apple'), $('#apple-help'));
 }
 
-// ---- Passo 4: comparação ----
+// ---- Passo 4: painel de sincronização ----
+
+// Contador animado: sobe do valor atual até o alvo com easing suave.
+function animateValue(element, target) {
+  const tile = element.closest('.stat');
+  if (tile) {
+    tile.classList.remove('pop');
+    void tile.offsetWidth; // reinicia a animação CSS
+    tile.classList.add('pop');
+  }
+  if (REDUCED_MOTION) {
+    element.textContent = target.toLocaleString('pt-BR');
+    return;
+  }
+  const duration = 900;
+  const start = performance.now();
+  const from = parseInt(element.textContent.replace(/\D/g, ''), 10) || 0;
+  function frame(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - (1 - t) ** 3;
+    element.textContent = Math.round(from + (target - from) * eased).toLocaleString('pt-BR');
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function syncPercent() {
+  const { matched, onlyGoogle, onlyApple } = lastResult;
+  const denominators = {
+    bi: matched.length + onlyGoogle.length + onlyApple.length,
+    g2a: matched.length + onlyGoogle.length,
+    a2g: matched.length + onlyApple.length,
+  };
+  const total = denominators[direction];
+  return total === 0 ? 100 : (matched.length / total) * 100;
+}
+
+const RING_CAPTIONS = {
+  bi: 'presentes nos dois acervos',
+  g2a: 'do Google já estão na Apple',
+  a2g: 'da Apple já estão no Google',
+};
+
+function renderRing() {
+  if (!lastResult) return;
+  const percent = syncPercent();
+  const fill = $('#ring-fill');
+  fill.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - percent / 100);
+  $('#ring-pct').textContent = `${percent.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  $('#ring-caption').textContent = RING_CAPTIONS[direction];
+  $('#ring-panel').classList.toggle('complete', percent >= 100);
+}
+
+function renderEstimates() {
+  if (!lastPlans) return;
+  const mbps = parseFloat($('#input-mbps').value);
+  const pps = parseFloat($('#input-pps').value);
+  $('#output-mbps').textContent = `${mbps.toLocaleString('pt-BR')} MB/s`;
+  $('#output-pps').textContent = `${pps.toLocaleString('pt-BR')} fotos/s`;
+
+  const g2aSeconds = estimateSeconds(lastPlans.toApple, mbps, pps);
+  const a2gSeconds = estimateSeconds(lastPlans.toGoogle, mbps, pps);
+
+  const describe = (plan) =>
+    plan.count === 0
+      ? 'acervo já coberto'
+      : `${plan.count.toLocaleString('pt-BR')} fotos · ${formatBytes(plan.bytes)}${plan.estimated ? ' (estim.)' : ''}`;
+
+  $('#est-g2a-time').textContent = formatDuration(g2aSeconds);
+  $('#est-g2a-detail').textContent = describe(lastPlans.toApple);
+  $('#est-a2g-time').textContent = formatDuration(a2gSeconds);
+  $('#est-a2g-detail').textContent = describe(lastPlans.toGoogle);
+
+  const biCount = lastPlans.toApple.count + lastPlans.toGoogle.count;
+  $('#est-bi-time').textContent = formatDuration(g2aSeconds + a2gSeconds);
+  $('#est-bi-detail').textContent =
+    biCount === 0
+      ? 'acervos já espelhados'
+      : `${biCount.toLocaleString('pt-BR')} fotos · ${formatBytes(lastPlans.toApple.bytes + lastPlans.toGoogle.bytes)}`;
+
+  const activeId = { bi: 'est-bi', g2a: 'est-g2a', a2g: 'est-a2g' }[direction];
+  for (const tile of document.querySelectorAll('.est')) {
+    tile.classList.toggle('active', tile.id === activeId);
+  }
+}
+
+function initDashboardControls() {
+  for (const button of document.querySelectorAll('#direction button')) {
+    button.addEventListener('click', async () => {
+      document.querySelectorAll('#direction button').forEach((b) => b.classList.remove('active'));
+      button.classList.add('active');
+      direction = button.dataset.dir;
+      await db.setSetting('direction', direction);
+      renderRing();
+      renderEstimates();
+    });
+  }
+
+  for (const id of ['input-mbps', 'input-pps']) {
+    $(`#${id}`).addEventListener('input', async () => {
+      renderEstimates();
+      await db.setSetting(id, $(`#${id}`).value);
+    });
+  }
+}
+
+async function restoreDashboardSettings() {
+  const [savedDirection, mbps, pps] = await Promise.all([
+    db.getSetting('direction'),
+    db.getSetting('input-mbps'),
+    db.getSetting('input-pps'),
+  ]);
+  if (savedDirection && ['bi', 'g2a', 'a2g'].includes(savedDirection)) {
+    direction = savedDirection;
+    document.querySelectorAll('#direction button').forEach((b) => {
+      b.classList.toggle('active', b.dataset.dir === direction);
+    });
+  }
+  if (mbps) $('#input-mbps').value = mbps;
+  if (pps) $('#input-pps').value = pps;
+}
 
 async function updateCompareButton() {
   const [googleCount, appleCount] = await Promise.all([
@@ -214,15 +341,16 @@ function renderTab(tab) {
     return;
   }
 
-  for (const cells of rows) {
+  rows.forEach((cells, index) => {
     const tr = document.createElement('tr');
+    tr.style.setProperty('--row-index', Math.min(index, 12));
     for (const cell of cells) {
       const td = document.createElement('td');
       td.textContent = cell;
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
-  }
+  });
 }
 
 function initCompare() {
@@ -235,25 +363,35 @@ function initCompare() {
       db.getAll('applePhotos'),
     ]);
     lastResult = compare(googlePhotos, applePhotos);
+    lastPlans = buildPlans(lastResult, applePhotos);
+    lastTotals = { google: googlePhotos.length, apple: applePhotos.length };
 
-    $('#stat-matched').textContent = lastResult.matched.length;
-    $('#stat-only-google').textContent = lastResult.onlyGoogle.length;
-    $('#stat-only-apple').textContent = lastResult.onlyApple.length;
-    $('#stat-uncertain').textContent = lastResult.uncertain.length;
+    $('#results').classList.remove('hidden');
+    $('#btn-export').classList.remove('hidden');
+
+    animateValue($('#stat-google-total'), lastTotals.google);
+    animateValue($('#stat-apple-total'), lastTotals.apple);
+    animateValue($('#stat-matched'), lastResult.matched.length);
+    animateValue($('#stat-only-google'), lastResult.onlyGoogle.length);
+    animateValue($('#stat-only-apple'), lastResult.onlyApple.length);
+    animateValue($('#stat-uncertain'), lastResult.uncertain.length);
+
+    renderRing();
+    renderEstimates();
 
     const missing = lastResult.onlyGoogle.length + lastResult.onlyApple.length;
     setStatus(
       status,
       missing === 0
         ? 'Acervos sincronizados: nenhuma foto faltando de nenhum lado. ✅'
-        : `${missing} itens faltando em um dos lados. Veja os detalhes abaixo.`,
-      missing === 0 ? 'ok' : 'busy',
+        : `${missing.toLocaleString('pt-BR')} fotos faltando em um dos lados. Ajuste a direção e a velocidade para estimar a sincronização.`,
+      missing === 0 ? 'ok' : '',
     );
 
-    $('#results').classList.remove('hidden');
-    $('#btn-export').classList.remove('hidden');
     renderTab(document.querySelector('.tab.active').dataset.tab);
   });
+
+  initDashboardControls();
 
   for (const tabButton of document.querySelectorAll('.tab')) {
     tabButton.addEventListener('click', () => {
@@ -292,6 +430,7 @@ async function main() {
   initApple();
   initCompare();
   initReset();
+  await restoreDashboardSettings();
   await Promise.all([refreshGoogleSummary(), refreshAppleSummary()]);
 }
 

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <div class="aurora" aria-hidden="true"></div>
   <header class="topbar">
     <div class="brand">
       <span class="logo">📷⇄🍎</span>
@@ -90,23 +91,109 @@
       <div class="summary hidden" id="summary-apple"></div>
     </section>
 
-    <!-- Passo 4: Comparação -->
+    <!-- Passo 4: Painel de sincronização -->
     <section class="card" id="step-compare">
-      <h2><span class="step-num">4</span> Validação cruzada</h2>
-      <p>Compara os dois acervos por nome de arquivo normalizado e data de captura, e mostra o que falta de cada lado.</p>
+      <h2><span class="step-num">4</span> Painel de sincronização</h2>
+      <p>Cruza os dois acervos por nome de arquivo normalizado e data de captura, mostra o que falta de cada lado e estima o tempo de sincronização.</p>
       <div class="row">
-        <button id="btn-compare" class="btn btn-primary" disabled>Comparar acervos</button>
+        <button id="btn-compare" class="btn btn-primary" disabled>Analisar acervos</button>
         <button id="btn-export" class="btn btn-alt hidden">Exportar relatório CSV</button>
       </div>
       <p class="status" id="status-compare"></p>
 
       <div id="results" class="hidden">
-        <div class="stats">
-          <div class="stat stat-ok"><span id="stat-matched">0</span><label>em ambos</label></div>
-          <div class="stat stat-warn"><span id="stat-only-google">0</span><label>só no Google</label></div>
-          <div class="stat stat-warn"><span id="stat-only-apple">0</span><label>só na Apple</label></div>
-          <div class="stat"><span id="stat-uncertain">0</span><label>incertos</label></div>
+        <!-- Linha de KPIs -->
+        <div class="kpi-row">
+          <div class="stat" id="tile-google-total">
+            <span class="value" id="stat-google-total">0</span>
+            <span class="label"><span class="dot dot-google"></span>no Google Fotos</span>
+          </div>
+          <div class="stat" id="tile-apple-total">
+            <span class="value" id="stat-apple-total">0</span>
+            <span class="label"><span class="dot dot-apple"></span>na Apple Fotos</span>
+          </div>
+          <div class="stat" id="tile-matched">
+            <span class="value" id="stat-matched">0</span>
+            <span class="label"><span class="dot dot-good"></span>sincronizadas</span>
+          </div>
+          <div class="stat" id="tile-only-google">
+            <span class="value" id="stat-only-google">0</span>
+            <span class="label"><span class="dot dot-google"></span>só no Google</span>
+          </div>
+          <div class="stat" id="tile-only-apple">
+            <span class="value" id="stat-only-apple">0</span>
+            <span class="label"><span class="dot dot-apple"></span>só na Apple</span>
+          </div>
+          <div class="stat" id="tile-uncertain">
+            <span class="value" id="stat-uncertain">0</span>
+            <span class="label"><span class="dot dot-muted"></span>incertos</span>
+          </div>
         </div>
+
+        <!-- Anel de progresso + estimativas -->
+        <div class="dash-grid">
+          <div class="panel ring-panel" id="ring-panel">
+            <div class="ring-wrap">
+              <svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-labelledby="ring-title">
+                <title id="ring-title">Percentual de fotos sincronizadas</title>
+                <defs>
+                  <linearGradient id="ring-gradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#2a78d6" />
+                    <stop offset="100%" stop-color="#4a3aa7" />
+                  </linearGradient>
+                </defs>
+                <circle class="ring-track" cx="75" cy="75" r="62" fill="none" stroke-width="13" />
+                <circle class="ring-fill" id="ring-fill" cx="75" cy="75" r="62" fill="none" stroke-width="13"
+                        stroke-dasharray="389.6" stroke-dashoffset="389.6" />
+              </svg>
+              <div class="ring-center">
+                <span class="pct" id="ring-pct">0%</span>
+                <span class="pct-label">sincronizado</span>
+              </div>
+            </div>
+            <span class="ring-caption" id="ring-caption">—</span>
+          </div>
+
+          <div class="panel est-panel">
+            <div class="row" style="margin-top: 0;">
+              <div class="segmented" id="direction" role="group" aria-label="Direção da sincronização">
+                <button data-dir="bi" class="active">⇄ Bidirecional</button>
+                <button data-dir="g2a">Google → Apple</button>
+                <button data-dir="a2g">Apple → Google</button>
+              </div>
+            </div>
+
+            <div class="speed-controls">
+              <div class="speed-control">
+                <label for="input-mbps">Velocidade média de cópia <output id="output-mbps">10 MB/s</output></label>
+                <input type="range" id="input-mbps" min="0.5" max="100" step="0.5" value="10" />
+              </div>
+              <div class="speed-control">
+                <label for="input-pps">Taxa de processamento <output id="output-pps">2 fotos/s</output></label>
+                <input type="range" id="input-pps" min="0.1" max="20" step="0.1" value="2" />
+              </div>
+            </div>
+
+            <div class="est-tiles">
+              <div class="est" id="est-g2a">
+                <span class="est-dir"><span class="dot dot-google"></span>Google → Apple</span>
+                <span class="est-time" id="est-g2a-time">—</span>
+                <span class="est-detail" id="est-g2a-detail"></span>
+              </div>
+              <div class="est" id="est-a2g">
+                <span class="est-dir"><span class="dot dot-apple"></span>Apple → Google</span>
+                <span class="est-time" id="est-a2g-time">—</span>
+                <span class="est-detail" id="est-a2g-detail"></span>
+              </div>
+              <div class="est" id="est-bi">
+                <span class="est-dir">⇄ Bidirecional</span>
+                <span class="est-time" id="est-bi-time">—</span>
+                <span class="est-detail" id="est-bi-detail"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="tabs">
           <button class="tab active" data-tab="only-google">Só no Google</button>
           <button class="tab" data-tab="only-apple">Só na Apple</button>

@@ -27,6 +27,26 @@ fusos horários. O resultado é classificado em:
 
 O relatório pode ser exportado em CSV.
 
+## Painel de sincronização
+
+O passo 4 é um dashboard animado com:
+
+- **KPIs**: total no Google, total na Apple, sincronizadas, só no Google,
+  só na Apple e incertos (contadores animados);
+- **Anel de progresso** com o percentual sincronizado, sensível à direção
+  escolhida (bidirecional = interseção dos acervos; unidirecional = cobertura
+  do acervo de origem no destino);
+- **Direção da sincronização**: bidirecional, Google → Apple ou Apple → Google;
+- **Estimativa de tempo** para cada direção e para o total bidirecional, a
+  partir de dois controles: **velocidade média de cópia (MB/s)** e **taxa de
+  processamento (fotos/s)**. O tempo estimado é o gargalo dominante:
+  `max(volume ÷ MB/s, quantidade ÷ fotos/s)`. Como a Picker API do Google não
+  expõe o tamanho dos arquivos, o volume Google → Apple usa o tamanho médio
+  observado no acervo Apple (ou 3,5 MB/foto sem amostra) — marcado como
+  "(estim.)" no painel.
+
+Direção e velocidades escolhidas ficam salvas no IndexedDB, como todo o resto.
+
 ## Limitações impostas pelas plataformas (importante)
 
 1. **Apple não tem API pública para o iCloud Fotos.** Não existe OAuth nem
@@ -92,12 +112,13 @@ js/db.js        — camada IndexedDB
 js/google.js    — OAuth + Google Photos Picker API
 js/apple.js     — varredura de pasta local + parser EXIF mínimo (JPEG)
 js/match.js     — motor de comparação e export CSV
-js/app.js       — orquestração da UI
-test/match.test.mjs — testes do motor de comparação (node --test)
+js/estimate.js  — planos e estimativas de tempo de sincronização
+js/app.js       — orquestração da UI e do dashboard
+test/*.test.mjs — testes (node --test)
 ```
 
 ## Testes
 
 ```bash
-node --test test/match.test.mjs
+node --test test/match.test.mjs test/estimate.test.mjs
 ```
