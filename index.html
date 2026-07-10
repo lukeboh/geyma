@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geyma — Validador Google Fotos × Apple Fotos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📷%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📷⇄🍎</span>
+      <div>
+        <h1>Geyma</h1>
+        <p class="tagline">Validação cruzada entre Google Fotos e Apple (iCloud) Fotos — 100% no seu navegador</p>
+      </div>
+    </div>
+    <button id="btn-reset" class="btn btn-ghost" title="Apaga todos os dados locais (IndexedDB)">Limpar dados locais</button>
+  </header>
+
+  <main>
+    <!-- Passo 1: Configuração -->
+    <section class="card" id="step-config">
+      <h2><span class="step-num">1</span> Configuração do Google</h2>
+      <p>
+        Informe o <strong>Client ID OAuth</strong> do seu projeto no Google Cloud
+        (com a <em>Google Photos Picker API</em> habilitada). Ele fica salvo apenas neste navegador.
+        <a href="#" id="link-help-config">Como obter?</a>
+      </p>
+      <div class="row">
+        <input type="text" id="input-client-id" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off" />
+        <button id="btn-save-client-id" class="btn">Salvar</button>
+      </div>
+      <div id="config-help" class="help hidden">
+        <ol>
+          <li>Acesse <code>console.cloud.google.com</code> e crie (ou selecione) um projeto.</li>
+          <li>Em <strong>APIs e serviços → Biblioteca</strong>, habilite a <strong>Google Photos Picker API</strong>.</li>
+          <li>Em <strong>APIs e serviços → Credenciais</strong>, crie um <strong>ID do cliente OAuth</strong> do tipo <em>Aplicativo da Web</em>.</li>
+          <li>Adicione a origem desta página (ex.: <code>http://localhost:8000</code>) em <em>Origens JavaScript autorizadas</em>.</li>
+          <li>Na <strong>Tela de consentimento OAuth</strong>, adicione seu e-mail como usuário de teste.</li>
+          <li>Copie o Client ID e cole acima.</li>
+        </ol>
+      </div>
+      <p class="status" id="status-config"></p>
+    </section>
+
+    <!-- Passo 2: Google Fotos -->
+    <section class="card" id="step-google">
+      <h2><span class="step-num">2</span> Google Fotos</h2>
+      <p>
+        Faça login com sua conta Google e selecione as fotos que deseja validar.
+        Desde 2025 o Google só permite acesso via <em>Picker</em>: na janela que abrir,
+        selecione as fotos (é possível selecionar todas) e confirme.
+      </p>
+      <div class="row">
+        <button id="btn-google-connect" class="btn btn-primary" disabled>Entrar com Google e selecionar fotos</button>
+        <button id="btn-google-clear" class="btn btn-ghost">Limpar importação</button>
+      </div>
+      <p class="status" id="status-google"></p>
+      <div class="summary hidden" id="summary-google"></div>
+    </section>
+
+    <!-- Passo 3: Apple / iCloud Fotos -->
+    <section class="card" id="step-apple">
+      <h2><span class="step-num">3</span> Apple (iCloud) Fotos</h2>
+      <p>
+        A Apple não oferece API pública para o iCloud Fotos, então a leitura é feita a partir
+        de uma <strong>pasta local</strong> com suas fotos do iCloud.
+        <a href="#" id="link-help-apple">De onde vem essa pasta?</a>
+      </p>
+      <div id="apple-help" class="help hidden">
+        <ul>
+          <li><strong>Windows:</strong> instale o <em>iCloud para Windows</em> e aponte para a pasta <code>Fotos do iCloud</code>.</li>
+          <li><strong>macOS:</strong> no app Fotos, selecione tudo e use <em>Arquivo → Exportar → Exportar original não modificado</em> para uma pasta.</li>
+          <li><strong>iCloud.com:</strong> baixe suas fotos (seleção + download) para uma pasta.</li>
+          <li><strong>privacy.apple.com:</strong> solicite uma cópia dos seus dados de Fotos e extraia o ZIP.</li>
+        </ul>
+        <p>Os arquivos <strong>não são enviados a lugar nenhum</strong> — apenas nome, tamanho e data (EXIF) são lidos, localmente.</p>
+      </div>
+      <div class="row">
+        <button id="btn-apple-pick" class="btn btn-primary">Escolher pasta de fotos do iCloud</button>
+        <label class="btn btn-alt" for="input-apple-files">Ou selecionar via input de pasta
+          <input type="file" id="input-apple-files" webkitdirectory multiple hidden />
+        </label>
+        <button id="btn-apple-clear" class="btn btn-ghost">Limpar importação</button>
+      </div>
+      <progress id="apple-progress" class="hidden" max="100" value="0"></progress>
+      <p class="status" id="status-apple"></p>
+      <div class="summary hidden" id="summary-apple"></div>
+    </section>
+
+    <!-- Passo 4: Comparação -->
+    <section class="card" id="step-compare">
+      <h2><span class="step-num">4</span> Validação cruzada</h2>
+      <p>Compara os dois acervos por nome de arquivo normalizado e data de captura, e mostra o que falta de cada lado.</p>
+      <div class="row">
+        <button id="btn-compare" class="btn btn-primary" disabled>Comparar acervos</button>
+        <button id="btn-export" class="btn btn-alt hidden">Exportar relatório CSV</button>
+      </div>
+      <p class="status" id="status-compare"></p>
+
+      <div id="results" class="hidden">
+        <div class="stats">
+          <div class="stat stat-ok"><span id="stat-matched">0</span><label>em ambos</label></div>
+          <div class="stat stat-warn"><span id="stat-only-google">0</span><label>só no Google</label></div>
+          <div class="stat stat-warn"><span id="stat-only-apple">0</span><label>só na Apple</label></div>
+          <div class="stat"><span id="stat-uncertain">0</span><label>incertos</label></div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-tab="only-google">Só no Google</button>
+          <button class="tab" data-tab="only-apple">Só na Apple</button>
+          <button class="tab" data-tab="matched">Em ambos</button>
+          <button class="tab" data-tab="uncertain">Incertos</button>
+        </div>
+        <div class="table-wrap">
+          <table id="results-table">
+            <thead>
+              <tr><th>Arquivo</th><th>Data</th><th>Detalhes</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        Todos os dados ficam no IndexedDB deste navegador. Nenhuma foto ou metadado sai da sua máquina,
+        exceto a comunicação direta e autenticada com as APIs do Google.
+      </p>
+    </footer>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
