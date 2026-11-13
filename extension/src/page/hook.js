@@ -108,20 +108,41 @@
     }
   }
 
+  // A grade pode estar no documento, em shadow DOM ou num iframe da mesma origem.
   function findScroller() {
     let best = null;
-    for (const el of document.querySelectorAll('*')) {
-      const d = el.scrollHeight - el.clientHeight;
-      if (d > 2000 && (!best || d > best.d)) best = { el, d };
-    }
+    const visit = (root) => {
+      for (const el of root.querySelectorAll('*')) {
+        const d = el.scrollHeight - el.clientHeight;
+        if (d > 2000 && (!best || d > best.d)) best = { el, d };
+        if (el.shadowRoot) visit(el.shadowRoot);
+        if (el.tagName === 'IFRAME') {
+          try { if (el.contentDocument) visit(el.contentDocument); } catch {}
+        }
+      }
+    };
+    visit(document);
     return best?.el || null;
   }
+
+  const waitVisible = async (task) => {
+    if (document.visibilityState === 'visible') return;
+    post('progress', { task, state: 'aguardando', reason: 'aba oculta: deixe a aba do iCloud visível' });
+    await new Promise((r) => document.addEventListener('visibilitychange', function h() {
+      if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', h); r(); }
+    }));
+  };
 
   let icloudError = 0;
   async function icloudWalk(startFrac = 0) {
     icloudError = 0;
-    const el = findScroller();
-    if (!el) { post('progress', { task: 'icloud', state: 'erro', reason: 'grade de fotos não encontrada; abra Fotos no iCloud' }); return; }
+    await waitVisible('icloud');
+    let el = null;
+    for (let i = 0; i < 20 && !el && !stopRequested; i++) {
+      el = findScroller();
+      if (!el) await sleep(1000);
+    }
+    if (!el) { post('progress', { task: 'icloud', state: 'erro', reason: 'grade de fotos não encontrada; abra Fotos no iCloud e deixe a aba visível' }); return; }
     el.scrollTop = Math.round(startFrac * (el.scrollHeight - el.clientHeight));
     await humanPause(2500);
     let step = 0;
@@ -129,8 +150,7 @@
       if (stopRequested) { post('progress', { task: 'icloud', state: 'parado', frac: frac(el) }); return; }
       if (icloudError) { post('progress', { task: 'icloud', state: 'erro', status: icloudError, frac: frac(el) }); return; }
       if (document.visibilityState !== 'visible') {
-        post('progress', { task: 'icloud', state: 'aguardando', reason: 'aba oculta: deixe a aba do iCloud visível', frac: frac(el) });
-        await new Promise((r) => document.addEventListener('visibilitychange', r, { once: true }));
+        await waitVisible('icloud');
         continue;
       }
       const before = el.scrollTop;

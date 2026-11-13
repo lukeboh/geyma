@@ -2,6 +2,17 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.4 — 13/11/2026
+
+- Extensão: o percurso do iCloud espera a aba ficar visível antes de procurar a
+  grade, tenta por até 20 s e procura também em shadow DOM e iframes da mesma
+  origem. Antes, com a aba oculta, falhava com "grade de fotos não encontrada".
+- Observado: o Windows impede que a extensão traga o Chrome para frente quando
+  o usuário está em outra janela; o percurso agora espera em vez de falhar.
+
+Verificação: 19 testes passando; sintaxe validada. Percurso do iCloud ainda não
+validado com a aba visível.
+
 ## 0.2.3 — 13/11/2026
 
 - Extensão: a captura passiva passa a ler respostas XHR em JSON e o corpo de
