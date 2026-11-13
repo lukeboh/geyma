@@ -2,6 +2,20 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.3 — 13/11/2026
+
+- Extensão: a captura passiva passa a ler respostas XHR em JSON e o corpo de
+  pedidos `fetch` feitos com `Request`.
+- Primeiro uso real: a leitura completa do catálogo do Google pela extensão
+  funcionou, em segundo plano, a partir do painel, com o mesmo total da medição
+  da prova de acesso.
+- **Problema em aberto:** as contagens oficiais da Apple ainda não chegam ao
+  inventário, mesmo com a correção acima. A causa não foi identificada; a
+  investigação exige recarregar a aba do iCloud várias vezes e foi adiada.
+
+Verificação: 19 testes passando; leitura do Google acompanhada pelo painel até
+"concluído".
+
 ## 0.2.2 — 13/11/2026
 
 - `docs/HANDOFF.md`: estado do projeto, cronologia, decisões, conhecimento

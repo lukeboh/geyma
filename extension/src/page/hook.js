@@ -26,14 +26,20 @@
 
   const origFetch = window.fetch;
   window.fetch = async function (input, init) {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input?.url || '';
+    const watched = /ckdatabasews|batchexecute/.test(url);
+    // o corpo do pedido pode vir em init.body (texto) ou dentro de um Request
+    let bodyPromise = Promise.resolve('');
+    if (watched) {
+      if (typeof init?.body === 'string') bodyPromise = Promise.resolve(init.body);
+      else if (input instanceof Request) bodyPromise = input.clone().text().catch(() => '');
+    }
     const res = await origFetch.apply(this, arguments);
-    try {
-      const url = typeof input === 'string' ? input : input?.url || '';
-      if (/ckdatabasews|batchexecute/.test(url)) {
-        const body = init?.body;
-        res.clone().text().then((t) => inspect(url, typeof body === 'string' ? body : '', res.status, t)).catch(() => {});
-      }
-    } catch {}
+    if (watched) {
+      Promise.all([bodyPromise, res.clone().text()])
+        .then(([body, t]) => inspect(url, body, res.status, t))
+        .catch(() => {});
+    }
     return res;
   };
 
@@ -47,8 +53,9 @@
     if (/ckdatabasews|batchexecute/.test(this.__geymaUrl || '')) {
       this.addEventListener('load', () => {
         try {
-          const text = this.responseType === '' || this.responseType === 'text' ? this.responseText : '';
-          inspect(this.__geymaUrl, typeof body === 'string' ? body : '', this.status, text);
+          const rt = this.responseType;
+          const text = rt === '' || rt === 'text' ? this.responseText : rt === 'json' && this.response ? JSON.stringify(this.response) : '';
+          if (text || this.status >= 400) inspect(this.__geymaUrl, typeof body === 'string' ? body : '', this.status, text);
         } catch {}
       });
     }
