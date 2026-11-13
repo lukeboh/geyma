@@ -16,9 +16,10 @@ concluir e validar uma etapa. Os números futuros são alvos.
 ### 0.2 — Prova de acesso *(em andamento)*
 - [x] Leitura do catálogo do iCloud e do Google pela sessão web (0.1.1)
 - [x] Leitura passiva do iCloud, sem erro do servidor (0.1.1)
-- [ ] Teste de casamento num período comum aos dois serviços
-- [ ] Confirmar a natureza do campo de 27 caracteres do Google (hash do original?)
-- [ ] Medir o total do Google e as miniaturas
+- [x] Teste de casamento num período comum aos dois serviços (0.1.2)
+- [x] Campo de 27 caracteres do Google confirmado como SHA-1 do original (0.1.2)
+- [x] Miniaturas do Google medidas (0.1.2)
+- [ ] Medir o total do Google
 - [ ] Decidir a arquitetura: extensão de navegador (recomendada) × programa local
 
 **Critério:** pares confirmados por instante, dimensão e hash perceptual numa

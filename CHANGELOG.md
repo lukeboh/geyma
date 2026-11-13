@@ -2,6 +2,17 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.1.2 — 13/11/2026
+
+- Prova de acesso: resultado do teste de casamento entre Google e iCloud
+  (instante exato + dimensões + pHash), confirmação do SHA-1 do original no
+  Google, navegação passiva por saltos no iCloud e regras iniciais para o motor
+  de identidade.
+- Roadmap: itens da etapa 0.2 atualizados.
+
+Verificação: somente documentação; testes feitos com scripts descartáveis, fora
+do repositório, só com leitura.
+
 ## 0.1.1 — 13/11/2026
 
 - Adoção do versionamento MAJOR.MINOR.PATCH, com `VERSION` como fonte única.
