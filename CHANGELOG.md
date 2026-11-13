@@ -2,6 +2,16 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.2 — 13/11/2026
+
+- `docs/HANDOFF.md`: estado do projeto, cronologia, decisões, conhecimento
+  técnico das duas fontes, ambiente, próximos passos e regras para retomar o
+  trabalho.
+- Extensão carregada sem compactação no Chrome de automação (ainda sem teste
+  em uso real).
+
+Verificação: somente documentação; 19 testes continuam passando.
+
 ## 0.2.1 — 13/11/2026
 
 - Extensão de navegador em `extension/` (Manifest V3, Chrome/Edge):
