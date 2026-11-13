@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.1 — 13/11/2026
+
+- Extensão de navegador em `extension/` (Manifest V3, Chrome/Edge):
+  - captura passiva das respostas do Google Fotos e do iCloud;
+  - leitura ativa do catálogo do Google, sem rolar a página;
+  - percurso da grade do iCloud em ritmo humano, que espera com a aba oculta,
+    para no primeiro erro do servidor e retoma pela posição salva;
+  - inventário em IndexedDB e painel com totais, período, contagens da Apple,
+    gráfico por ano (com tabela) e exportação em JSON.
+- `test/ext-normalize.test.mjs`: interpretação dos dados dos serviços.
+
+Verificação: `node --test test/*.test.mjs` com 19 testes passando; sintaxe dos
+scripts de página e manifesto validados. Ainda não testada carregada no
+navegador.
+
 ## 0.2.0 — 13/11/2026 — Prova de acesso concluída
 
 - Catálogo completo do Google lido sem rolar a página e sem erro; total medido.

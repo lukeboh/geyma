@@ -1,0 +1,109 @@
+:root {
+  --surface-0: #f4f4f2;
+  --surface-1: #fcfcfb;
+  --border: #e2e1dc;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #6f6e69;
+  --accent: #2a78d6;
+  --series-google: #2a78d6;
+  --series-icloud: #eb6834;
+  --grid: #e9e8e3;
+  --danger: #d03b3b;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-0: #111110;
+    --surface-1: #1a1a19;
+    --border: #2e2e2c;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9a998f;
+    --accent: #3987e5;
+    --series-google: #3987e5;
+    --series-icloud: #d95926;
+    --grid: #2a2a28;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.top { padding: 28px 24px 8px; max-width: 1080px; margin: 0 auto; }
+h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
+h1 .sub { font-weight: 400; color: var(--text-secondary); font-size: 18px; margin-left: 6px; }
+h2 { margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.note, .muted, .hint { color: var(--text-secondary); margin: 4px 0; }
+.hint { font-size: 13px; color: var(--text-muted); }
+main { max-width: 1080px; margin: 0 auto; padding: 8px 24px 40px; display: grid; gap: 16px; }
+
+.cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.card, .panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.big { font-size: 40px; font-weight: 650; margin: 4px 0 0; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 12px 0; }
+.facts dt { color: var(--text-muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+button {
+  font: inherit;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-0);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+button:hover { border-color: var(--text-muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: 0.5; cursor: default; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.swatch.google { background: var(--series-google); }
+.swatch.icloud { background: var(--series-icloud); }
+.state-erro { color: var(--danger); font-weight: 600; }
+details { margin-top: 10px; }
+summary { cursor: pointer; color: var(--text-secondary); }
+#a-counts { margin: 8px 0 0; padding-left: 18px; columns: 2; font-variant-numeric: tabular-nums; }
+
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.legend { display: flex; gap: 14px; color: var(--text-secondary); font-size: 13px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart { width: 100%; overflow-x: auto; margin-top: 8px; }
+.chart svg { display: block; min-width: 560px; }
+.chart .grid line { stroke: var(--grid); }
+.chart .axis text { fill: var(--text-muted); font-size: 11px; }
+.chart rect.g { fill: var(--series-google); }
+.chart rect.a { fill: var(--series-icloud); }
+.chart rect.hit { fill: transparent; }
+.chart .col:hover rect.g, .chart .col:hover rect.a { opacity: 0.85; }
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+  font-variant-numeric: tabular-nums;
+}
+.tooltip b { display: block; margin-bottom: 2px; }
+table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 14px; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; }
+.tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+@media (max-width: 520px) {
+  .top, main { padding-left: 16px; padding-right: 16px; }
+  .big { font-size: 32px; }
+}

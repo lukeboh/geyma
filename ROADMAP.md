@@ -25,12 +25,14 @@ concluir e validar uma etapa. Os números futuros são alvos.
 **Critério:** pares confirmados por instante, dimensão e hash perceptual numa
 amostra, com a taxa de falso positivo medida contra um controle.
 
-### 0.3 — Extensão e inventário
-- Esqueleto da extensão (Chrome/Edge, MV3) com o núcleo atual reaproveitado
-- Conectores Google e iCloud com ritmo humano, parada no primeiro erro e retomada
-- Índice local: metadados, miniatura processada e impressão digital; sem guardar
-  fotos
-- Contagem por categoria nos dois lados
+### 0.3 — Extensão e inventário *(em andamento)*
+- [x] Esqueleto da extensão (Chrome/Edge, MV3) e painel com cobertura por ano (0.2.1)
+- [x] Conectores Google (leitura ativa) e iCloud (percurso passivo, parada no
+  primeiro erro, retomada pela posição) (0.2.1)
+- [x] Inventário local de metadados, sem URLs nem fotos (0.2.1)
+- [x] Contagens oficiais do iCloud por categoria (0.2.1)
+- [ ] Validação em uso real: inventário completo dos dois lados
+- [ ] Impressão digital das miniaturas (pHash) no índice
 
 **Critério:** inventário completo dos dois lados, retomável, sem queda de sessão.
 

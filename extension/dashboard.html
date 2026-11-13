@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geyma — Inventário</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Geyma <span class="sub">Inventário das bibliotecas</span></h1>
+    <p class="note">Tudo fica neste navegador. Nada é copiado, alterado ou apagado nos serviços.</p>
+  </header>
+
+  <main>
+    <section class="cards">
+      <article class="card" data-site="google">
+        <h2><span class="swatch google" aria-hidden="true"></span>Google Fotos</h2>
+        <p class="big" id="g-total">0</p>
+        <p class="muted">itens no inventário</p>
+        <dl class="facts">
+          <dt>Período</dt><dd id="g-range">—</dd>
+          <dt>Situação</dt><dd id="g-state">não iniciado</dd>
+        </dl>
+        <div class="actions">
+          <button id="g-start" class="primary">Ler catálogo</button>
+          <button id="g-stop">Parar</button>
+        </div>
+        <p class="hint">A leitura roda na aba do Google Fotos, mesmo em segundo plano.</p>
+      </article>
+
+      <article class="card" data-site="icloud">
+        <h2><span class="swatch icloud" aria-hidden="true"></span>iCloud Fotos</h2>
+        <p class="big" id="a-total">0</p>
+        <p class="muted" id="a-coverage">itens no inventário</p>
+        <dl class="facts">
+          <dt>Período</dt><dd id="a-range">—</dd>
+          <dt>Vídeos lidos</dt><dd id="a-videos">—</dd>
+          <dt>Situação</dt><dd id="a-state">não iniciado</dd>
+        </dl>
+        <div class="actions">
+          <button id="a-start" class="primary">Percorrer biblioteca</button>
+          <button id="a-resume">Continuar de onde parou</button>
+          <button id="a-stop">Parar</button>
+        </div>
+        <p class="hint">A aba do iCloud precisa ficar visível: o Geyma rola a grade como uma pessoa e para no primeiro erro do servidor.</p>
+        <details id="a-counts-box" hidden>
+          <summary>Contagens informadas pela Apple</summary>
+          <ul id="a-counts"></ul>
+        </details>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Itens por ano de captura</h2>
+        <div class="legend" aria-label="Legenda">
+          <span><i class="swatch google"></i>Google Fotos</span>
+          <span><i class="swatch icloud"></i>iCloud Fotos</span>
+        </div>
+      </div>
+      <div id="chart" class="chart" role="img" aria-label="Barras por ano comparando Google Fotos e iCloud Fotos"></div>
+      <div id="tooltip" class="tooltip" hidden></div>
+      <details>
+        <summary>Ver como tabela</summary>
+        <table id="year-table">
+          <thead><tr><th>Ano</th><th>Google</th><th>iCloud</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
+    </section>
+
+    <section class="panel tools">
+      <button id="export">Exportar inventário (JSON)</button>
+      <span class="muted" id="msg" role="status"></span>
+    </section>
+  </main>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

@@ -7,7 +7,8 @@ enviado para fora da sua máquina além da comunicação direta e autenticada co
 Google.
 
 > **Direção do projeto:** estratégia em [docs/ESTRATEGIA.md](docs/ESTRATEGIA.md)
-> e etapas em [ROADMAP.md](ROADMAP.md). Esta página descreve o protótipo 0.1.
+> e etapas em [ROADMAP.md](ROADMAP.md). A nova base é a extensão de navegador
+> em [extension/](extension/README.md). Esta página descreve o protótipo 0.1.
 
 ## Como funciona
 
