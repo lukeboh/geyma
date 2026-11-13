@@ -13,6 +13,7 @@ porque o repositório é público.
 | Miniaturas do iCloud | **Sim.** ~70 KB cada, baixáveis sem sessão por URL temporária |
 | Ler o catálogo do Google sem baixar | **Sim.** Páginas de ~300 itens com chave, dimensões, data de captura e um campo de 27 caracteres (hipótese: hash do arquivo original, **não confirmado**). O nome do arquivo não vem nessa listagem |
 | Paginação automática no Google | **Sim**, por cursor |
+| Ler o catálogo inteiro do Google sem rolar a página | **Sim.** A chamada é montada com os dados da própria página; ~110 itens/s com pausas, sem erro, inclusive com a aba em segundo plano. O campo 4 do item é o fuso horário em ms |
 | Leitura passiva do iCloud (rolando a página) | **Sim.** ~10 itens/s, sem erro do servidor |
 | Chegar a um período antigo no iCloud sem consultas próprias | **Sim.** Saltos pela barra de rolagem (busca binária pela data), ~9 saltos |
 | Campo de 27 caracteres do Google | **É o SHA-1 do arquivo original** (base64url): bateu com o original da Apple em 3 de 10 pares; nos demais, o Google guarda bytes diferentes |
@@ -61,7 +62,12 @@ Conclusões para o motor de identidade:
   depende de rolagem; em alguns ciclos, o Google não carregou páginas novas e foi
   preciso tentar de novo.
 
-## Pendências da prova
+- **As bibliotecas se completam.** O Google era maior e concentrava os anos até
+  2017; o iCloud, os recentes. A estratégia passou a prever envio nos dois
+  sentidos.
 
-1. Medir o total da biblioteca do Google.
-2. Decidir a arquitetura (extensão × programa local).
+## Decisão
+
+Prova concluída em 13/11/2026 (versão 0.2.0). Arquitetura escolhida: **extensão
+de navegador**, porque tudo o que funcionou depende da sessão do navegador e a
+automação externa travava com a janela oculta ou a tela bloqueada.

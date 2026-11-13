@@ -2,6 +2,16 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.0 — 13/11/2026 — Prova de acesso concluída
+
+- Catálogo completo do Google lido sem rolar a página e sem erro; total medido.
+- Arquitetura decidida: extensão de navegador.
+- Estratégia revista: as bibliotecas se completam (Google com os anos antigos,
+  iCloud com os recentes); envio curado nos dois sentidos, com as opções do
+  caminho Google → iCloud.
+
+Verificação: critérios da etapa 0.2 do roadmap atendidos; somente documentação.
+
 ## 0.1.2 — 13/11/2026
 
 - Prova de acesso: resultado do teste de casamento entre Google e iCloud

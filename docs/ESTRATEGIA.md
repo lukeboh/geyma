@@ -74,16 +74,33 @@ reduzida, identidade não confirmada ou categoria indefinida.
 
 ## 5. Estratégia para a biblioteca pessoal (caso fundador)
 
-Situação: o iCloud é a biblioteca mais completa. O Google Fotos ficou parado por
-um período e teve exclusões, e a pessoa quer voltar a usá-lo sem levar lixo.
+Situação (medida em 13/11/2026): a biblioteca do Google é maior que a do iCloud
+e concentra os anos até 2017; o iCloud concentra os anos recentes. O Google não
+recebe fotos do celular desde dezembro de 2023 e teve exclusões. **Cada lado tem
+fotos que o outro não tem.** A pessoa quer voltar a usar o Google sem levar lixo.
 
-### Decisão: iCloud como fonte da verdade, Google como segunda cópia curada
+### Decisão: as bibliotecas se completam; envio curado nos dois sentidos
+
+Nenhum lado é a "fonte da verdade". A verdade é a união das fotos pessoais dos
+dois, e cada foto pessoal que estiver em um lado só é enviada ao outro.
+
+#### iCloud → Google
 
 | Caminho | Prós | Contras | Uso |
 |---|---|---|---|
 | Religar o backup do Google Fotos no celular | Oficial e simples | Envia tudo, inclusive o lixo; leva semanas; consome a cota | **Não agora.** Opção de reserva |
 | Transferência oficial Apple → Google (privacy.apple.com) | Oficial, sem passar pelo notebook | Copia tudo, sem filtro, e cria duplicatas do que já existe | Reserva, após avaliação |
 | **Envio curado pelo Geyma** (Google Photos Library API, escopo de envio) | Oficial do lado Google; só fotos pessoais que faltam; os itens enviados ficam gerenciáveis pelo app | Exige desenvolvimento; a banda passa pelo computador, em fluxo, sem acumular disco | **Recomendado** |
+
+#### Google → iCloud
+
+A Apple não tem API para enviar fotos ao iCloud. Opções a avaliar na etapa 0.7:
+
+| Caminho | Observação |
+|---|---|
+| Transferência oficial Google → Apple (Google Takeout) | Oficial, mas copia tudo, sem filtro, e criaria duplicatas; a verificar |
+| Pasta de envio do iCloud para Windows | Oficial do lado Apple; os arquivos passam pelo computador em lotes |
+| Envio pela página do iCloud.com | Usa a sessão do navegador; interface não oficial |
 
 Sequência:
 
@@ -96,8 +113,8 @@ Sequência:
    para o envio; nada suspeito é copiado antes da decisão.
 5. **Conferir a cota do Google** contra o volume curado. Se não couber, o plano
    de armazenamento é uma decisão de custo da pessoa.
-6. **Enviar em lotes**, baixando do iCloud e enviando ao Google em fluxo, com
-   retomada.
+6. **Enviar em lotes, nos dois sentidos**, baixando de um lado e enviando ao
+   outro em fluxo, com retomada.
 7. **Manutenção contínua:** rodar o Geyma periodicamente para enviar só as fotos
    pessoais novas, substituindo o backup automático do celular.
 8. **Sanitizar** depois que o painel mostrar as fotos protegidas: listas de

@@ -13,14 +13,14 @@ concluir e validar uma etapa. Os números futuros são alvos.
 
 ## Etapas
 
-### 0.2 — Prova de acesso *(em andamento)*
+### 0.2 — Prova de acesso *(concluída em 0.2.0)*
 - [x] Leitura do catálogo do iCloud e do Google pela sessão web (0.1.1)
 - [x] Leitura passiva do iCloud, sem erro do servidor (0.1.1)
 - [x] Teste de casamento num período comum aos dois serviços (0.1.2)
 - [x] Campo de 27 caracteres do Google confirmado como SHA-1 do original (0.1.2)
 - [x] Miniaturas do Google medidas (0.1.2)
-- [ ] Medir o total do Google
-- [ ] Decidir a arquitetura: extensão de navegador (recomendada) × programa local
+- [x] Total do Google medido, com leitura completa sem rolar a página (0.2.0)
+- [x] Arquitetura decidida: extensão de navegador (0.2.0)
 
 **Critério:** pares confirmados por instante, dimensão e hash perceptual numa
 amostra, com a taxa de falso positivo medida contra um controle.
@@ -60,11 +60,13 @@ revisada manualmente.
 **Critério:** responder com números "quais fotos pessoais estão nos dois lugares
 com qualidade preservada". Marco de validação do uso pessoal.
 
-### 0.7 — Envio curado iCloud → Google
+### 0.7 — Envio curado nos dois sentidos
 - Envia **somente** itens marcados Pessoal ou Manter; Pendente e Descartar nunca
   são copiados
 - Google Photos Library API (escopo de envio), em lotes, em fluxo, com retomada
-- Conferência de cota antes de enviar
+- Google → iCloud: escolher o caminho (transferência oficial, pasta de envio do
+  iCloud para Windows ou página do iCloud.com)
+- Conferência de cota antes de enviar, nos dois serviços
 - Envio contínuo do que é novo (substitui o backup automático do celular)
 
 ### 0.8 — Sanitização guiada
