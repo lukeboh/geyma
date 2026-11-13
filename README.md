@@ -6,6 +6,9 @@ dados vive **no navegador** (IndexedDB) — nenhum servidor próprio, nenhum dad
 enviado para fora da sua máquina além da comunicação direta e autenticada com o
 Google.
 
+> **Direção do projeto:** estratégia em [docs/ESTRATEGIA.md](docs/ESTRATEGIA.md)
+> e etapas em [ROADMAP.md](ROADMAP.md). Esta página descreve o protótipo 0.1.
+
 ## Como funciona
 
 | Lado | Fonte | Mecanismo |
