@@ -72,3 +72,45 @@ test('limite parcial pelo percentil 99 ignora os recentes capturados no início'
   assert.ok(partialUntil(items) < 1000);
   assert.equal(partialUntil(items.slice(0, 10)), null);
 });
+
+// pHash: 'f'*16 e um bit de diferença = mesma imagem; '0'*16 = outra imagem
+const P1 = 'ffffffffffffffff';
+const P1b = 'fffffffffffffffe';
+const P2 = '0000000000000000';
+const withHash = (item, phash) => ({ ...item, phash });
+
+test('candidatos que são a mesma imagem deixam de ser disputa', () => {
+  const google = [withHash(g(1, T, 4032, 3024), P1), withHash(g(2, T, 4032, 3024), P1b)];
+  const r = matchLibraries(google, [a(1, T + 200, 4032, 3024)]);
+  assert.equal(r.pairs[0].cls, 'ambos');
+  assert.equal(r.pairs[0].duplicatasNoGoogle, 1);
+});
+
+test('candidatos com imagens diferentes continuam a confirmar', () => {
+  const google = [withHash(g(1, T, 4032, 3024), P1), withHash(g(2, T, 4032, 3024), P2)];
+  const r = matchLibraries(google, [a(1, T + 200, 4032, 3024)]);
+  assert.equal(r.pairs[0].cls, 'confirmar');
+});
+
+test('sem pHash calculado, o par continua a confirmar', () => {
+  const google = [withHash(g(1, T, 4032, 3024), P1), g(2, T, 4032, 3024)];
+  const r = matchLibraries(google, [a(1, T + 200, 4032, 3024)]);
+  assert.equal(r.pairs[0].cls, 'confirmar');
+});
+
+test('duplicatas do Google classificadas pelo pHash', async () => {
+  const { analyzeGoogleDuplicates } = await import('../extension/src/core/match.js');
+  const groups = [
+    [withHash(g(1, T, 1, 1), P1), withHash(g(2, T, 1, 1), P1b), withHash(g(3, T, 1, 1), P1)], // 2 extras
+    [withHash(g(4, T, 1, 1), P1), withHash(g(5, T, 1, 1), P2)], // fotos diferentes
+    [withHash(g(6, T, 1, 1), P1), g(7, T, 1, 1)], // falta hash
+    [withHash(g(8, T, 1, 1), 'ffffffffffff0000'), withHash(g(9, T, 1, 1), P1)], // distância 16: incerto
+  ];
+  const r = analyzeGoogleDuplicates(groups);
+  assert.equal(r.confirmados, 1);
+  assert.equal(r.extrasConfirmados, 2);
+  assert.equal(r.diferentes, 1);
+  assert.equal(r.pendentes, 1);
+  assert.deepEqual(r.pendingIds, ['g:7']);
+  assert.equal(r.incertos, 1);
+});

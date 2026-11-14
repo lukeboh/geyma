@@ -1,7 +1,8 @@
 // Service worker: recebe os dados das páginas, normaliza, grava no inventário
 // e encaminha os comandos do painel para as abas dos serviços.
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
-import { putItems, setMeta, getMeta } from './core/db.js';
+import { putItems, patchItems, setMeta, getMeta } from './core/db.js';
+import { grayFromRgba, phashFromGray } from './core/phash.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -28,13 +29,35 @@ async function handlePageEvent(site, type, payload) {
       await setMeta('icloudCounts', { ...prev, ...Object.fromEntries(counts) });
       broadcast({ site, event: 'counts' });
     }
+  } else if (type === 'google-thumbs') {
+    const patches = [];
+    for (const { id, b64 } of payload.items) {
+      const hash = await phashFromBase64(b64).catch(() => null);
+      if (hash) patches.push({ id, phash: hash });
+    }
+    if (patches.length) await patchItems(patches);
+    broadcast({ site, event: 'phash', added: patches.length });
   } else if (type === 'icloud-error') {
     await setMeta('icloudLastError', { status: payload.status });
     broadcast({ site, event: 'error', status: payload.status });
   } else if (type === 'progress') {
     await setMeta(`${payload.task}Progress`, payload);
+    // a conclusão do percurso do iCloud fica registrada mesmo depois de outro percurso parado
+    if (payload.task === 'icloud' && payload.state === 'concluido') await setMeta('icloudCompleted', { at: Date.now() });
     broadcast({ site, event: 'progress', progress: payload });
   }
+}
+
+// pHash de uma miniatura: reduz para 32×32 em tons de cinza e aplica a DCT
+const canvas = new OffscreenCanvas(32, 32);
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+async function phashFromBase64(b64) {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const bmp = await createImageBitmap(new Blob([bytes]), { resizeWidth: 32, resizeHeight: 32, resizeQuality: 'high' });
+  ctx.clearRect(0, 0, 32, 32);
+  ctx.drawImage(bmp, 0, 0);
+  bmp.close();
+  return phashFromGray(grayFromRgba(ctx.getImageData(0, 0, 32, 32).data));
 }
 
 async function findOrOpenTab(site) {
@@ -47,6 +70,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'page-event') {
     handlePageEvent(msg.site, msg.type, msg.payload).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
     return false;
+  }
+  if (msg?.kind === 'phash') {
+    (async () => {
+      const tab = await findOrOpenTab('google');
+      await setMeta('phashProgress', { task: 'phash', state: 'lendo', done: 0, total: msg.keys.length });
+      await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd: 'google-thumbs', keys: msg.keys });
+      sendResponse({ ok: true });
+    })().catch((err) => sendResponse({ ok: false, reason: String(err.message || err) }));
+    return true;
   }
   if (msg?.kind === 'start' || msg?.kind === 'stop') {
     (async () => {

@@ -7,5 +7,5 @@ window.addEventListener('message', (e) => {
 });
 
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg?.kind === 'command') window.postMessage({ __geymaCmd: true, cmd: msg.cmd, startFrac: msg.startFrac }, location.origin);
+  if (msg?.kind === 'command') window.postMessage({ __geymaCmd: true, cmd: msg.cmd, startFrac: msg.startFrac, keys: msg.keys }, location.origin);
 });

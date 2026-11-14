@@ -105,8 +105,13 @@
 
     <section class="panel" id="m-dup-box" hidden>
       <h2>Possíveis duplicatas no Google</h2>
-      <p id="m-dup"></p>
-      <p class="hint">Itens do Google com o mesmo segundo de captura e as mesmas dimensões. Numa amostra de 30 grupos, 21 eram a mesma foto guardada duas vezes; os demais eram fotos diferentes tiradas em sequência. Nada será apagado sem a sua decisão, foto a foto ou grupo a grupo.</p>
+      <p id="m-dup" class="lines"></p>
+      <div class="actions">
+        <button id="m-phash" class="primary" hidden>Conferir pelas miniaturas</button>
+        <button id="m-phash-stop" hidden>Parar</button>
+        <span class="muted" id="m-phash-state" role="status"></span>
+      </div>
+      <p class="hint">Itens do Google com o mesmo segundo de captura e as mesmas dimensões. A conferência baixa uma miniatura pequena de cada um, pela sua sessão do Google Fotos, e compara as imagens (pHash): iguais são cópias repetidas; diferentes são fotos tiradas em sequência. Nada será apagado sem a sua decisão.</p>
     </section>
   </main>
 

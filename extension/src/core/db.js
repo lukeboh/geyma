@@ -34,12 +34,30 @@ function tx(store, mode, fn) {
   );
 }
 
-/** Grava itens; mantém o primeiro registro de quando o item foi visto. */
+/**
+ * Grava itens mesclando com o registro existente: campos calculados depois
+ * (como o pHash) sobrevivem a uma nova leitura, e seenAt guarda a primeira vez
+ * em que o item foi visto.
+ */
 export function putItems(items) {
   const now = Date.now();
   return tx('items', 'readwrite', (store) => {
-    for (const it of items) store.put({ ...it, seenAt: now });
+    for (const it of items) {
+      const req = store.get(it.id);
+      req.onsuccess = () => store.put({ ...req.result, ...it, seenAt: req.result?.seenAt ?? now });
+    }
     return items.length;
+  });
+}
+
+/** Acrescenta campos a itens já existentes ([{id, ...campos}]); ignora ids ausentes. */
+export function patchItems(patches) {
+  return tx('items', 'readwrite', (store) => {
+    for (const p of patches) {
+      const req = store.get(p.id);
+      req.onsuccess = () => { if (req.result) store.put({ ...req.result, ...p }); };
+    }
+    return patches.length;
   });
 }
 

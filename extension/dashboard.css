@@ -147,3 +147,4 @@ select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid 
 #r-table td.name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 .tag { font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; }
 .pager { display: flex; gap: 12px; align-items: center; margin-top: 10px; }
+.lines .line { display: block; margin-bottom: 4px; }

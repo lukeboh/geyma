@@ -2,6 +2,34 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.7 — 14/11/2026
+
+- pHash na extensão (`src/core/phash.js`), idêntico ao da biblioteca Python
+  imagehash a partir da matriz 32×32 (testado com valores gerados por ela).
+- Conferência pelas miniaturas: a aba do Google relê o catálogo para obter as
+  URLs (que não ficam no inventário), baixa miniaturas de 128 px com a sessão
+  da página (até 4 por vez, sem timers, para funcionar com a aba oculta) e o
+  service worker calcula o pHash e grava no item. Para no primeiro erro.
+- Motor: candidatos do mesmo segundo que são a mesma imagem deixam de ser
+  disputa (o par vira "Em ambos"); grupos do Google classificados em cópias
+  repetidas, fotos diferentes, incertos e pendentes.
+- Painel: quadro de duplicatas com o resultado, botão "Conferir pelas
+  miniaturas", progresso ao vivo e filtro "Cópias repetidas no Google" na
+  Revisão.
+- Inventário: gravar mescla com o registro existente (o pHash sobrevive a uma
+  nova leitura; `seenAt` guarda a primeira vez).
+- A conclusão do percurso do iCloud fica registrada; o cruzamento também é
+  completo quando o inventário alcança o total oficial da Apple.
+- Parar o percurso do iCloud encerra na hora a espera pela aba visível.
+- Uso real: o total oficial da Apple chegou ao painel e o inventário do iCloud
+  ficou com 100% de cobertura.
+
+Verificação: 38 testes passando (pHash contra o imagehash, uso do pHash no
+motor e nas duplicatas). No navegador, o pHash das miniaturas da amostra
+difere do Python em mediana 2 bits; a classificação dos 30 grupos só diverge
+em 2 casos na faixa de fronteira. Conferência iniciada em escala, com hashes
+gravados no inventário.
+
 ## 0.2.6 — 14/11/2026
 
 - Motor de identidade (`extension/src/core/match.js`): cruza Google e iCloud

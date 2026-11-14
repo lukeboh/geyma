@@ -1,6 +1,6 @@
 import { getItemsBySource, getMeta } from './src/core/db.js';
 import { summarize } from './src/core/normalize.js';
-import { initProtection, ensureComputed, compute, hasData } from './protection.js';
+import { initProtection, ensureComputed, compute, hasData, showPhashProgress } from './protection.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -206,6 +206,11 @@ let lastIcloudState = null;
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.kind !== 'status') return;
   const st = msg.progress?.state;
+  if (msg.progress?.task === 'phash') {
+    showPhashProgress(msg.progress);
+    if (st !== 'lendo' && hasData()) compute();
+    return;
+  }
   if (msg.site === 'icloud' && st && st !== lastIcloudState) {
     lastIcloudState = st;
     if (st === 'concluido' && hasData()) compute();

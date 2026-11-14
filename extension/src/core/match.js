@@ -12,6 +12,8 @@
 // - Mais de um candidato no mesmo segundo (rajadas, duplicatas) = par provável,
 //   que precisa de confirmação visual (pHash) antes de qualquer decisão.
 
+import { hamming, SAME_MAX, DIFFERENT_MIN } from './phash.js';
+
 export const TOLERANCE_MS = 1000;
 
 export const CLASSES = {
@@ -89,7 +91,9 @@ export function matchLibraries(google, icloud, opts = {}) {
     const pick = c.find(({ g }) => !usedG.has(g.id));
     if (!pick) { soIcloud.push(a); continue; }
     usedG.add(pick.g.id);
-    const disputed = c.length > 1 || demand.get(pick.g.id) > 1;
+    // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
+    const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
+    const disputed = (c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1;
     const pair = { a, g: pick.g, dt: pick.dt };
     if (pick.rel === 'reduzida') {
       pair.cls = 'reduzida';
@@ -98,10 +102,50 @@ export function matchLibraries(google, icloud, opts = {}) {
       pair.cls = disputed ? 'confirmar' : 'ambos';
     }
     if (disputed) pair.disputado = true;
+    if (sameImage) pair.duplicatasNoGoogle = c.length - 1;
     pairs.push(pair);
   }
   const soGoogle = G.filter((g) => !usedG.has(g.id));
   return { pairs, soGoogle, soIcloud };
+}
+
+/** Mesma imagem pelo pHash (os dois precisam ter o hash calculado). */
+export function samePicture(x, y) {
+  if (x === y) return true;
+  const d = hamming(x.phash, y.phash);
+  return d !== null && d <= SAME_MAX;
+}
+
+/**
+ * Classifica os grupos de mesmo segundo do Google pelo pHash.
+ * Cada grupo vira agrupamentos de imagens iguais; o que passa do primeiro de
+ * cada agrupamento é duplicata confirmada.
+ * @returns {{confirmados, extrasConfirmados, diferentes, incertos, pendentes, pendingIds, extraIds}}
+ */
+export function analyzeGoogleDuplicates(groups) {
+  const out = { confirmados: 0, extrasConfirmados: 0, diferentes: 0, incertos: 0, pendentes: 0, pendingIds: [], extraIds: [] };
+  for (const l of groups) {
+    const missing = l.filter((g) => !g.phash);
+    if (missing.length) {
+      out.pendentes++;
+      for (const g of missing) out.pendingIds.push(g.id);
+      continue;
+    }
+    const clusters = [];
+    let uncertain = false;
+    for (const g of l) {
+      const home = clusters.find((cl) => hamming(cl[0].phash, g.phash) <= SAME_MAX);
+      if (home) { home.push(g); continue; }
+      if (clusters.some((cl) => hamming(cl[0].phash, g.phash) < DIFFERENT_MIN)) uncertain = true;
+      clusters.push([g]);
+    }
+    const extras = clusters.reduce((n, cl) => n + cl.length - 1, 0);
+    for (const cl of clusters) for (const g of cl.slice(1)) out.extraIds.push(g.id);
+    if (extras) { out.confirmados++; out.extrasConfirmados += extras; }
+    else if (uncertain) out.incertos++;
+    else out.diferentes++;
+  }
+  return out;
 }
 
 /** Itens do Google com outro item no mesmo segundo e mesmas dimensões: possível duplicata. */

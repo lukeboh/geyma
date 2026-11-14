@@ -108,6 +108,76 @@
     }
   }
 
+  // Miniaturas para o pHash: relê o catálogo (as URLs não ficam guardadas no
+  // inventário), baixa as miniaturas pedidas em 128 px com a sessão da página e
+  // envia os bytes para a extensão calcular o hash. Para no primeiro erro.
+  // Sem setTimeout: em aba oculta o Chrome atrasa timers encadeados para 1 por
+  // minuto; o ritmo vem de no máximo 4 downloads simultâneos.
+  async function googleThumbs(keys) {
+    const wanted = new Set(keys);
+    const total = wanted.size;
+    let cursor = null;
+    let pages = 0;
+    let done = 0;
+    let failed = 0;
+    let fatal = null;
+    let listing = true;
+    const queue = [];
+    let batch = [];
+    // sinal simples entre a listagem (produtora) e os downloads (consumidores)
+    let wake = null;
+    const signal = () => { const w = wake; wake = null; w?.(); };
+    const waitSignal = () => new Promise((r) => { const prev = wake; wake = () => { prev?.(); r(); }; });
+    const flush = () => { if (batch.length) { post('google-thumbs', { items: batch }); batch = []; } };
+    const toB64 = (buf) => {
+      const b = new Uint8Array(buf);
+      let s = '';
+      for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
+      return btoa(s);
+    };
+    const worker = async () => {
+      for (;;) {
+        if (stopRequested || fatal) return;
+        const job = queue.shift();
+        if (!job) { if (!listing) return; await waitSignal(); continue; }
+        signal(); // libera a listagem se ela esperava a fila esvaziar
+        try {
+          const res = await origFetch(`${job.url}=w128-h128`, { credentials: 'include' });
+          if (res.status === 404) { failed++; continue; }
+          if (!res.ok) { fatal = res.status; signal(); return; }
+          batch.push({ id: `g:${job.key}`, b64: toB64(await res.arrayBuffer()) });
+          done++;
+          if (batch.length >= 25) flush();
+          if (done % 200 === 0) post('progress', { task: 'phash', state: 'lendo', done, failed, total, pages });
+        } catch { failed++; }
+      }
+    };
+    const workers = Array.from({ length: 4 }, worker);
+    while (wanted.size && !stopRequested && !fatal) {
+      const { status, text } = await googleList(cursor);
+      if (status !== 200) { fatal = status; break; }
+      pages++;
+      const line = text.split('\n').find((l) => l.startsWith('[["wrb.fr"'));
+      let data = null;
+      try { data = JSON.parse(JSON.parse(line)[0][2]); } catch {}
+      for (const it of data?.[0] || []) {
+        if (wanted.has(it[0]) && it[1]?.[0]) { wanted.delete(it[0]); queue.push({ key: it[0], url: it[1][0] }); }
+      }
+      signal();
+      cursor = data?.[1] || null;
+      if (!cursor) break;
+      if (pages % 20 === 0) post('progress', { task: 'phash', state: 'lendo', done, failed, total, pages });
+      // não deixa a fila crescer demais enquanto lista
+      while (queue.length > 400 && !stopRequested && !fatal) await waitSignal();
+    }
+    listing = false;
+    signal();
+    await Promise.all(workers);
+    flush();
+    const state = fatal ? 'erro' : stopRequested ? 'parado' : 'concluido';
+    post('progress', { task: 'phash', state, done, failed, total, pages, ...(fatal ? { status: fatal } : {}) });
+  }
+
   // A grade pode estar no documento, em shadow DOM ou num iframe da mesma origem.
   function findScroller() {
     let best = null;
@@ -125,12 +195,17 @@
     return best?.el || null;
   }
 
+  // Espera a aba ficar visível; um pedido de parada encerra a espera na hora.
+  let wakeWaiter = null;
   const waitVisible = async (task) => {
     if (document.visibilityState === 'visible') return;
     post('progress', { task, state: 'aguardando', reason: 'aba oculta: deixe a aba do iCloud visível' });
-    await new Promise((r) => document.addEventListener('visibilitychange', function h() {
-      if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', h); r(); }
-    }));
+    await new Promise((r) => {
+      const done = () => { document.removeEventListener('visibilitychange', h); wakeWaiter = null; r(); };
+      function h() { if (document.visibilityState === 'visible') done(); }
+      document.addEventListener('visibilitychange', h);
+      wakeWaiter = done;
+    });
   };
 
   // Controle de tamanho das miniaturas do iCloud (slider ARIA, valor mínimo =
@@ -156,6 +231,7 @@
   async function icloudWalk(startFrac = 0) {
     icloudError = 0;
     await waitVisible('icloud');
+    if (stopRequested) { post('progress', { task: 'icloud', state: 'parado', frac: startFrac }); return; }
     let el = null;
     for (let i = 0; i < 20 && !el && !stopRequested; i++) {
       el = findScroller();
@@ -191,14 +267,15 @@
 
   window.addEventListener('message', (e) => {
     if (e.source !== window || !e.data?.__geymaCmd) return;
-    const { cmd, startFrac } = e.data;
-    if (cmd === 'stop') { stopRequested = true; return; }
+    const { cmd, startFrac, keys } = e.data;
+    if (cmd === 'stop') { stopRequested = true; wakeWaiter?.(); return; }
     // O app de Fotos do iCloud roda num iframe (/applications/photos…); o script
     // é injetado em todos os frames, mas só o frame do app percorre a grade.
     if (cmd === 'icloud-walk' && !isPhotosFrame()) return;
     if (running) { post('progress', { task: SITE, state: 'ocupado' }); return; }
     stopRequested = false;
     const job = cmd === 'google-crawl' && SITE === 'google' ? googleCrawl()
+      : cmd === 'google-thumbs' && SITE === 'google' ? googleThumbs(keys || [])
       : cmd === 'icloud-walk' && SITE === 'icloud' ? icloudWalk(Number(startFrac) || 0)
       : null;
     if (!job) return;

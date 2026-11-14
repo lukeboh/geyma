@@ -29,8 +29,11 @@ export function initProtection() {
   $('r-prev').addEventListener('click', () => { page = Math.max(0, page - 1); renderList(); });
   $('r-next').addEventListener('click', () => { page++; renderList(); });
   $('r-csv').addEventListener('click', exportCsv);
+  $('m-phash').addEventListener('click', startPhash);
+  $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
   const cls = $('r-cls');
   for (const k of ORDER) cls.append(new Option(CLASSES[k], k));
+  cls.append(new Option('Cópias repetidas no Google (conferidas)', 'dupGoogle'));
   cls.value = 'soIcloud';
 }
 
@@ -99,8 +102,40 @@ function renderProtection() {
   $('m-legend').innerHTML = ORDER.map((k) => `<span><i class="swatch c-${k}"></i>${CLASSES[k]}</span>`).join('');
   drawStack(s.byYear);
 
+  renderDup();
+}
+
+function renderDup() {
+  const { dup, phashNeeded } = data;
   $('m-dup-box').hidden = !dup.groups;
-  $('m-dup').innerHTML = `<b>${fmt.format(dup.groups)}</b> grupos, com <b>${fmt.format(dup.extras)}</b> itens além do primeiro de cada grupo.`;
+  const lines = [`<b>${fmt.format(dup.groups)}</b> grupos, com <b>${fmt.format(dup.extras)}</b> itens além do primeiro de cada grupo.`];
+  const checked = dup.groups - dup.pendentes;
+  if (checked) {
+    lines.push(`Conferidos pelas miniaturas: <b>${fmt.format(checked)}</b> grupos. A mesma foto repetida: <b>${fmt.format(dup.confirmados)}</b> grupos, com <b>${fmt.format(dup.extrasConfirmados)}</b> cópias a mais. Fotos diferentes: ${fmt.format(dup.diferentes)}. Incertos: ${fmt.format(dup.incertos)}.`);
+  }
+  $('m-dup').innerHTML = lines.map((l) => `<span class="line">${l}</span>`).join('');
+  const btn = $('m-phash');
+  btn.hidden = !phashNeeded.length;
+  btn.textContent = `Conferir pelas miniaturas (${fmt.format(phashNeeded.length)} itens)`;
+  showPhashProgress(data.phashProgress);
+}
+
+export function showPhashProgress(p) {
+  const el = $('m-phash-state');
+  if (!p) { el.textContent = ''; return; }
+  const n = `${fmt.format(p.done || 0)} de ${fmt.format(p.total || 0)} miniaturas`;
+  const label = { lendo: `conferindo… ${n}`, concluido: `conferência concluída: ${n}`, parado: `parada por você: ${n}`, erro: `parou por erro do Google (${p.status || p.reason || '?'}): ${n}` }[p.state] || p.state;
+  el.textContent = label;
+  $('m-phash').disabled = p.state === 'lendo';
+  $('m-phash-stop').hidden = p.state !== 'lendo';
+}
+
+async function startPhash() {
+  if (!data?.phashNeeded.length) return;
+  $('m-phash').disabled = true;
+  const res = await chrome.runtime.sendMessage({ kind: 'phash', keys: data.phashNeeded });
+  if (!res?.ok) { $('m-phash-state').textContent = `Não foi possível: ${res?.reason || 'abra o Google Fotos e tente de novo'}`; $('m-phash').disabled = false; }
+  else showPhashProgress({ state: 'lendo', done: 0, total: data.phashNeeded.length });
 }
 
 function drawStack(byYear) {
@@ -192,7 +227,7 @@ function filtered() {
   const cls = $('r-cls').value;
   const year = $('r-year').value;
   const kind = $('r-kind').value;
-  return data.rows.filter((r) => r.cls === cls
+  return data.rows.filter((r) => (cls === 'dupGoogle' ? r.dup : r.cls === cls)
     && (!year || new Date(r.ts).getUTCFullYear() === Number(year))
     && (!kind || (kind === 'video') === Boolean(r.a?.video)))
     .sort((x, y) => y.ts - x.ts);
