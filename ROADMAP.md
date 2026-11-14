@@ -88,6 +88,14 @@ com qualidade preservada". Marco de validação do uso pessoal.
 - Envio contínuo do que é novo (substitui o backup automático do celular)
 
 ### 0.8 — Sanitização guiada
+- [x] Deduplicação nos dois serviços (0.2.15): arquivos idênticos pela
+  impressão digital (iCloud) ou SHA-1 (Google), mesma imagem pelo pHash e
+  candidatas de mesmo segundo; cópia de maior qualidade fica; revisão com a
+  cópia ao lado da que fica e marcação em lote
+- [ ] Duplicatas candidatas do iCloud conferidas pelas miniaturas (depende de
+  um novo percurso do iCloud)
+- [ ] Remoção das cópias aprovadas para a lixeira de cada serviço, só com
+  confirmação explícita
 - Listas de exclusão revisadas em lote, só para itens protegidos
 - Quarentena pela lixeira do serviço e relatório do que foi feito
 

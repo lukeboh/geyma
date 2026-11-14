@@ -42,3 +42,9 @@ test('reenvio de original quando o Google guarda a cópia menor', () => {
 test('sem fotos do iCloud usa o valor padrão de bytes por pixel', () => {
   assert.equal(bytesPerPixel([], 0.35), 0.35);
 });
+
+test('cópias repetidas no iCloud não entram no envio', () => {
+  const p = sendPlan([icl(), icl({ dupIcloud: true })]);
+  assert.equal(p.toGoogle.n, 1);
+  assert.equal(p.toGoogle.held, 0);
+});

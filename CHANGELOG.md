@@ -2,6 +2,28 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.15 — 14/11/2026
+
+- Deduplicação nos dois serviços (`src/core/dedup.js`), pedida pelo usuário:
+  - provas, da mais forte para a mais fraca: arquivo idêntico (impressão
+    digital do original no iCloud, SHA-1 no Google, em qualquer instante),
+    mesma imagem pelo pHash e, só como candidata, mesmo segundo com as mesmas
+    dimensões;
+  - em cada grupo fica a cópia de maior qualidade (mais pixels, depois mais
+    bytes, depois favorita); as demais são cópias a revisar.
+- Painel: quadro "Duplicatas nos dois serviços" (cópias, grupos, arquivos
+  idênticos, espaço quando conhecido, fotos diferentes, incertos e o que falta
+  conferir); filtros "Cópias repetidas no Google" e "no iCloud" na Revisão,
+  com a cópia que fica ao lado; candidatas do iCloud entram no desempate pelas
+  miniaturas do iCloud.
+- Plano de envio não conta cópias repetidas de nenhum dos lados.
+- Nada é removido: marcar como Descartar só registra a decisão; a remoção para
+  a lixeira dos serviços fica para a etapa 0.8, com confirmação explícita.
+
+Verificação: 65 testes passando (8 novos de deduplicação e 1 do plano). No
+navegador: contagens dos dois lados conferidas; no iCloud, as cópias
+idênticas já aparecem confirmadas sem baixar nada.
+
 ## 0.2.14 — 14/11/2026
 
 - Visual do painel na linguagem do Urna Velox: aurora azul ao fundo, vidro

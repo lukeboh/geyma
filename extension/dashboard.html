@@ -120,14 +120,18 @@
     </section>
 
     <section class="panel" id="m-dup-box" hidden>
-      <h2>Possíveis duplicatas no Google</h2>
-      <p id="m-dup" class="lines"></p>
+      <h2>Duplicatas nos dois serviços</h2>
+      <p class="muted">A mesma foto guardada mais de uma vez dentro do mesmo serviço. Em cada grupo, a cópia de maior qualidade (mais pixels, depois mais bytes) é a que fica; as demais são cópias a revisar.</p>
+      <div class="cat-grid dup-grid">
+        <article id="m-dup-g"></article>
+        <article id="m-dup-a"></article>
+      </div>
       <div class="actions">
         <button id="m-phash" class="primary" hidden>Conferir pelas miniaturas</button>
         <button id="m-phash-stop" hidden>Parar</button>
         <span class="muted" id="m-phash-state" role="status"></span>
       </div>
-      <p class="hint">Itens do Google com o mesmo segundo de captura e as mesmas dimensões. A conferência baixa uma miniatura pequena de cada um, pela sua sessão do Google Fotos, e compara as imagens (pHash): iguais são cópias repetidas; diferentes são fotos tiradas em sequência. Nada será apagado sem a sua decisão.</p>
+      <p class="hint">Provas, da mais forte para a mais fraca: arquivo idêntico (impressão digital do original), mesma imagem pelo pHash da miniatura, e só então mesmo segundo com as mesmas dimensões, que sozinho não basta (fotos em sequência também caem aí). Marcar uma cópia como Descartar só registra a decisão; remover dos serviços será uma etapa à parte, sempre com a sua confirmação.</p>
     </section>
 
     <section class="panel" id="m-ic-box" hidden>

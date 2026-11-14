@@ -517,6 +517,7 @@ th:first-child, td:first-child { text-align: left; }
 .thumb.icloud { border: 2px solid var(--series-icloud); }
 .thumb.google { border: 2px solid var(--series-google); }
 .thumb.original { border: 2px dashed var(--series-google); opacity: 0.85; }
+.thumb.original.icloud-orig { border-color: var(--series-icloud); }
 a.thumb:hover { transform: scale(1.06); }
 .thumb.missing img { display: none; }
 .thumb.missing::after { content: '—'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--texto-3); }
@@ -559,3 +560,5 @@ a.thumb:hover { transform: scale(1.06); }
   .headline { font-size: 19px; }
   .steps { width: 100%; }
 }
+
+.dup-grid article .n { color: var(--texto); }

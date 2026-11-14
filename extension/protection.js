@@ -52,7 +52,8 @@ export function initProtection() {
   const cls = $('r-cls');
   cls.append(new Option('Todas', ''));
   for (const k of ORDER) cls.append(new Option(CLASSES[k], k));
-  cls.append(new Option('Cópias repetidas no Google (conferidas)', 'dupGoogle'));
+  cls.append(new Option('Cópias repetidas no Google', 'dupGoogle'));
+  cls.append(new Option('Cópias repetidas no iCloud', 'dupIcloud'));
   cls.value = '';
 }
 
@@ -218,17 +219,28 @@ function renderCategories() {
 }
 
 function renderDup() {
-  const { dup, phashNeeded } = data;
-  $('m-dup-box').hidden = !dup.groups;
-  const lines = [`<b>${fmt.format(dup.groups)}</b> grupos, com <b>${fmt.format(dup.extras)}</b> itens além do primeiro de cada grupo.`];
-  const checked = dup.groups - dup.pendentes;
-  if (checked) {
-    lines.push(`Conferidos pelas miniaturas: <b>${fmt.format(checked)}</b> grupos. A mesma foto repetida: <b>${fmt.format(dup.confirmados)}</b> grupos, com <b>${fmt.format(dup.extrasConfirmados)}</b> cópias a mais. Fotos diferentes: ${fmt.format(dup.diferentes)}. Incertos: ${fmt.format(dup.incertos)}.`);
-  }
-  $('m-dup').innerHTML = lines.map((l) => `<span class="line">${l}</span>`).join('');
+  const { dup, phashNeeded, icloudPhashNeeded } = data;
+  const side = (el, title, d, filter, pend) => {
+    const mb = d.bytes ? ` · ${GB(d.bytes)}` : '';
+    el.innerHTML = `<span>${title}</span><span class="n">${fmt.format(d.copias)}</span>`
+      + `<span class="hint">cópias a mais em ${fmt.format(d.grupos)} grupos${mb}${d.identicos ? ` · ${fmt.format(d.identicos)} são arquivos idênticos` : ''}</span>`
+      + `<span class="hint">fotos diferentes no mesmo segundo: ${fmt.format(d.diferentes)} · incertos: ${fmt.format(d.incertos)} · ainda sem conferir: ${fmt.format(d.pendentes)}${pend}</span>`;
+    const btn = document.createElement('button');
+    btn.textContent = 'Ver cópias';
+    btn.disabled = !d.copias;
+    btn.addEventListener('click', () => {
+      $('r-cls').value = filter; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList();
+      document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' }));
+    });
+    el.append(btn);
+  };
+  $('m-dup-box').hidden = !(dup.google.candidatos || dup.icloud.candidatos || dup.google.copias || dup.icloud.copias);
+  side($('m-dup-g'), 'Google Fotos', dup.google, 'dupGoogle', '');
+  const icPend = dup.icloud.pendentes && !(icloudPhashNeeded || []).length ? ' (precisam das miniaturas do próximo percurso do iCloud)' : '';
+  side($('m-dup-a'), 'iCloud Fotos', dup.icloud, 'dupIcloud', icPend);
   const btn = $('m-phash');
   btn.hidden = !phashNeeded.length;
-  btn.textContent = `Conferir pelas miniaturas (${fmt.format(phashNeeded.length)} itens)`;
+  btn.textContent = `Conferir o Google pelas miniaturas (${fmt.format(phashNeeded.length)} itens)`;
   showPhashProgress(data.phashProgress);
 }
 
@@ -352,7 +364,7 @@ function filtered() {
   const dec = $('r-dec').value;
   const year = $('r-year').value;
   const kind = $('r-kind').value;
-  return data.rows.filter((r) => (cls === '' || (cls === 'dupGoogle' ? r.dup : r.cls === cls))
+  return data.rows.filter((r) => (cls === '' || (cls === 'dupGoogle' ? r.dup : cls === 'dupIcloud' ? r.dupIcloud : r.cls === cls))
     && (!cat || r.cat === cat)
     && (!dec || (dec === 'sugestao' ? !r.decision : r.decision === dec))
     && (!year || new Date(r.ts).getUTCFullYear() === Number(year))
@@ -395,7 +407,8 @@ function renderList() {
   tbody.innerHTML = '';
   for (const r of pageRows) {
     const tr = document.createElement('tr');
-    const note = r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : r.dup ? ' <span class="tag">cópia repetida</span>' : '';
+    const note = (r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : '')
+      + (r.dup ? ' <span class="tag">cópia no Google</span>' : '') + (r.dupIcloud ? ' <span class="tag">cópia no iCloud</span>' : '');
     tr.innerHTML = `<td class="thumbs"></td><td>${when(r.ts)}</td><td><i class="swatch c-${r.cls}"></i> ${CLASSES[r.cls]}${note}</td><td class="cat"></td><td class="dec"></td><td class="name"></td><td>${dims(r.a)} ${mb(r.a?.size)}</td><td>${dims(r.g)}</td>`;
     const cat = tr.querySelector('.cat');
     cat.textContent = CATEGORIES[r.cat];
@@ -461,9 +474,10 @@ function fillThumbs(td, r, link = true) {
     return img;
   };
   if (r.a?.thumb) add('Miniatura no iCloud', 'icloud').src = r.a.thumb.replace('${f}', 'thumb.jpg');
-  // cópia repetida: mostra a original ao lado, para conferir antes de decidir
+  // cópia repetida: mostra a cópia que fica ao lado, para conferir antes de decidir
+  if (r.dupOfIcloud?.thumb) add('Cópia que fica no iCloud (esta linha é uma repetição dela)', 'original icloud-orig').src = r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg');
   if (r.dupOf?.thumb) {
-    const img = add('Original no Google (esta linha é uma cópia dela)', 'original');
+    const img = add('Cópia que fica no Google (esta linha é uma repetição dela)', 'original');
     googleThumb(r.dupOf.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
   }
   if (r.g?.thumb) {
@@ -511,7 +525,7 @@ function renderGrid() {
     const cap = document.createElement('span');
     cap.className = 'cap';
     const dec = r.decision ? DECISIONS[r.decision] : `sugestão: ${DECISIONS[suggestDecision(r.cat)]}`;
-    cap.textContent = `${r.dup ? 'cópia · ' : ''}${day(r.ts)} · ${dec}`;
+    cap.textContent = `${r.dup || r.dupIcloud ? 'cópia · ' : ''}${day(r.ts)} · ${dec}`;
     tile.title = `${CATEGORIES[r.cat]}${r.why ? ` (${r.why})` : ''}${r.a?.name ? ` · ${r.a.name}` : ''}`;
     tile.append(box, pic, cap);
     grid.append(tile);

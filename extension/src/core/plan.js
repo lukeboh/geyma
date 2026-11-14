@@ -1,6 +1,6 @@
 // Plano de envio (prévia da etapa 0.7): o que seria copiado em cada sentido com
 // as marcações em vigor. Só entra o que está como Pessoal ou Manter; Pendente e
-// Descartar ficam retidos; cópias repetidas do Google não contam.
+// Descartar ficam retidos; cópias repetidas (de qualquer lado) não contam.
 import { suggestDecision } from './classify.js';
 
 export const SENDABLE = new Set(['pessoal', 'manter']);
@@ -30,7 +30,7 @@ export function sendPlan(rows) {
   };
   for (const r of rows) {
     const goes = SENDABLE.has(effectiveDecision(r));
-    if (r.cls === 'soIcloud') {
+    if (r.cls === 'soIcloud' && !r.dupIcloud) {
       if (!goes) { plan.toGoogle.held++; continue; }
       plan.toGoogle.n++;
       plan.toGoogle.bytes += r.a.size || 0;

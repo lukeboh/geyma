@@ -2,7 +2,8 @@
 // e linhas compactas para a revisão, sem travar o painel.
 import { getItemsBySource, getMeta } from './core/db.js';
 import { classifyRow } from './core/classify.js';
-import { matchLibraries, summarizeMatch, googleSameSecondGroups, partialUntil, analyzeGoogleDuplicates } from './core/match.js';
+import { matchLibraries, summarizeMatch, partialUntil } from './core/match.js';
+import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 
 const row = (cls, a, g, extra = {}) => {
   const { cat, reasons } = classifyRow(a, g);
@@ -27,12 +28,30 @@ function phashNeeded(pendingIds, pairs, google) {
   return [...need].map((id) => id.slice(2));
 }
 
-/** Itens do iCloud com miniatura e sem pHash em pares que a imagem decidiria (disputados ou reduzidos). */
-function icloudPhashNeeded(pairs) {
-  return pairs
-    .filter((p) => (p.cls === 'confirmar' || p.cls === 'reduzida') && p.a.thumb && !p.a.phash)
-    .map((p) => ({ id: p.a.id, url: p.a.thumb, at: p.a.thumbAt || 0 }));
+/** Itens do iCloud com miniatura e sem pHash que a imagem decidiria: pares disputados ou reduzidos e candidatas a duplicata. */
+function icloudPhashNeeded(pairs, dupPending, icloudById) {
+  const need = new Map();
+  for (const p of pairs) {
+    if ((p.cls === 'confirmar' || p.cls === 'reduzida') && p.a.thumb && !p.a.phash) need.set(p.a.id, p.a);
+  }
+  for (const id of dupPending) { const a = icloudById.get(id); if (a?.thumb && !a.phash) need.set(id, a); }
+  return [...need.values()].map((a) => ({ id: a.id, url: a.thumb, at: a.thumbAt || 0 }));
 }
+
+/** Resumo de duplicatas de um serviço para o painel. */
+const dupSummary = (items, d) => ({
+  candidatos: candidateGroups(items).length,
+  grupos: d.grupos,
+  copias: d.copias,
+  identicos: d.identicos,
+  diferentes: d.diferentes,
+  incertos: d.incertos,
+  pendentes: d.pendentes,
+  bytes: copiesBytes(items, d.copies),
+});
+
+/** Miniatura da cópia a manter, para mostrar ao lado da cópia na revisão. */
+const keeperInfo = (it, side) => it && { thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
 
 self.onmessage = async () => {
   try {
@@ -50,36 +69,34 @@ self.onmessage = async () => {
     const until = complete ? null : partialUntil(icloud);
     const result = matchLibraries(google, icloud, { until: until ?? Infinity });
     const summary = summarizeMatch(result);
-    const scope = until ? google.filter((g) => g.ts <= until) : google;
-    const dupGroups = googleSameSecondGroups(scope);
-    const analysis = analyzeGoogleDuplicates(dupGroups);
-    const extra = new Set(analysis.extraIds);
+    const scopeG = until ? google.filter((g) => g.ts <= until) : google;
+    const scopeA = until ? icloud.filter((x) => x.ts <= until) : icloud;
+    const dupG = analyzeDuplicates(scopeG);
+    const dupA = analyzeDuplicates(scopeA);
     const googleById = new Map(google.map((g) => [g.id, g]));
+    const icloudById = new Map(icloud.map((x) => [x.id, x]));
+    // marca a linha como cópia (de um lado ou dos dois) e traz a cópia a manter
+    const dupInfo = (a, g) => {
+      const extra = {};
+      const cg = g && dupG.copies.get(g.id);
+      const ca = a && dupA.copies.get(a.id);
+      if (cg) { extra.dup = true; extra.dupOf = keeperInfo(googleById.get(cg.keeper), 'google'); extra.dupEvidence = cg.evidence; }
+      if (ca) { extra.dupIcloud = true; extra.dupOfIcloud = keeperInfo(icloudById.get(ca.keeper), 'icloud'); extra.dupEvidenceIcloud = ca.evidence; }
+      return extra;
+    };
     const rows = [
-      ...result.pairs.map((p) => row(p.cls, p.a, p.g, p.menor ? { menor: p.menor } : {})),
-      ...result.soGoogle.map((g) => {
-        if (!extra.has(g.id)) return row('soGoogle', null, g);
-        const orig = googleById.get(analysis.extraOf[g.id]);
-        return row('soGoogle', null, g, { dup: true, dupOf: orig ? { thumb: orig.thumb || null, key: orig.id.slice(2), w: orig.w, h: orig.h } : null });
-      }),
-      ...result.soIcloud.map((a) => row('soIcloud', a, null)),
+      ...result.pairs.map((p) => row(p.cls, p.a, p.g, { ...(p.menor ? { menor: p.menor } : {}), ...dupInfo(p.a, p.g) })),
+      ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
+      ...result.soIcloud.map((x) => row('soIcloud', x, null, dupInfo(x, null))),
     ];
     self.postMessage({
       ok: true,
       complete,
       until,
       summary,
-      dup: {
-        groups: dupGroups.length,
-        extras: dupGroups.reduce((n, l) => n + l.length - 1, 0),
-        confirmados: analysis.confirmados,
-        extrasConfirmados: analysis.extrasConfirmados,
-        diferentes: analysis.diferentes,
-        incertos: analysis.incertos,
-        pendentes: analysis.pendentes,
-      },
-      phashNeeded: phashNeeded(analysis.pendingIds, result.pairs, google),
-      icloudPhashNeeded: icloudPhashNeeded(result.pairs),
+      dup: { google: dupSummary(scopeG, dupG), icloud: dupSummary(scopeA, dupA) },
+      phashNeeded: phashNeeded(dupG.pendingIds, result.pairs, google),
+      icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,
