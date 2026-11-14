@@ -173,7 +173,7 @@ async function runIcloudCheck() {
     }
   };
   show();
-  await Promise.all(Array.from({ length: 4 }, worker));
+  await Promise.all(Array.from({ length: 8 }, worker));
   await flush();
   const why = icJob.stop === 'expiradas' ? 'as URLs das miniaturas expiraram: percorra a biblioteca do iCloud de novo e tente outra vez'
     : icJob.stop ? 'parada por você' : 'concluída';

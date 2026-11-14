@@ -2,6 +2,18 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.20 — 14/11/2026
+
+- Desempate pelas miniaturas do iCloud: 8 downloads simultâneos (antes 4;
+  cerca de 4,5 por segundo era pouco para acompanhar o percurso).
+- Uso real: segundo percurso do iCloud iniciado com a tela desbloqueada,
+  janela própria e miniaturas no menor tamanho; as URLs das miniaturas do
+  iCloud passaram a ser guardadas. Primeiro lote do desempate (607 itens, sem
+  falhas): 577 pares saíram de "a confirmar" para "Em ambos" e 106 cópias
+  repetidas novas apareceram dentro do iCloud.
+
+Verificação: 68 testes passando; desempate conferido no navegador.
+
 ## 0.2.19 — 14/11/2026
 
 - Guia passo a passo também no celular (`mobile/guia.js`), que faltava na
