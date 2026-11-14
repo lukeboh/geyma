@@ -68,6 +68,8 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     miniaturas.
 11. **Classificação por regras e marcação de decisão** (0.2.8), plano de envio
     (prévia) e miniaturas na revisão (0.2.9).
+12. **Desempate pelas miniaturas do iCloud** (0.2.10), pronto mas ainda não
+    exercitado, e **cópia ao lado da original** na revisão (0.2.11).
 
 ## 4. Decisões e motivos
 
@@ -171,8 +173,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
    "Continuar de onde parou" (falta para fechar a etapa 0.3 e marcar 0.3.0).
 2. Revisar as categorias com as miniaturas e ajustar as regras com o que o
    usuário corrigir.
-3. Pares "a confirmar" que continuam disputados (fotos diferentes no mesmo
-   segundo): comparar com a miniatura do iCloud, que vem no percurso passivo.
+3. Depois desse percurso, rodar "Conferir pelas miniaturas do iCloud" na aba
+   Proteção: resolve os pares "a confirmar" restantes (as URLs das miniaturas
+   do iCloud são temporárias; rodar logo após o percurso).
 4. Qualidade (0.5): indicar a melhor cópia; cópias reduzidas do Google.
 5. Envio curado (0.7): decidir o caminho (ver pendências), começando pelas
    fotos (pouco volume) e tratando os vídeos à parte.
