@@ -164,12 +164,17 @@
       }
     }
   }
+  const isPhotosFrame = () => /\/applications\/photos/.test(location.pathname)
+    || (window.top === window && !document.querySelector('iframe[src*="/applications/photos"]'));
   const frac = (el) => el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
 
   window.addEventListener('message', (e) => {
     if (e.source !== window || !e.data?.__geymaCmd) return;
     const { cmd, startFrac } = e.data;
     if (cmd === 'stop') { stopRequested = true; return; }
+    // O app de Fotos do iCloud roda num iframe (/applications/photos…); o script
+    // é injetado em todos os frames, mas só o frame do app percorre a grade.
+    if (cmd === 'icloud-walk' && !isPhotosFrame()) return;
     if (running) { post('progress', { task: SITE, state: 'ocupado' }); return; }
     stopRequested = false;
     const job = cmd === 'google-crawl' && SITE === 'google' ? googleCrawl()

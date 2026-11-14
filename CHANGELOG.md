@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.5 — 13/11/2026
+
+- Causa encontrada: o app de Fotos do iCloud roda num iframe da mesma origem
+  (`/applications/photos…`), e a extensão só era injetada na página principal.
+  Por isso as contagens oficiais da Apple não chegavam (problema em aberto da
+  0.2.3) e a captura passiva via poucos itens.
+- Extensão: scripts do iCloud injetados em todos os frames; só o frame do app
+  de Fotos executa o percurso da grade, para não haver dois percursos.
+- `test/ext-manifest.test.mjs`: injeção em todos os frames do iCloud, percurso
+  restrito ao frame do app e versão do manifesto igual a `VERSION`.
+
+Verificação: o teste novo falha no código anterior (2 de 3) e passa com a
+correção; 22 testes passando. Em uso real, as contagens por tipo chegaram ao
+inventário e o percurso do iCloud começou a ler a grade com a aba visível.
+
 ## 0.2.4 — 13/11/2026
 
 - Extensão: o percurso do iCloud espera a aba ficar visível antes de procurar a
