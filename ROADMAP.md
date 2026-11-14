@@ -30,13 +30,25 @@ amostra, com a taxa de falso positivo medida contra um controle.
 - [x] Conectores Google (leitura ativa) e iCloud (percurso passivo, parada no
   primeiro erro, retomada pela posição) (0.2.1)
 - [x] Inventário local de metadados, sem URLs nem fotos (0.2.1)
-- [x] Contagens oficiais do iCloud por categoria (0.2.1)
+- [x] Contagens oficiais do iCloud por categoria (0.2.1), que chegam ao
+  inventário desde que o hook roda no iframe do app de Fotos (0.2.5)
 - [ ] Validação em uso real: inventário completo dos dois lados
-- [ ] Impressão digital das miniaturas (pHash) no índice
+- [ ] Impressão digital das miniaturas (pHash), calculada só para os pares e
+  grupos que precisam de desempate (não para a biblioteca inteira)
+- [ ] Percurso do iCloud numa janela própria e com as miniaturas no menor
+  tamanho, ajustados pela extensão
 
 **Critério:** inventário completo dos dois lados, retomável, sem queda de sessão.
 
 ### 0.4 — Identidade
+- [x] Primeira versão do motor (0.2.6): instante com tolerância de 1 s (o Google
+  guarda sem milissegundos), dimensões iguais ou giradas, cópia reduzida pela
+  proporção, atribuição um para um e estado "a confirmar" quando há outro
+  candidato no mesmo segundo
+- [x] Aba Proteção e aba Revisão no painel, com cruzamento parcial enquanto o
+  iCloud é lido (0.2.6)
+- [ ] Duplicatas dentro do Google (mesmo segundo e dimensões): confirmar por
+  pHash; numa amostra, a maioria era a mesma foto guardada duas vezes
 - Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
   houver, nome como evidência
 - Tratamento de rajadas, Live Photos, HEIC × JPG e fusos horários

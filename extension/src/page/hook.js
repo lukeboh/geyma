@@ -133,6 +133,25 @@
     }));
   };
 
+  // Controle de tamanho das miniaturas do iCloud (slider ARIA, valor mínimo =
+  // mais fotos por tela). Responde a ArrowLeft; Home não funciona.
+  async function smallestThumbs(doc) {
+    const knob = doc.querySelector('.GridToolbarSlider [role=slider], ui-slider-knob[role=slider]');
+    if (!knob) return false;
+    const min = Number(knob.getAttribute('aria-valuemin'));
+    let changed = false;
+    for (let i = 0; i < 10; i++) {
+      const v = Number(knob.getAttribute('aria-valuenow'));
+      if (!Number.isFinite(v) || !Number.isFinite(min) || v <= min) break;
+      knob.focus();
+      for (const type of ['keydown', 'keyup']) knob.dispatchEvent(new KeyboardEvent(type, { key: 'ArrowLeft', code: 'ArrowLeft', bubbles: true, cancelable: true }));
+      changed = true;
+      await humanPause(600);
+    }
+    if (changed) await humanPause(1500);
+    return changed;
+  }
+
   let icloudError = 0;
   async function icloudWalk(startFrac = 0) {
     icloudError = 0;
@@ -143,6 +162,8 @@
       if (!el) await sleep(1000);
     }
     if (!el) { post('progress', { task: 'icloud', state: 'erro', reason: 'grade de fotos não encontrada; abra Fotos no iCloud e deixe a aba visível' }); return; }
+    // miniaturas no menor tamanho: mais fotos por passo (cerca de 7x mais rápido no uso real)
+    if (await smallestThumbs(el.ownerDocument)) el = findScroller() || el;
     el.scrollTop = Math.round(startFrac * (el.scrollHeight - el.clientHeight));
     await humanPause(2500);
     let step = 0;

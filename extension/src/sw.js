@@ -52,8 +52,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     (async () => {
       const tab = await findOrOpenTab(msg.site);
       if (msg.kind === 'start' && msg.site === 'icloud') {
-        await chrome.tabs.update(tab.id, { active: true });
-        await chrome.windows.update(tab.windowId, { focused: true });
+        // A aba do iCloud precisa ficar visível. Numa janela com outras abas
+        // (como o painel), basta olhar o painel para escondê-la: vai para uma
+        // janela própria, do mesmo tamanho. Mover a aba não recarrega a página.
+        const others = await chrome.tabs.query({ windowId: tab.windowId });
+        if (others.length > 1) {
+          const win = await chrome.windows.get(tab.windowId);
+          await chrome.windows.create({ tabId: tab.id, focused: true, left: win.left, top: win.top, width: win.width, height: win.height });
+        } else {
+          await chrome.tabs.update(tab.id, { active: true });
+          await chrome.windows.update(tab.windowId, { focused: true });
+        }
       }
       const startFrac = msg.site === 'icloud' && msg.resume ? (await getMeta('icloudProgress'))?.value?.frac || 0 : 0;
       const cmd = msg.kind === 'stop' ? 'stop' : msg.site === 'google' ? 'google-crawl' : 'icloud-walk';

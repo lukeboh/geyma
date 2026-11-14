@@ -3,16 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Geyma — Inventário</title>
+  <title>Geyma</title>
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
   <header class="top">
-    <h1>Geyma <span class="sub">Inventário das bibliotecas</span></h1>
+    <h1>Geyma <span class="sub">Suas fotos protegidas em dois lugares</span></h1>
     <p class="note">Tudo fica neste navegador. Nada é copiado, alterado ou apagado nos serviços.</p>
+    <nav class="steps" role="tablist" aria-label="Etapas">
+      <button role="tab" id="tab-inv" aria-controls="view-inv" aria-selected="true"><span class="n">1</span>Inventário</button>
+      <button role="tab" id="tab-prot" aria-controls="view-prot" aria-selected="false"><span class="n">2</span>Proteção</button>
+      <button role="tab" id="tab-rev" aria-controls="view-rev" aria-selected="false"><span class="n">3</span>Revisão</button>
+    </nav>
   </header>
 
-  <main>
+  <main id="view-inv" role="tabpanel" aria-labelledby="tab-inv">
     <section class="cards">
       <article class="card" data-site="google">
         <h2><span class="swatch google" aria-hidden="true"></span>Google Fotos</h2>
@@ -73,6 +78,55 @@
     <section class="panel tools">
       <button id="export">Exportar inventário (JSON)</button>
       <span class="muted" id="msg" role="status"></span>
+    </section>
+  </main>
+
+  <main id="view-prot" role="tabpanel" aria-labelledby="tab-prot" hidden>
+    <p id="m-partial" class="banner" hidden></p>
+    <section class="panel lead">
+      <p id="m-headline" class="headline">Calculando o cruzamento…</p>
+      <p class="muted" id="m-sub"></p>
+      <div class="actions"><button id="m-refresh">Recalcular</button><span class="muted" id="m-time"></span></div>
+    </section>
+
+    <section class="classes" id="m-classes"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Proteção por ano de captura</h2>
+        <div class="legend" id="m-legend" aria-label="Legenda"></div>
+      </div>
+      <div id="m-chart" class="chart" role="img" aria-label="Colunas empilhadas por ano com a situação de cada foto"></div>
+      <details>
+        <summary>Ver como tabela</summary>
+        <table id="m-table"><thead></thead><tbody></tbody></table>
+      </details>
+    </section>
+
+    <section class="panel" id="m-dup-box" hidden>
+      <h2>Possíveis duplicatas no Google</h2>
+      <p id="m-dup"></p>
+      <p class="hint">Itens do Google com o mesmo segundo de captura e as mesmas dimensões. Numa amostra de 30 grupos, 21 eram a mesma foto guardada duas vezes; os demais eram fotos diferentes tiradas em sequência. Nada será apagado sem a sua decisão, foto a foto ou grupo a grupo.</p>
+    </section>
+  </main>
+
+  <main id="view-rev" role="tabpanel" aria-labelledby="tab-rev" hidden>
+    <section class="panel">
+      <div class="filters">
+        <label>Situação <select id="r-cls"></select></label>
+        <label>Ano <select id="r-year"><option value="">Todos</option></select></label>
+        <label>Tipo <select id="r-kind"><option value="">Fotos e vídeos</option><option value="foto">Só fotos</option><option value="video">Só vídeos</option></select></label>
+        <span class="muted" id="r-count" role="status"></span>
+        <button id="r-csv">Exportar lista (CSV)</button>
+      </div>
+      <div class="table-wrap">
+        <table id="r-table">
+          <thead><tr><th>Captura</th><th>Situação</th><th>Arquivo no iCloud</th><th>iCloud</th><th>Google</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager"><button id="r-prev">Anteriores</button><span class="muted" id="r-page"></span><button id="r-next">Próximos</button></div>
+      <p class="hint">Em breve: miniaturas lado a lado e a marcação de cada item (Pessoal, Pendente, Manter, Descartar). O que for suspeito de lixo fica Pendente até você decidir, e nada é copiado antes disso.</p>
     </section>
   </main>
   <script type="module" src="dashboard.js"></script>

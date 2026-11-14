@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Geyma",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Inventário local do Google Fotos e do iCloud Fotos para verificar se suas fotos estão protegidas em dois lugares.",
   "action": { "default_title": "Abrir o painel do Geyma" },
   "background": { "service_worker": "src/sw.js", "type": "module" },

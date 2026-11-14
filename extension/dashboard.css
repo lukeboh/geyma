@@ -41,6 +41,7 @@ h1 .sub { font-weight: 400; color: var(--text-secondary); font-size: 18px; margi
 h2 { margin: 0 0 8px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
 .note, .muted, .hint { color: var(--text-secondary); margin: 4px 0; }
 .hint { font-size: 13px; color: var(--text-muted); }
+[hidden] { display: none !important; }
 main { max-width: 1080px; margin: 0 auto; padding: 8px 24px 40px; display: grid; gap: 16px; }
 
 .cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
@@ -107,3 +108,42 @@ th:first-child, td:first-child { text-align: left; }
   .top, main { padding-left: 16px; padding-right: 16px; }
   .big { font-size: 32px; }
 }
+
+/* ---------- etapas e cruzamento ---------- */
+:root {
+  --c-ambos: #1baf7a; --c-confirmar: #eda100; --c-reduzida: #e87ba4;
+  --c-soGoogle: var(--series-google); --c-soIcloud: var(--series-icloud);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --c-ambos: #199e70; --c-confirmar: #c98500; --c-reduzida: #d55181; }
+}
+.steps { display: flex; gap: 6px; margin: 16px 0 4px; flex-wrap: wrap; }
+.steps button { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 16px 6px 6px; }
+.steps .n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--border); font-size: 13px; font-weight: 600; }
+.steps button[aria-selected="true"] { border-color: var(--accent); color: var(--text-primary); font-weight: 600; }
+.steps button[aria-selected="true"] .n { background: var(--accent); color: #fff; }
+.banner { margin: 0; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--c-confirmar); background: color-mix(in srgb, var(--c-confirmar) 12%, var(--surface-1)); }
+.headline { font-size: 20px; margin: 0 0 4px; }
+.lead .actions { align-items: center; }
+.classes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.class-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.class-card h3 { margin: 0; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.class-card .big { font-size: 28px; }
+.class-card .hint { flex: 1; }
+.class-card button { align-self: flex-start; margin-top: 8px; }
+.swatch.c-ambos, .chart rect.c-ambos { background: var(--c-ambos); fill: var(--c-ambos); }
+.swatch.c-confirmar, .chart rect.c-confirmar { background: var(--c-confirmar); fill: var(--c-confirmar); }
+.swatch.c-reduzida, .chart rect.c-reduzida { background: var(--c-reduzida); fill: var(--c-reduzida); }
+.swatch.c-soGoogle, .chart rect.c-soGoogle { background: var(--c-soGoogle); fill: var(--c-soGoogle); }
+.swatch.c-soIcloud, .chart rect.c-soIcloud { background: var(--c-soIcloud); fill: var(--c-soIcloud); }
+.legend { flex-wrap: wrap; }
+.tip-row { display: flex; align-items: center; gap: 6px; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.filters label { display: inline-flex; gap: 6px; align-items: center; color: var(--text-secondary); }
+select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-0); color: var(--text-primary); }
+.table-wrap { overflow-x: auto; margin-top: 10px; }
+#r-table { width: 100%; font-size: 14px; }
+#r-table td, #r-table th { text-align: left; white-space: nowrap; }
+#r-table td.name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.tag { font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; }
+.pager { display: flex; gap: 12px; align-items: center; margin-top: 10px; }

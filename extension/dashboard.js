@@ -1,5 +1,6 @@
 import { getItemsBySource, getMeta } from './src/core/db.js';
 import { summarize } from './src/core/normalize.js';
+import { initProtection, ensureComputed, compute, hasData } from './protection.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -180,10 +181,36 @@ $('export').addEventListener('click', async () => {
   setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 });
 
+// ---------- abas ----------
+const TABS = { inv: 'view-inv', prot: 'view-prot', rev: 'view-rev' };
+let current = 'inv';
+function showTab(name) {
+  if (!TABS[name]) name = 'inv';
+  current = name;
+  for (const [k, view] of Object.entries(TABS)) {
+    $(view).hidden = k !== name;
+    $(`tab-${k}`).setAttribute('aria-selected', String(k === name));
+  }
+  try { history.replaceState(null, '', `#${name}`); } catch {}
+  if (name === 'inv') render();
+  else ensureComputed();
+}
+for (const k of Object.keys(TABS)) $(`tab-${k}`).addEventListener('click', () => showTab(k));
+document.addEventListener('geyma-tab', (e) => showTab(e.detail));
+initProtection();
+
+// O inventário tem centenas de milhares de itens: redesenha no máximo a cada
+// 5 s e só com a aba Inventário aberta.
 let timer = null;
+let lastIcloudState = null;
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.kind !== 'status') return;
-  clearTimeout(timer);
-  timer = setTimeout(render, 700);
+  const st = msg.progress?.state;
+  if (msg.site === 'icloud' && st && st !== lastIcloudState) {
+    lastIcloudState = st;
+    if (st === 'concluido' && hasData()) compute();
+  }
+  if (current !== 'inv' || timer) return;
+  timer = setTimeout(() => { timer = null; render(); }, 5000);
 });
-render();
+showTab(location.hash.slice(1));

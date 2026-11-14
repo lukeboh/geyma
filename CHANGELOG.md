@@ -2,6 +2,37 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.6 — 14/11/2026
+
+- Motor de identidade (`extension/src/core/match.js`): cruza Google e iCloud
+  pelo instante (tolerância de 1 s), dimensões iguais ou giradas e proporção
+  (cópia reduzida, com o lado menor); atribuição um para um; "a confirmar"
+  quando há outro candidato no mesmo segundo; grupos de possíveis duplicatas
+  no Google; cruzamento parcial até onde o iCloud já foi lido.
+- Painel em três etapas: Inventário, Proteção (frase-resumo, cartões por
+  situação, colunas empilhadas por ano com tabela, duplicatas do Google) e
+  Revisão (filtros por situação, ano e tipo, lista paginada, CSV). O cálculo
+  roda num worker.
+- Painel do inventário redesenha no máximo a cada 5 s e só com a aba aberta.
+- Percurso do iCloud: a extensão põe as miniaturas no menor tamanho (controle
+  do próprio site, por teclado) e, se a aba do iCloud divide a janela com
+  outras, move-a para uma janela própria, sem recarregar.
+- Primeiro inventário completo do iCloud pela extensão, sem erro do servidor:
+  total igual ao medido na prova de acesso (mais as fotos novas) e vídeos
+  batendo com a contagem oficial da Apple.
+- `docs/USABILIDADE.md`: princípios, jornada, telas e aprendizados do uso real.
+- Achados no inventário real (trecho lido do iCloud): o Google guarda o
+  instante sem milissegundos; a maioria das fotos do iCloud já lidas tem par no
+  Google; parte das cópias do Google é reduzida; numa amostra de 30 grupos do
+  Google com o mesmo segundo e as mesmas dimensões, 21 eram a mesma foto
+  (pHash ≤ 10).
+
+Verificação: 30 testes passando (8 novos do motor). Abas Proteção e Revisão
+conferidas no navegador com o inventário completo (cálculo em cerca de 12 s,
+num worker). O ajuste das miniaturas foi testado isoladamente na página do
+iCloud (ArrowLeft reduz; Home não funciona); a janela própria ainda não foi
+exercitada num novo percurso.
+
 ## 0.2.5 — 13/11/2026
 
 - Causa encontrada: o app de Fotos do iCloud roda num iframe da mesma origem
