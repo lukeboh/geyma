@@ -157,3 +157,23 @@ select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid 
 .cat-grid article { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
 .cat-grid .n { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .cat-grid button { align-self: flex-start; }
+#r-table td.thumbs { white-space: nowrap; }
+.thumb { display: inline-block; width: 56px; height: 56px; margin-right: 4px; border-radius: 6px; overflow: hidden; background: var(--border); position: relative; vertical-align: middle; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb.icloud { border: 2px solid var(--series-icloud); }
+.thumb.google { border: 2px solid var(--series-google); }
+.thumb.missing img { display: none; }
+.thumb.missing::after { content: '—'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-muted); }
+.view-toggle { display: inline-flex; gap: 0; margin-top: 8px; }
+.view-toggle button { border-radius: 0; }
+.view-toggle button:first-child { border-radius: 8px 0 0 8px; }
+.view-toggle button:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+.view-toggle button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.selbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.grid-view { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); margin-top: 10px; }
+.tile { position: relative; display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--border); border-radius: 10px; padding: 6px; cursor: pointer; }
+.tile.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.tile input { position: absolute; top: 10px; left: 10px; z-index: 1; width: 18px; height: 18px; }
+.tile .pic { display: flex; gap: 4px; }
+.tile .pic .thumb { width: 100%; height: auto; aspect-ratio: 1; margin: 0; flex: 1; }
+.tile .cap { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

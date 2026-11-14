@@ -114,3 +114,12 @@ test('duplicatas do Google classificadas pelo pHash', async () => {
   assert.deepEqual(r.pendingIds, ['g:7']);
   assert.equal(r.incertos, 1);
 });
+
+test('par disputado informa os candidatos do Google', () => {
+  const google = [g(1, T, 4032, 3024), g(2, T + 900, 4032, 3024)];
+  const r = matchLibraries(google, [a(1, T + 400, 4032, 3024)]);
+  assert.equal(r.pairs[0].cls, 'confirmar');
+  assert.deepEqual([...r.pairs[0].candidatos].sort(), ['g:1', 'g:2']);
+  const unico = matchLibraries([g(1, T, 4032, 3024)], [a(1, T, 4032, 3024)]);
+  assert.equal(unico.pairs[0].candidatos, undefined);
+});

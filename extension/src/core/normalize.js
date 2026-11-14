@@ -47,6 +47,8 @@ export function normalizeGoogleItem(it) {
     w: Number(it[1][1]) || null,
     h: Number(it[1][2]) || null,
     sha1: typeof it[3] === 'string' && it[3].length === 27 ? it[3] : null,
+    // URL-base da imagem (exige a sessão do Google; acrescentar =w160-h160 etc.)
+    thumb: typeof it[1][0] === 'string' && it[1][0].startsWith('https://') ? it[1][0] : null,
   };
 }
 
@@ -91,6 +93,9 @@ export function normalizeIcloudPair(asset, master) {
     burst: Number(a('burstFlags')) > 0,
     favorite: Number(a('isFavorite')) === 1,
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
+    // miniatura JPEG (URL temporária assinada pela Apple); thumbAt diz quando foi vista
+    thumb: typeof m('resJPEGThumbRes')?.downloadURL === 'string' ? m('resJPEGThumbRes').downloadURL : null,
+    thumbAt: Date.now(),
   };
 }
 

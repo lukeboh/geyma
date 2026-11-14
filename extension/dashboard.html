@@ -91,6 +91,13 @@
 
     <section class="classes" id="m-classes"></section>
 
+    <section class="panel" id="m-plan-box" hidden>
+      <h2>Plano de envio (prévia)</h2>
+      <p class="muted">O que seria copiado de um serviço para o outro com as marcações de agora. Entra só o que está como Pessoal ou Manter; Pendente e Descartar ficam de fora, e cópias repetidas do Google não contam. Nada é copiado por aqui.</p>
+      <div id="m-plan" class="cat-grid"></div>
+      <p class="hint" id="m-plan-note"></p>
+    </section>
+
     <section class="panel" id="m-cat-box" hidden>
       <h2>Pessoal ou lixo?</h2>
       <p class="muted">Classificação por regras sobre os metadados, contando cada foto uma vez (o par conta como uma).</p>
@@ -146,9 +153,22 @@
         <button id="r-confirm-no">Cancelar</button>
       </div>
       <p class="muted" id="r-msg" role="status"></p>
-      <div class="table-wrap">
+      <div class="view-toggle" role="group" aria-label="Modo de exibição">
+        <button id="r-view-list" aria-pressed="true">Lista</button>
+        <button id="r-view-grid" aria-pressed="false">Grade</button>
+      </div>
+      <div class="selbar" id="r-selbar" hidden>
+        <span><b id="r-sel-n">0</b> selecionados nesta página.</span>
+        <label>Marcar <select id="r-sel-which"><option value="sel">os selecionados</option><option value="unsel">os não selecionados desta página</option></select></label>
+        <label>como <select id="r-sel-dec"></select></label>
+        <button id="r-sel-apply">Aplicar</button>
+        <button id="r-sel-all">Selecionar todos</button>
+        <button id="r-sel-none">Limpar seleção</button>
+      </div>
+      <div class="grid-view" id="r-grid" hidden></div>
+      <div class="table-wrap" id="r-list">
         <table id="r-table">
-          <thead><tr><th>Captura</th><th>Situação</th><th>Categoria</th><th>Marcação</th><th>Arquivo no iCloud</th><th>iCloud</th><th>Google</th></tr></thead>
+          <thead><tr><th>Foto</th><th>Captura</th><th>Situação</th><th>Categoria</th><th>Marcação</th><th>Arquivo no iCloud</th><th>iCloud</th><th>Google</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>

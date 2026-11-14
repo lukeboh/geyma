@@ -2,6 +2,31 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.9 — 14/11/2026
+
+- Miniaturas na Revisão: o inventário passa a guardar a URL da miniatura
+  (Google: só abre com a sessão; iCloud: temporária). O painel busca as do
+  Google com a sessão, graças à permissão de host para os domínios de imagem
+  do Google; clicar na do Google abre a foto no Google Fotos.
+- Revisão em **grade**: 120 miniaturas por página, seleção por clique e
+  marcação dos selecionados ou dos não selecionados da página (para marcar o
+  resto depois de separar as exceções), com confirmação.
+- **Plano de envio (prévia)** na aba Proteção (`src/core/plan.js`): o que iria
+  em cada sentido com as marcações em vigor, com quantidade e espaço (fotos e
+  vídeos separados; tamanho do lado do Google estimado por bytes por pixel do
+  iCloud); cópias repetidas do Google e itens Pendente ou Descartar ficam de
+  fora.
+- Conferência pelas miniaturas: inclui os candidatos de pares disputados (a ±1
+  s, fora dos grupos de mesmo segundo) e percorre o catálogo inteiro,
+  atualizando o inventário na mesma passagem.
+- Conferência completa em uso real, sem nenhuma falha: a maior parte dos
+  grupos de mesmo segundo do Google é a mesma foto repetida.
+- Documentação: README da extensão, handoff e usabilidade atualizados.
+
+Verificação: 53 testes passando (plano de envio e candidatos de disputa). No
+navegador: miniaturas do Google carregadas pelo painel (status 200 com a
+sessão), grade com fotos reais, prévia do plano conferida.
+
 ## 0.2.8 — 14/11/2026
 
 - Classificação por regras (`src/core/classify.js`, primeira parte da etapa

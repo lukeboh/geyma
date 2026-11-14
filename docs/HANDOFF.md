@@ -1,4 +1,4 @@
-# Handoff do Geyma — 13/11/2026
+# Handoff do Geyma — 14/11/2026
 
 Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 [ESTRATEGIA.md](ESTRATEGIA.md), [../ROADMAP.md](../ROADMAP.md) e
@@ -8,11 +8,11 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 | Item | Estado |
 |---|---|
-| Versão | **0.2.2** (`VERSION`); tag `v0.2.0` marca o fim da prova de acesso |
+| Versão | ver `VERSION` e o topo do [CHANGELOG](../CHANGELOG.md); tag `v0.2.0` marca o fim da prova de acesso |
 | Branch | `claude/icloud-google-photos-sync-y42lpa` (é também a principal) |
-| Etapa atual | **0.3 — Extensão e inventário**, em andamento |
-| Testes | `node --test test/*.test.mjs` → 19 passando |
-| Extensão | Carregada sem compactação no Chrome de automação; **ainda não testada em uso real** |
+| Etapas | 0.3 (inventário) com os dois lados completos em uso real; 0.4 (identidade) e 0.6 (classificação e marcação) com primeira versão; ver [ROADMAP](../ROADMAP.md) |
+| Testes | `node --test test/*.test.mjs`, todos passando |
+| Extensão | Carregada sem compactação no Chrome de automação e usada nos dois serviços |
 | Repositório | **Público** no GitHub: não registrar dados da biblioteca pessoal |
 
 ## 2. Objetivo (pedido original)
@@ -53,6 +53,21 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 5. **Revisão da estratégia** (0.2.0): as bibliotecas se completam (Google com os
    anos antigos, iCloud com os recentes); envio curado nos dois sentidos.
 6. **Extensão de navegador** (0.2.1) em `extension/`.
+7. **Uso real** (0.2.3 a 0.2.5): catálogo do Google lido inteiro pela extensão.
+   O iCloud falhava porque o app de Fotos roda num **iframe** e a extensão só
+   era injetada na página principal; corrigido com injeção em todos os frames.
+   O percurso completo do iCloud terminou sem erro do servidor, com o total
+   igual ao informado pela Apple.
+8. **Velocidade do percurso do iCloud:** com as miniaturas do site no menor
+   tamanho, ficou cerca de 7 vezes mais rápido; a extensão agora ajusta isso e
+   abre o iCloud numa janela própria (olhar o painel na mesma janela escondia a
+   aba e pausava a leitura).
+9. **Motor de identidade e painel em três etapas** (0.2.6): Inventário,
+   Proteção, Revisão.
+10. **pHash na extensão** (0.2.7) e conferência das duplicatas do Google pelas
+    miniaturas.
+11. **Classificação por regras e marcação de decisão** (0.2.8), plano de envio
+    (prévia) e miniaturas na revisão (0.2.9).
 
 ## 4. Decisões e motivos
 
@@ -65,6 +80,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 | Envio curado nos dois sentidos | Cada lado tem fotos que o outro não tem |
 | Não religar o backup do Google no celular por enquanto | Ele envia tudo, inclusive lixo, e leva semanas |
 | Nunca apagar automaticamente | Risco de perda irreversível |
+| pHash só onde há dúvida, não na biblioteca inteira | Grupos de mesmo segundo e pares disputados bastam; poupa tempo e banda |
+| Guardar a URL da miniatura no inventário | Revisar exige ver a foto; a do Google só abre com a sessão, a do iCloud expira |
+| Sugestão "Pessoal" só para o claramente pessoal | Regra do usuário: suspeito e indefinido ficam Pendente |
 
 ## 5. Conhecimento técnico essencial
 
@@ -96,6 +114,28 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 - **Regras de segurança:** não recarregar a aba repetidamente, não repetir
   consultas por conta própria, ritmo humano, parar no primeiro status ≥ 400.
 
+### Aprendizados do inventário completo
+- O Google guarda o instante quase sempre **sem milissegundos**; o iCloud
+  guarda com. Comparar com tolerância de 1 s.
+- Dimensões trocadas (orientação) são a mesma foto.
+- Parte das fotos do Google é uma **cópia reduzida** (mesma proporção, área
+  bem menor): o iCloud tem a melhor versão.
+- O Google tem muitos **grupos de itens no mesmo segundo e com as mesmas
+  dimensões**; pelo pHash, a maioria é a mesma foto guardada mais de uma vez
+  (bytes diferentes, SHA-1 diferente) e o resto são fotos em sequência.
+- iCloud: `assetSubtypeV2` 3 = captura de tela, 2 = Live Photo, 1 = panorama,
+  100 = câmera lenta, 101 = timelapse (bate com as contagens da Apple);
+  `importedByBundleIdentifierEnc` diz o app de origem (câmera, WhatsApp,
+  Mensagens, AirDrop, Instagram…).
+- O volume do que falta no Google está quase todo em **vídeos**.
+- O controle de tamanho das miniaturas do iCloud é um `ui-slider-knob`
+  (`role=slider`, valores 3 a 9) no iframe; responde a ArrowLeft/ArrowRight
+  sintéticos (Home não funciona). 3 = mais fotos por tela.
+- Miniatura do Google: só com a sessão (cookies). O painel da extensão busca
+  com permissão de host; o pHash usa a aba do Google.
+- Em aba oculta o Chrome atrasa `setTimeout` encadeados; código que roda com a
+  aba oculta deve ser ritmado por requisições, não por timers.
+
 ### Identidade (teste com 60 pares)
 - Mesmo milissegundo + mesmas dimensões: 29/29 confirmados por pHash (mediana 2).
 - Até 3 s de diferença: em geral são outras fotos (sequências).
@@ -126,16 +166,16 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 ## 7. Próximos passos
 
-1. **Testar a extensão em uso real** (etapa 0.3):
-   - Google: "Ler catálogo" no painel; conferir o total e o gráfico por ano.
-   - iCloud: "Percorrer biblioteca" com a aba **visível**; acompanhar a cobertura
-     contra o total informado pela Apple; testar "Continuar de onde parou".
-   - Corrigir o que aparecer e registrar.
-2. Calcular o pHash das miniaturas dentro da extensão (WebAssembly ou canvas) e
-   guardar no índice.
-3. Etapa 0.4: motor de identidade com o placar descrito acima.
-4. Etapas seguintes conforme o roadmap: qualidade, classificação com marcação
-   de decisão, painel de proteção, envio curado, sanitização, vídeos.
+1. **Com o usuário, com a tela desbloqueada:** validar o percurso do iCloud
+   com a janela própria e o ajuste automático das miniaturas, e o botão
+   "Continuar de onde parou" (falta para fechar a etapa 0.3 e marcar 0.3.0).
+2. Revisar as categorias com as miniaturas e ajustar as regras com o que o
+   usuário corrigir.
+3. Pares "a confirmar" que continuam disputados (fotos diferentes no mesmo
+   segundo): comparar com a miniatura do iCloud, que vem no percurso passivo.
+4. Qualidade (0.5): indicar a melhor cópia; cópias reduzidas do Google.
+5. Envio curado (0.7): decidir o caminho (ver pendências), começando pelas
+   fotos (pouco volume) e tratando os vídeos à parte.
 
 ## 8. Regras do usuário que se aplicam
 
@@ -150,6 +190,8 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 ## 9. Pendências de decisão do usuário
 
 - Caminho do envio Google → iCloud (etapa 0.7).
+- Vídeos: concentram quase todo o volume do que falta no Google; decidir se
+  entram no envio, e com qual prioridade.
 - Plano de armazenamento do Google e do iCloud, se o volume curado não couber.
 - Repositório público: a estratégia comercial está visível. Avaliar tornar o
   repositório privado antes da trilha de produto.

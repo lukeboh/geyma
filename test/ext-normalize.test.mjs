@@ -35,7 +35,7 @@ test('parseGoogleBatchText extrai itens normalizados e o cursor', () => {
   const { items, cursor } = parseGoogleBatchText(text);
   assert.equal(cursor, 'CURSOR123');
   assert.equal(items.length, 2);
-  assert.deepEqual(items[0], { id: 'g:AF1QipA', source: 'google', ts: 1700000000000, tzOffset: -10800000, w: 4032, h: 3024, sha1: SHA });
+  assert.deepEqual(items[0], { id: 'g:AF1QipA', source: 'google', ts: 1700000000000, tzOffset: -10800000, w: 4032, h: 3024, sha1: SHA, thumb: 'https://photos.fife.usercontent.google.com/pw/x' });
 });
 
 test('parseGoogleBatchText sem cursor e sem linha de dados', () => {
@@ -131,4 +131,15 @@ test('summarize conta por ano e vídeos', () => {
   assert.deepEqual(s.byYear, { 2023: 2, 2024: 1 });
   assert.equal(s.from, Date.UTC(2023, 0, 1));
   assert.deepEqual(summarize([]), { total: 0, videos: 0, from: null, to: null, byYear: {} });
+});
+
+test('miniatura do iCloud vem do master, com o instante em que foi vista', () => {
+  const master = { recordName: 'M1', recordType: 'CPLMaster', fields: { itemType: { value: 'public.jpeg' }, resOriginalWidth: { value: 10 }, resOriginalHeight: { value: 10 }, resJPEGThumbRes: { value: { downloadURL: 'https://cvws.icloud-content.com/B/x/${f}?o=1' } } } };
+  const asset = { recordName: 'A1', recordType: 'CPLAsset', fields: { assetDate: { value: 1700000000000 }, masterRef: { value: { recordName: 'M1' } } } };
+  const antes = Date.now();
+  const [item] = parseIcloudQuery({ records: [master, asset] });
+  assert.equal(item.thumb, 'https://cvws.icloud-content.com/B/x/${f}?o=1');
+  assert.ok(item.thumbAt >= antes);
+  const [semMini] = parseIcloudQuery({ records: [{ ...master, fields: { ...master.fields, resJPEGThumbRes: undefined } }, asset] });
+  assert.equal(semMini.thumb, null);
 });

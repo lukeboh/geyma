@@ -101,7 +101,7 @@ export function matchLibraries(google, icloud, opts = {}) {
     } else {
       pair.cls = disputed ? 'confirmar' : 'ambos';
     }
-    if (disputed) pair.disputado = true;
+    if (disputed) { pair.disputado = true; pair.candidatos = c.map(({ g }) => g.id); }
     if (sameImage) pair.duplicatasNoGoogle = c.length - 1;
     pairs.push(pair);
   }

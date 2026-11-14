@@ -13,11 +13,19 @@ const row = (cls, a, g, extra = {}) => {
     cat,
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
-    a: a && { name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video },
-    g: g && { w: g.w, h: g.h },
+    a: a && { name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, thumb: a.thumb || null, thumbAt: a.thumbAt || null },
+    g: g && { w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2) },
     ...extra,
   };
 };
+
+/** Itens do Google sem pHash que ajudariam a decidir: grupos de duplicatas e candidatos de pares disputados. */
+function phashNeeded(pendingIds, pairs, google) {
+  const hasHash = new Set(google.filter((g) => g.phash).map((g) => g.id));
+  const need = new Set(pendingIds);
+  for (const p of pairs) for (const id of p.candidatos || []) if (!hasHash.has(id)) need.add(id);
+  return [...need].map((id) => id.slice(2));
+}
 
 self.onmessage = async () => {
   try {
@@ -58,7 +66,7 @@ self.onmessage = async () => {
         incertos: analysis.incertos,
         pendentes: analysis.pendentes,
       },
-      phashNeeded: analysis.pendingIds.map((id) => id.slice(2)),
+      phashNeeded: phashNeeded(analysis.pendingIds, result.pairs, google),
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,

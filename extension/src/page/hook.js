@@ -153,10 +153,13 @@
       }
     };
     const workers = Array.from({ length: 12 }, worker);
-    while (wanted.size && !stopRequested && !fatal) {
+    // percorre o catálogo inteiro: além das miniaturas pedidas, atualiza o inventário
+    while (!stopRequested && !fatal) {
       const { status, text } = await googleList(cursor);
       if (status !== 200) { fatal = status; break; }
       pages++;
+      // a mesma página atualiza o inventário (ex.: URL da miniatura), sem custo extra
+      post('google-batch', { body: text, page: pages });
       const line = text.split('\n').find((l) => l.startsWith('[["wrb.fr"'));
       let data = null;
       try { data = JSON.parse(JSON.parse(line)[0][2]); } catch {}

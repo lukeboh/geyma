@@ -3,6 +3,7 @@
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { patchItems } from './src/core/db.js';
+import { sendPlan, effectiveDecision } from './src/core/plan.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -32,6 +33,13 @@ export function initProtection() {
   for (const [k, l] of Object.entries(DECISIONS)) $('r-dec').append(new Option(l, k));
   for (const b of document.querySelectorAll('#r-batch button[data-dec]')) b.addEventListener('click', () => askBatch(b.dataset.dec));
   $('r-confirm-yes').addEventListener('click', confirmBatch);
+  $('r-view-list').addEventListener('click', () => setGrid(false));
+  $('r-view-grid').addEventListener('click', () => setGrid(true));
+  for (const [k, l] of Object.entries(DECISIONS)) $('r-sel-dec').append(new Option(l, k));
+  $('r-sel-dec').value = 'descartar';
+  $('r-sel-apply').addEventListener('click', applySelection);
+  $('r-sel-all').addEventListener('click', () => selectAll(true));
+  $('r-sel-none').addEventListener('click', () => selectAll(false));
   $('r-confirm-no').addEventListener('click', cancelBatch);
   $('r-prev').addEventListener('click', () => { page = Math.max(0, page - 1); renderList(); });
   $('r-next').addEventListener('click', () => { page++; renderList(); });
@@ -112,6 +120,22 @@ function renderProtection() {
 
   renderDup();
   renderCategories();
+  renderPlan();
+}
+
+const GB = (bytes) => `${(bytes / 1024 ** 3).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} GB`;
+
+/** Prévia do envio curado, a partir das marcações em vigor. */
+export function renderPlan() {
+  if (!data) return;
+  const plan = sendPlan(data.rows);
+  $('m-plan-box').hidden = !data.rows.length;
+  $('m-plan').innerHTML = [
+    ['iCloud → Google', plan.toGoogle.n, `${GB(plan.toGoogle.bytes)}, dos quais ${fmt.format(plan.toGoogle.videos)} vídeos somam ${GB(plan.toGoogle.videoBytes)} · ${fmt.format(plan.toGoogle.held)} retidos (Pendente ou Descartar)`],
+    ['Google → iCloud', plan.toIcloud.n, `${GB(plan.toIcloud.bytes)} estimados · ${fmt.format(plan.toIcloud.held)} retidos`],
+    ['Reenviar original ao Google', plan.quality.n, 'o Google guarda uma cópia menor; o iCloud tem a melhor'],
+  ].map(([t, n, sub]) => `<article><span>${t}</span><span class="n">${fmt.format(n)}</span><span class="hint">${sub}</span></article>`).join('');
+  $('m-plan-note').textContent = 'O tamanho do lado do Google é estimado pela resolução, com a média de bytes por pixel das fotos do iCloud (o Google não informa o tamanho dos arquivos). Vídeos do Google entram pela mesma estimativa.';
 }
 
 function renderCategories() {
@@ -245,9 +269,12 @@ function niceStep(raw) {
 }
 
 // ---------- revisão ----------
-const PAGE = 50;
+let gridMode = false;
+const pageSize = () => (gridMode ? 120 : 50);
 let page = 0;
 let pendingBatch = null;
+let selected = new Set();
+let pageRows = [];
 
 function fillYears() {
   const sel = $('r-year');
@@ -259,7 +286,7 @@ function fillYears() {
 }
 
 // marcação em vigor: a do usuário ou, sem ela, a sugestão das regras
-const effective = (r) => r.decision || suggestDecision(r.cat);
+const effective = effectiveDecision;
 
 function filtered() {
   if (!data) return [];
@@ -290,6 +317,7 @@ function renderReviewSummary() {
 
 function renderList() {
   const rows = filtered();
+  const PAGE = pageSize();
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   page = Math.min(page, pages - 1);
   $('r-count').textContent = data ? `${fmt.format(rows.length)} itens` : 'abra a aba Proteção para calcular';
@@ -300,12 +328,18 @@ function renderList() {
   for (const b of document.querySelectorAll('#r-batch button[data-dec]')) b.disabled = !rows.length;
   cancelBatch();
   renderReviewSummary();
+  pageRows = rows.slice(page * PAGE, (page + 1) * PAGE);
+  selected = new Set();
+  $('r-list').hidden = gridMode;
+  $('r-grid').hidden = !gridMode;
+  $('r-selbar').hidden = !gridMode;
+  if (gridMode) { renderGrid(); return; }
   const tbody = document.querySelector('#r-table tbody');
   tbody.innerHTML = '';
-  for (const r of rows.slice(page * PAGE, (page + 1) * PAGE)) {
+  for (const r of pageRows) {
     const tr = document.createElement('tr');
     const note = r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : r.dup ? ' <span class="tag">cópia repetida</span>' : '';
-    tr.innerHTML = `<td>${when(r.ts)}</td><td><i class="swatch c-${r.cls}"></i> ${CLASSES[r.cls]}${note}</td><td class="cat"></td><td class="dec"></td><td class="name"></td><td>${dims(r.a)} ${mb(r.a?.size)}</td><td>${dims(r.g)}</td>`;
+    tr.innerHTML = `<td class="thumbs"></td><td>${when(r.ts)}</td><td><i class="swatch c-${r.cls}"></i> ${CLASSES[r.cls]}${note}</td><td class="cat"></td><td class="dec"></td><td class="name"></td><td>${dims(r.a)} ${mb(r.a?.size)}</td><td>${dims(r.g)}</td>`;
     const cat = tr.querySelector('.cat');
     cat.textContent = CATEGORIES[r.cat];
     if (r.why) cat.title = r.why;
@@ -319,11 +353,62 @@ function renderList() {
       await decide([r], sel.value || null);
       sel.classList.toggle('suggested', !r.decision);
       renderReviewSummary();
+      renderPlan();
     });
     tr.querySelector('.dec').append(sel);
     tr.querySelector('.name').textContent = r.a?.name || (r.a ? '(sem nome)' : '—');
+    fillThumbs(tr.querySelector('.thumbs'), r);
     tbody.append(tr);
   }
+}
+
+// ---------- miniaturas ----------
+// Google: a imagem exige a sessão; a extensão busca com cookies (permissão de
+// host) e mostra como blob. iCloud: URL temporária assinada, carregada direto.
+const thumbCache = new Map();
+let thumbActive = 0;
+const thumbQueue = [];
+function googleThumb(base) {
+  if (thumbCache.has(base)) return thumbCache.get(base);
+  const p = new Promise((resolve) => thumbQueue.push({ base, resolve }));
+  thumbCache.set(base, p);
+  pumpThumbs();
+  return p;
+}
+function pumpThumbs() {
+  while (thumbActive < 6 && thumbQueue.length) {
+    const { base, resolve } = thumbQueue.shift();
+    thumbActive++;
+    fetch(`${base}=w160-h160-c`, { credentials: 'include' })
+      .then(async (res) => {
+        const type = res.headers.get('content-type') || '';
+        resolve(res.ok && type.startsWith('image/') && !type.includes('png') ? URL.createObjectURL(await res.blob()) : null);
+      })
+      .catch(() => resolve(null))
+      .finally(() => { thumbActive--; pumpThumbs(); });
+  }
+}
+
+function fillThumbs(td, r, link = true) {
+  const add = (label, side) => {
+    const fig = document.createElement('a');
+    fig.className = `thumb ${side}`;
+    fig.title = label;
+    if (link && side === 'google' && r.g?.key) { fig.href = `https://photos.google.com/photo/${r.g.key}`; fig.target = '_blank'; fig.rel = 'noopener'; }
+    const img = document.createElement('img');
+    img.alt = label;
+    img.loading = 'lazy';
+    img.onerror = () => fig.classList.add('missing');
+    fig.append(img);
+    td.append(fig);
+    return img;
+  };
+  if (r.a?.thumb) add('Miniatura no iCloud', 'icloud').src = r.a.thumb.replace('${f}', 'thumb.jpg');
+  if (r.g?.thumb) {
+    const img = add(link ? 'Miniatura no Google (clique para abrir no Google Fotos)' : 'Miniatura no Google', 'google');
+    googleThumb(r.g.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
+  }
+  if (!td.children.length) td.innerHTML = '<span class="hint">sem miniatura</span>';
 }
 
 /** Grava a marcação nos itens (os dois lados do par). null volta para a sugestão. */
@@ -337,12 +422,59 @@ async function decide(rows, decision) {
   for (let i = 0; i < patches.length; i += 5000) await patchItems(patches.slice(i, i + 5000));
 }
 
-function askBatch(decision) {
-  const rows = filtered();
+function askBatch(decision, rows = filtered(), what = 'itens') {
   if (!rows.length) return;
   pendingBatch = { decision, rows };
-  $('r-confirm-text').textContent = `Marcar ${fmt.format(rows.length)} itens como ${DECISIONS[decision]}? Isso só registra a sua decisão aqui; nada muda nos serviços.`;
+  $('r-confirm-text').textContent = `Marcar ${fmt.format(rows.length)} ${what} como ${DECISIONS[decision]}? Isso só registra a sua decisão aqui; nada muda nos serviços.`;
   $('r-confirm').hidden = false;
+}
+
+// ---------- grade ----------
+function renderGrid() {
+  const grid = $('r-grid');
+  grid.innerHTML = '';
+  for (const r of pageRows) {
+    const tile = document.createElement('label');
+    tile.className = 'tile';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.addEventListener('change', () => {
+      if (box.checked) selected.add(r); else selected.delete(r);
+      tile.classList.toggle('on', box.checked);
+      $('r-sel-n').textContent = fmt.format(selected.size);
+    });
+    const pic = document.createElement('div');
+    pic.className = 'pic';
+    fillThumbs(pic, r, false);
+    const cap = document.createElement('span');
+    cap.className = 'cap';
+    const dec = r.decision ? DECISIONS[r.decision] : `sugestão: ${DECISIONS[suggestDecision(r.cat)]}`;
+    cap.textContent = `${day(r.ts)} · ${dec}`;
+    tile.title = `${CATEGORIES[r.cat]}${r.why ? ` (${r.why})` : ''}${r.a?.name ? ` · ${r.a.name}` : ''}`;
+    tile.append(box, pic, cap);
+    grid.append(tile);
+  }
+  $('r-sel-n').textContent = '0';
+}
+
+function setGrid(on) {
+  gridMode = on;
+  $('r-view-list').setAttribute('aria-pressed', String(!on));
+  $('r-view-grid').setAttribute('aria-pressed', String(on));
+  page = 0;
+  renderList();
+}
+
+function applySelection() {
+  const which = $('r-sel-which').value;
+  const rows = which === 'sel' ? [...selected] : pageRows.filter((r) => !selected.has(r));
+  askBatch($('r-sel-dec').value, rows, which === 'sel' ? 'itens selecionados' : 'itens não selecionados desta página');
+}
+
+function selectAll(on) {
+  for (const box of $('r-grid').querySelectorAll('input[type=checkbox]')) {
+    if (box.checked !== on) { box.checked = on; box.dispatchEvent(new Event('change')); }
+  }
 }
 
 function cancelBatch() { pendingBatch = null; $('r-confirm').hidden = true; }
@@ -354,6 +486,7 @@ async function confirmBatch() {
   await decide(rows, decision);
   $('r-msg').textContent = `${fmt.format(rows.length)} itens marcados como ${DECISIONS[decision]}.`;
   renderList();
+  renderPlan();
 }
 
 function exportCsv() {
