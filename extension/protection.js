@@ -452,7 +452,7 @@ function pumpThumbs() {
     fetch(`${base}=w160-h160-c`, { credentials: 'include' })
       .then(async (res) => {
         const type = res.headers.get('content-type') || '';
-        resolve(res.ok && type.startsWith('image/') && !type.includes('png') ? URL.createObjectURL(await res.blob()) : null);
+        resolve(res.ok && type.startsWith('image/') ? URL.createObjectURL(await res.blob()) : null);
       })
       .catch(() => resolve(null))
       .finally(() => { thumbActive--; pumpThumbs(); });

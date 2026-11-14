@@ -2,6 +2,16 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.16 — 14/11/2026
+
+- Revisão: miniaturas do Google em PNG (como capturas de tela) eram
+  descartadas junto com o PNG que o Google devolve quando bloqueia o acesso;
+  agora vale qualquer imagem com status de sucesso (o bloqueio já vem com
+  status de erro).
+
+Verificação: 65 testes passando; na grade de cópias repetidas, nenhuma
+miniatura faltando depois da correção (antes, 69 de 240).
+
 ## 0.2.15 — 14/11/2026
 
 - Deduplicação nos dois serviços (`src/core/dedup.js`), pedida pelo usuário:
