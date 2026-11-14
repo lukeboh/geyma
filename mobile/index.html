@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1230">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Geyma">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icone.svg">
+  <title>Geyma</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <header class="topo">
+    <h1 class="marca">Geyma</h1>
+    <button class="icone-btn" id="atualizar" type="button" aria-label="Atualizar">↻</button>
+  </header>
+
+  <!-- Resumo -->
+  <section class="tela" id="t-resumo" aria-labelledby="nav-resumo">
+    <p class="aviso" id="parcial" hidden></p>
+    <article class="vidro destaque">
+      <p class="frase" id="frase">Carregando…</p>
+      <p class="sub" id="frase-sub"></p>
+    </article>
+    <h2 class="secao">Situação das fotos</h2>
+    <div class="cartoes" id="classes"></div>
+    <h2 class="secao">Plano de envio <small>(prévia)</small></h2>
+    <div class="cartoes" id="plano"></div>
+    <p class="nota">Só entra o que está como Pessoal ou Manter. Nada é copiado por aqui.</p>
+    <h2 class="secao">Pessoal ou lixo?</h2>
+    <div class="cartoes" id="categorias"></div>
+  </section>
+
+  <!-- Revisar -->
+  <section class="tela" id="t-revisar" hidden aria-labelledby="nav-revisar">
+    <div class="vidro filtros">
+      <label>Situação <select id="f-cls"></select></label>
+      <label>Categoria <select id="f-cat"><option value="">Todas</option></select></label>
+      <label>Marcação <select id="f-dec"><option value="">Todas</option><option value="sugestao">Sem marcação</option></select></label>
+      <label>Ano <select id="f-year"><option value="">Todos</option></select></label>
+    </div>
+    <p class="contagem" id="r-total"></p>
+    <div class="grade" id="grade"></div>
+    <div class="paginas"><button id="r-ant" type="button">‹ Anteriores</button><span id="r-pag"></span><button id="r-prox" type="button">Próximos ›</button></div>
+    <p class="nota">Toque nas fotos para selecionar. Borda azul: Google; laranja: iCloud; tracejada: a cópia que fica. Marcar não apaga nada.</p>
+  </section>
+
+  <!-- Cópias -->
+  <section class="tela" id="t-copias" hidden aria-labelledby="nav-copias">
+    <h2 class="secao">Cópias repetidas</h2>
+    <p class="nota">A mesma foto guardada mais de uma vez no mesmo serviço. A de melhor qualidade fica; as outras são cópias para revisar.</p>
+    <div class="cartoes" id="dups"></div>
+  </section>
+
+  <!-- Leituras -->
+  <section class="tela" id="t-leituras" hidden aria-labelledby="nav-leituras">
+    <h2 class="secao">Leituras no notebook</h2>
+    <div class="cartoes" id="leituras"></div>
+    <p class="nota">As leituras rodam no Chrome do notebook. O percurso do iCloud precisa da tela do notebook desbloqueada; o resto funciona com ela bloqueada. Esta tela se atualiza sozinha.</p>
+    <button class="largo" id="recalcular" type="button">Recalcular o cruzamento</button>
+  </section>
+
+  <!-- barra de seleção (Revisar) -->
+  <div class="selecao vidro" id="selecao" hidden>
+    <span id="sel-n">0 selecionadas</span>
+    <div class="sel-acoes">
+      <select id="sel-quais" aria-label="Quais marcar"><option value="sel">Selecionadas</option><option value="resto">O resto da página</option></select>
+      <select id="sel-dec" aria-label="Marcação"></select>
+      <button class="primario" id="sel-aplicar" type="button">Marcar</button>
+    </div>
+  </div>
+
+  <!-- confirmação -->
+  <div class="folha-fundo" id="folha" hidden>
+    <div class="folha vidro" role="dialog" aria-modal="true" aria-labelledby="folha-titulo">
+      <h3 id="folha-titulo">Confirmar</h3>
+      <p id="folha-texto"></p>
+      <div class="folha-acoes"><button id="folha-nao" type="button">Cancelar</button><button class="primario" id="folha-sim" type="button">Confirmar</button></div>
+    </div>
+  </div>
+
+  <!-- detalhe da foto -->
+  <div class="folha-fundo" id="detalhe" hidden>
+    <div class="folha vidro detalhe" role="dialog" aria-modal="true" aria-labelledby="det-titulo">
+      <div class="det-fotos" id="det-fotos"></div>
+      <h3 id="det-titulo"></h3>
+      <dl id="det-info"></dl>
+      <div class="det-marcar" id="det-marcar"></div>
+      <button class="largo" id="det-fechar" type="button">Fechar</button>
+    </div>
+  </div>
+
+  <p class="toast" id="toast" role="status" hidden></p>
+
+  <nav class="abas vidro" aria-label="Seções">
+    <button id="nav-resumo" data-tela="resumo" aria-current="page"><span class="ic">◎</span>Resumo</button>
+    <button id="nav-revisar" data-tela="revisar"><span class="ic">▦</span>Revisar</button>
+    <button id="nav-copias" data-tela="copias"><span class="ic">⧉</span>Cópias</button>
+    <button id="nav-leituras" data-tela="leituras"><span class="ic">↻</span>Leituras</button>
+  </nav>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

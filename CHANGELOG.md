@@ -2,6 +2,32 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.18 — 14/11/2026
+
+- **Geyma no celular** (`mobile/`), pedido pelo usuário: servidor local
+  (Node, sem dependências) que mostra no celular o que a extensão processou no
+  notebook — resumo, plano de envio, categorias, cópias repetidas, leituras e
+  revisão com miniaturas e marcação.
+  - Acesso só pela rede Tailscale (`tailscale serve`, HTTP restrito à rede);
+    o servidor escuta só em 127.0.0.1 e recusa outras origens.
+  - Senha de acesso: token aleatório fora do repositório, trocado por um
+    cookie HttpOnly/SameSite=Strict; POST exige cabeçalho próprio; política de
+    segurança de conteúdo restritiva; miniaturas só dos domínios de imagem dos
+    serviços, com cache em memória.
+  - `mobile/iniciar.ps1` inicia em segundo plano, sem janela, e publica na
+    rede; o link de acesso aparece ao iniciar.
+  - Interface no vidro tátil do painel, com abas embaixo, grade de três
+    colunas, seleção por toque, detalhe ao segurar a foto, folha de
+    confirmação e ícone para a tela de início do iPhone.
+- Extensão: `mobile-api.js` (API interna que o servidor chama pela porta de
+  depuração) e `src/core/review.js` (filtro e contagens da revisão, agora
+  compartilhados pelo painel e pelo celular).
+
+Verificação: 68 testes passando (3 novos do filtro). Servidor testado: sem
+login 401, token errado 403, login pela rede Tailscale, resumo, lista,
+miniatura (200, JPEG) e domínio proibido (400). Telas conferidas com
+emulação de iPhone: resumo, cópias, revisão com seleção, detalhe e leituras.
+
 ## 0.2.17 — 14/11/2026
 
 - Guia passo a passo (`extension/tour.js`), pedido pelo usuário: na primeira

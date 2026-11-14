@@ -4,6 +4,7 @@ import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { patchItems } from './src/core/db.js';
 import { sendPlan, effectiveDecision } from './src/core/plan.js';
+import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
 
 const $ = (id) => document.getElementById(id);
@@ -360,17 +361,7 @@ const effective = effectiveDecision;
 
 function filtered() {
   if (!data) return [];
-  const cls = $('r-cls').value;
-  const cat = $('r-cat').value;
-  const dec = $('r-dec').value;
-  const year = $('r-year').value;
-  const kind = $('r-kind').value;
-  return data.rows.filter((r) => (cls === '' || (cls === 'dupGoogle' ? r.dup : cls === 'dupIcloud' ? r.dupIcloud : r.cls === cls))
-    && (!cat || r.cat === cat)
-    && (!dec || (dec === 'sugestao' ? !r.decision : r.decision === dec))
-    && (!year || new Date(r.ts).getUTCFullYear() === Number(year))
-    && (!kind || (kind === 'video') === Boolean(r.a?.video)))
-    .sort((x, y) => y.ts - x.ts);
+  return filterRows(data.rows, { cls: $('r-cls').value, cat: $('r-cat').value, dec: $('r-dec').value, year: $('r-year').value, kind: $('r-kind').value });
 }
 
 const dims = (o) => (o?.w ? `${o.w}×${o.h}` : '—');
@@ -378,9 +369,7 @@ const mb = (n) => (n ? `${(n / 1048576).toFixed(1)} MB` : '');
 
 function renderReviewSummary() {
   if (!data) return;
-  const counts = { pessoal: 0, pendente: 0, manter: 0, descartar: 0 };
-  let decided = 0;
-  for (const r of data.rows) { counts[effective(r)]++; if (r.decision) decided++; }
+  const { counts, decided } = decisionCounts(data.rows);
   $('r-summary').innerHTML = `Marcadas por você: <b>${fmt.format(decided)}</b> de ${fmt.format(data.rows.length)} fotos. `
     + `Em vigor (sua marcação ou a sugestão): ${Object.entries(DECISIONS).map(([k, l]) => `${l} ${fmt.format(counts[k])}`).join(' · ')}.`;
 }
@@ -590,3 +579,19 @@ function exportCsv() {
 }
 
 export function hasData() { return Boolean(data); }
+
+// ---------- acesso para a versão do celular (mobile-api.js) ----------
+export const getData = () => data;
+export const isBusy = () => busy;
+/** Espera o cruzamento estar pronto (calcula se ainda não houver). */
+export function whenComputed() {
+  if (data && !busy) return Promise.resolve(data);
+  if (!busy) compute();
+  return new Promise((resolve) => document.addEventListener('geyma-ready', () => resolve(data), { once: true }));
+}
+/** Marca linhas vindas do celular e atualiza o painel aberto. */
+export async function decideRows(rows, decision) {
+  await decide(rows, decision);
+  renderList();
+  renderPlan();
+}

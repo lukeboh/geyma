@@ -9,7 +9,8 @@ Google.
 > **Direção do projeto:** estratégia em [docs/ESTRATEGIA.md](docs/ESTRATEGIA.md)
 > e etapas em [ROADMAP.md](ROADMAP.md). A nova base é a extensão de navegador
 > em [extension/](extension/README.md). Para retomar o trabalho, comece pelo
-> [handoff](docs/HANDOFF.md). Esta página descreve o protótipo 0.1.
+> [handoff](docs/HANDOFF.md). Para ver no celular, [mobile/](mobile/README.md).
+> Esta página descreve o protótipo 0.1.
 
 ## Como funciona
 
