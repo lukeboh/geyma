@@ -2,6 +2,17 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.13 — 14/11/2026
+
+- Registro no changelog da 0.2.12, que saiu sem ele.
+
+## 0.2.12 — 14/11/2026
+
+- Handoff: trabalho da noite e próximos passos (percurso do iCloud com o
+  usuário e, logo depois, o desempate pelas miniaturas do iCloud).
+
+Verificação: somente documentação; 56 testes continuam passando.
+
 ## 0.2.11 — 14/11/2026
 
 - Revisão das cópias repetidas do Google: cada cópia aparece ao lado da
