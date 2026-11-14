@@ -3,6 +3,7 @@
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
 import { putItems, patchItems, setMeta, getMeta } from './core/db.js';
 import { phashFromBase64 } from './core/phash-image.js';
+import { shouldKeepAwake } from './core/keep-awake.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -10,6 +11,14 @@ const SITES = {
 };
 
 chrome.action.onClicked.addListener(() => chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') }));
+
+// Tela acesa enquanto uma leitura roda (o percurso do iCloud para se a tela bloquear).
+const taskStates = {};
+function updateKeepAwake(task, state) {
+  if (task) taskStates[task] = state;
+  if (shouldKeepAwake(taskStates)) chrome.power.requestKeepAwake('display');
+  else chrome.power.releaseKeepAwake();
+}
 
 const broadcast = (msg) => chrome.runtime.sendMessage({ kind: 'status', ...msg }).catch(() => {});
 
@@ -42,6 +51,7 @@ async function handlePageEvent(site, type, payload) {
     broadcast({ site, event: 'error', status: payload.status });
   } else if (type === 'progress') {
     await setMeta(`${payload.task}Progress`, payload);
+    updateKeepAwake(payload.task, payload.state);
     // a conclusão do percurso do iCloud fica registrada mesmo depois de outro percurso parado
     if (payload.task === 'icloud' && payload.state === 'concluido') await setMeta('icloudCompleted', { at: Date.now() });
     broadcast({ site, event: 'progress', progress: payload });
@@ -63,6 +73,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     (async () => {
       const tab = await findOrOpenTab('google');
       await setMeta('phashProgress', { task: 'phash', state: 'lendo', done: 0, total: msg.keys.length });
+      updateKeepAwake('phash', 'lendo');
       await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd: 'google-thumbs', keys: msg.keys });
       sendResponse({ ok: true });
     })().catch((err) => sendResponse({ ok: false, reason: String(err.message || err) }));
@@ -84,6 +95,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           await chrome.windows.update(tab.windowId, { focused: true });
         }
       }
+      if (msg.kind === 'start') updateKeepAwake(msg.site, 'lendo');
       const startFrac = msg.site === 'icloud' && msg.resume ? (await getMeta('icloudProgress'))?.value?.frac || 0 : 0;
       const cmd = msg.kind === 'stop' ? 'stop' : msg.site === 'google' ? 'google-crawl' : 'icloud-walk';
       await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd, startFrac });

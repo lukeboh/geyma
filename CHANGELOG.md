@@ -2,6 +2,18 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.21 — 14/11/2026
+
+- Tela acesa durante as leituras: a extensão pede ao Chrome para manter a
+  tela ligada (permissão `power`, o mesmo pedido de um vídeo em reprodução)
+  enquanto alguma leitura está lendo ou esperando a aba voltar, e solta o
+  pedido quando tudo termina, para ou dá erro (`src/core/keep-awake.js`).
+  Motivo: o percurso do iCloud parou às 12h38 porque a tela bloqueou por
+  inatividade (política do notebook: 15 minutos).
+
+Verificação: 70 testes passando; permissão e API conferidas no service worker
+do Chrome de automação.
+
 ## 0.2.20 — 14/11/2026
 
 - Desempate pelas miniaturas do iCloud: 8 downloads simultâneos (antes 4;
