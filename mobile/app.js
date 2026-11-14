@@ -1,5 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
+import { abrirGuia, talvezGuia } from './guia.js';
+
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
 const pct = (x) => `${Math.round(x * 100)}%`;
@@ -53,8 +55,10 @@ function mostrar(nome) {
   }
   $('selecao').hidden = nome !== 'revisar';
   scrollTo({ top: 0 });
-  if (nome === 'revisar') carregarLinhas();
-  if (nome === 'leituras') carregarLeituras();
+  // o guia da aba espera o conteúdo carregar (a grade, as leituras)
+  if (nome === 'revisar') carregarLinhas().then(() => talvezGuia('revisar'));
+  else if (nome === 'leituras') carregarLeituras().then(() => talvezGuia('leituras'));
+  else talvezGuia(nome);
   try { history.replaceState(null, '', `#${nome}`); } catch {}
 }
 for (const b of document.querySelectorAll('.abas button')) b.addEventListener('click', () => mostrar(b.dataset.tela));
@@ -299,6 +303,8 @@ $('atualizar').addEventListener('click', async () => {
   } catch (e) { toast(e.message); }
   setTimeout(() => b.classList.remove('girando'), 400);
 });
+
+$('ajuda').addEventListener('click', () => abrirGuia(tela));
 
 // ---------- início ----------
 (async () => {

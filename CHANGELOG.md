@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.19 — 14/11/2026
+
+- Guia passo a passo também no celular (`mobile/guia.js`), que faltava na
+  0.2.18: na primeira visita a cada aba (Resumo, Revisar, Cópias, Leituras),
+  destaca a parte da tela e explica o gesto (toque seleciona, segurar abre o
+  detalhe, barra de baixo marca várias); cartão encaixado no alto ou embaixo,
+  do lado oposto ao destaque; botão "?" no topo repete o guia da aba.
+- Servidor do celular: a folha de estilos era guardada por uma hora no
+  navegador e o celular ficava com a versão antiga (o guia não aparecia);
+  agora revalida a cada acesso, e a página pede CSS e JS com a versão no
+  endereço.
+
+Verificação: 68 testes passando; guias do Resumo e da Revisão percorridos com
+emulação de iPhone, com capturas de tela.
+
 ## 0.2.18 — 14/11/2026
 
 - **Geyma no celular** (`mobile/`), pedido pelo usuário: servidor local

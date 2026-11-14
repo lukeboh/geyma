@@ -126,6 +126,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const STATIC = {
   '/': join(HERE, 'index.html'),
   '/app.js': join(HERE, 'app.js'),
+  '/guia.js': join(HERE, 'guia.js'),
   '/app.css': join(HERE, 'app.css'),
   '/manifest.webmanifest': join(HERE, 'manifest.webmanifest'),
   '/icone.svg': join(HERE, 'icone.svg'),
@@ -164,9 +165,11 @@ const server = createServer(async (req, res) => {
       if (!sameToken(url.searchParams.get('t'))) return send(res, 403, LOGIN_PAGE, { 'content-type': 'text/html; charset=utf-8' });
       return send(res, 303, '', { location: '/', 'set-cookie': `geyma=${TOKEN}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000` });
     }
-    if (url.pathname === '/app.css' || url.pathname === '/assets/archivo.woff2' || url.pathname === '/icone.svg' || url.pathname === '/manifest.webmanifest') {
+    if (url.pathname.split('?')[0] === '/app.css' || url.pathname === '/assets/archivo.woff2' || url.pathname === '/icone.svg' || url.pathname === '/manifest.webmanifest') {
       const f = STATIC[url.pathname];
-      return send(res, 200, await readFile(f), { 'content-type': MIME[extname(f)], 'cache-control': 'max-age=3600' });
+      // fonte e ícone mudam pouco; o CSS revalida a cada acesso (senão o celular fica com a versão antiga)
+      const cache = url.pathname === '/app.css' || url.pathname === '/manifest.webmanifest' ? 'no-cache' : 'max-age=86400';
+      return send(res, 200, await readFile(f), { 'content-type': MIME[extname(f)], 'cache-control': cache });
     }
     if (!sameToken(cookieToken(req))) {
       if (url.pathname.startsWith('/api/')) return json(res, 401, { erro: 'acesso não autorizado: abra o link de acesso' });

@@ -38,6 +38,10 @@ continua exigindo a tela desbloqueada no notebook.
 
 ## Telas
 
+Na primeira visita a cada aba, um guia passo a passo explica a tela; o botão
+**?** do topo repete.
+
+
 - **Resumo:** frase-resumo, situação das fotos, plano de envio e categorias
   (toque num cartão para revisar aquele grupo).
 - **Revisar:** filtros, grade de miniaturas (toque seleciona; segure para ver

@@ -10,14 +10,17 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icone.svg">
   <title>Geyma</title>
-  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/app.css?v=0.2.19">
 </head>
 <body>
   <div class="aurora" aria-hidden="true"></div>
 
   <header class="topo">
     <h1 class="marca">Geyma</h1>
-    <button class="icone-btn" id="atualizar" type="button" aria-label="Atualizar">↻</button>
+    <div class="topo-btns">
+      <button class="icone-btn" id="ajuda" type="button" aria-label="Ver o guia desta tela">?</button>
+      <button class="icone-btn" id="atualizar" type="button" aria-label="Atualizar">↻</button>
+    </div>
   </header>
 
   <!-- Resumo -->
@@ -104,6 +107,6 @@
     <button id="nav-leituras" data-tela="leituras"><span class="ic">↻</span>Leituras</button>
   </nav>
 
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/app.js?v=0.2.19"></script>
 </body>
 </html>

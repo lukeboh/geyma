@@ -358,3 +358,46 @@ body.login { display: grid; place-items: center; min-height: 100dvh; padding: 16
   background: var(--vidro-forte);
   padding: 10px 16px;
 }
+
+/* ---------- guia passo a passo ---------- */
+.topo-btns { display: flex; gap: 8px; }
+.guia { position: fixed; inset: 0; z-index: 100; }
+.guia.centro::before { content: ""; position: fixed; inset: 0; background: rgba(3, 6, 22, 0.66); }
+.guia-luz {
+  position: fixed;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(3, 6, 22, 0.66), 0 0 0 2px var(--acento-2), 0 0 24px rgba(34, 195, 230, 0.5);
+  transition: left 0.35s var(--mola), top 0.35s var(--mola), width 0.35s var(--mola), height 0.35s var(--mola), opacity 0.2s;
+  pointer-events: none;
+}
+.guia-cartao {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  border-radius: 22px;
+  padding: 14px 16px 12px;
+  background: color-mix(in srgb, var(--fundo-2) 82%, transparent);
+  max-height: 60dvh;
+  overflow-y: auto;
+}
+.guia-cartao::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(90deg, var(--acento), var(--acento-2));
+}
+.guia-topo { display: flex; justify-content: space-between; align-items: center; }
+.guia-conta { font-size: 12px; color: var(--texto-3); }
+.guia-fechar { border: 0; background: transparent; font-size: 24px; line-height: 1; padding: 0 6px; color: var(--texto-2); }
+.guia-cartao h3 { margin: 4px 0 6px; font-size: 18px; font-weight: 700; }
+.guia-cartao p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--texto-2); }
+.guia-cartao p b { color: var(--texto); }
+.guia-pontos { display: flex; gap: 6px; margin: 12px 0 10px; }
+.guia-pontos i { width: 7px; height: 7px; border-radius: 50%; background: var(--borda); transition: width 0.3s var(--mola); }
+.guia-pontos i.on { width: 20px; border-radius: 4px; background: linear-gradient(90deg, var(--acento), var(--acento-2)); }
+.guia-acoes { display: grid; grid-template-columns: auto 1fr 1fr; gap: 8px; align-items: center; }
+.guia-acoes button { border-radius: 999px; border: 1px solid var(--borda); background: var(--vidro-forte); padding: 10px 14px; }
+.guia-pular { border: 0 !important; background: transparent !important; color: var(--texto-3); }
+.guia-acoes button:disabled { opacity: 0.4; }
