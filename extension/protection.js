@@ -106,6 +106,7 @@ function renderProtection() {
   for (const k of ORDER) {
     const card = document.createElement('article');
     card.className = 'class-card';
+    card.style.setProperty('--cor', `var(--c-${k})`);
     const extra = k === 'reduzida' && t.reduzida
       ? `<p class="hint">menor no Google: ${fmt.format(s.reduzidaMenor.google)} · menor no iCloud: ${fmt.format(s.reduzidaMenor.icloud)}</p>`
       : '';

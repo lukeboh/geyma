@@ -70,6 +70,14 @@ temporária), pHash e a sua marcação. Não guarda o conteúdo das fotos.
 
 Testes: `node --test test/*.test.mjs` na raiz do repositório.
 
+## Visual
+
+Aurora azul ao fundo, vidro "tátil" (cartões translúcidos que inclinam de leve
+e acendem um reflexo sob o ponteiro) e pílulas, na linguagem do Urna Velox.
+Tema escuro e claro (botão ◐; sem escolha, segue o sistema). Movimento
+reduzido do sistema é respeitado. Fonte: **Archivo** (variável), licença SIL
+Open Font License, embutida em `assets/archivo.woff2`.
+
 ## Limites conhecidos
 
 - As interfaces lidas não são oficiais e podem mudar sem aviso.

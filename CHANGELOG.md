@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.14 — 14/11/2026
+
+- Visual do painel na linguagem do Urna Velox: aurora azul ao fundo, vidro
+  tátil (cartões translúcidos com borda de luz que inclinam de leve e acendem
+  um reflexo sob o ponteiro), etapas e botões em pílula com degradê
+  azul-turquesa, fonte Archivo embutida (OFL).
+- Tema escuro e claro, com botão ◐ (a escolha fica salva; sem escolha, segue o
+  sistema) e aplicação antes do primeiro desenho.
+- Cores das situações validadas nos dois temas (azul do Google e
+  coral-laranja do iCloud, complementares; turquesa, âmbar e rosa para as
+  demais); no tema claro, gráficos com legenda e tabela.
+- Movimento reduzido do sistema desliga inclinações e transições.
+
+Verificação: 56 testes passando; painel conferido no navegador nos dois temas.
+
 ## 0.2.13 — 14/11/2026
 
 - Registro no changelog da 0.2.12, que saiu sem ele.

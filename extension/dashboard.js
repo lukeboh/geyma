@@ -142,7 +142,6 @@ function drawYears(gy, ay) {
   });
   chart.innerHTML = '';
   chart.append(svg);
-  svg.querySelectorAll('.col text').forEach((t) => t.setAttribute('fill', 'currentColor'));
 }
 
 function niceStep(raw) {
@@ -198,6 +197,45 @@ function showTab(name) {
 for (const k of Object.keys(TABS)) $(`tab-${k}`).addEventListener('click', () => showTab(k));
 document.addEventListener('geyma-tab', (e) => showTab(e.detail));
 initProtection();
+
+// ---------- tema ----------
+$('tema').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('geyma-tema', root.dataset.theme); } catch {}
+});
+
+// ---------- vidro tátil: inclina de leve e acende o reflexo sob o ponteiro ----------
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+function tatil(c) {
+  if (c.dataset.tatil) return;
+  c.dataset.tatil = '1';
+  c.classList.add('tatil');
+  const mover = (e) => {
+    if (reduced.matches) return;
+    const r = c.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    // cartões grandes inclinam menos
+    const k = Math.max(0.6, Math.min(3, 900 / Math.max(r.width, 1)));
+    c.style.setProperty('--ry', `${((x - 0.5) * k).toFixed(2)}deg`);
+    c.style.setProperty('--rx', `${((0.5 - y) * k).toFixed(2)}deg`);
+    c.style.setProperty('--mx', `${(x * 100).toFixed(1)}%`);
+    c.style.setProperty('--my', `${(y * 100).toFixed(1)}%`);
+    c.style.setProperty('--luz', '1');
+  };
+  const soltar = () => { c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); c.style.setProperty('--luz', '0'); };
+  c.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) mover(e); });
+  c.addEventListener('pointerdown', mover);
+  c.addEventListener('pointerleave', soltar);
+  c.addEventListener('pointercancel', soltar);
+}
+// cartões entram e saem com os dados: observa o documento e aplica nos novos
+const TATEIS = '.card, .class-card, .cat-grid article, .panel.lead';
+const aplicar = () => document.querySelectorAll(TATEIS).forEach(tatil);
+new MutationObserver(aplicar).observe(document.body, { childList: true, subtree: true });
+aplicar();
 
 // O inventário tem centenas de milhares de itens: redesenha no máximo a cada
 // 5 s e só com a aba Inventário aberta.
