@@ -59,8 +59,11 @@ produto (ver [ESTRATEGIA.md](ESTRATEGIA.md)).
 
 ## Aprendizados do uso real
 
-- **A aba do iCloud precisa ficar visível**, e olhar o painel na mesma janela
-  a esconde. A extensão agora move o iCloud para uma janela própria.
+- **A aba do iCloud precisava ficar visível**: olhar o painel na mesma janela
+  ou o bloqueio da tela por inatividade (política do notebook) a escondia e o
+  percurso parava. A extensão move o iCloud para uma janela própria e, desde a
+  0.2.22, liga a emulação de foco do Chrome na aba: o percurso anda com a
+  janela coberta e a tela bloqueada.
 - **O controle de tamanho das miniaturas do iCloud** (no próprio site) no
   menor valor deixou o percurso cerca de 7 vezes mais rápido. A extensão agora
   ajusta sozinha.

@@ -33,8 +33,8 @@ serviços.
    processo `node` do servidor.
 
 Requisitos: notebook ligado e sem suspender, Chrome de automação aberto com a
-extensão. Ver e marcar funcionam com a tela bloqueada; o percurso do iCloud
-continua exigindo a tela desbloqueada no notebook.
+extensão. Tudo funciona com a tela bloqueada, inclusive o percurso do
+iCloud (a extensão mantém a aba ativa pela emulação de foco do Chrome).
 
 ## Telas
 

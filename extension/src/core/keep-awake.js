@@ -1,7 +1,6 @@
-// Mantém a tela do notebook acordada enquanto uma leitura está rodando.
-// O percurso do iCloud só anda com a aba visível; se a tela apagar ou
-// bloquear por inatividade, ele para. Usa o pedido de energia do próprio
-// Chrome (o mesmo de um vídeo em reprodução) e o solta quando nada está rodando.
+// Impede o notebook de dormir enquanto uma leitura está rodando (a tela pode
+// apagar e bloquear normalmente; o percurso do iCloud usa a emulação de foco).
+// Usa o pedido de energia do próprio Chrome e o solta quando nada está rodando.
 
 const ATIVOS = new Set(['lendo', 'aguardando', 'ocupado']);
 

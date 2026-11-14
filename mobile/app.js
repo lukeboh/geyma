@@ -271,7 +271,7 @@ function textoLeitura(p, nome) {
   if (!p) return 'não iniciada';
   const parado = ['lendo', 'aguardando'].includes(p.state) && p.at && Date.now() - p.at > 600000;
   if (parado) return `sem notícias desde ${quando(p.at)}`;
-  const st = { lendo: 'lendo…', concluido: 'concluída', parado: 'parada', aguardando: 'aguardando a aba visível no notebook', erro: 'erro' }[p.state] || p.state;
+  const st = { lendo: 'lendo…', concluido: 'concluída', parado: 'parada', aguardando: 'aguardando a aba do iCloud', erro: 'erro' }[p.state] || p.state;
   const extra = typeof p.frac === 'number' && p.state !== 'concluido' ? ` (${Math.round(p.frac * 100)}%)` : p.pages ? ` (${p.pages} páginas)` : '';
   void nome;
   return `${st}${extra}${p.at ? ` · ${quando(p.at)}` : ''}`;

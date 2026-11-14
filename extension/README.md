@@ -30,8 +30,10 @@ passo** explica a tela; o botão **?** do topo repete o guia.
      segundo plano.
    - **Percorrer biblioteca** do iCloud: a extensão põe a aba do iCloud numa
      janela própria, reduz o tamanho das miniaturas do site e rola a grade como
-     uma pessoa. A janela precisa ficar **visível** (sem nada por cima; tela
-     bloqueada também pausa). Um erro do servidor da Apple interrompe a leitura
+     uma pessoa. Funciona com a janela coberta ou a tela
+     bloqueada: a extensão liga a emulação de foco do Chrome na aba (permissão
+     `debugger`; o Chrome mostra o aviso de depuração enquanto roda) e impede o
+     notebook de dormir (permissão `power`). Um erro do servidor da Apple interrompe a leitura
      na hora. **Continuar de onde parou** retoma pela posição salva.
 2. **Proteção**
    - Frase-resumo, situação de cada foto (Em ambos, A confirmar, Cópia
@@ -82,7 +84,8 @@ Open Font License, embutida em `assets/archivo.woff2`.
 ## Limites conhecidos
 
 - As interfaces lidas não são oficiais e podem mudar sem aviso.
-- O iCloud exige a janela visível durante o percurso.
+- O percurso do iCloud depende da emulação de foco (protocolo de depuração do
+  Chrome); se o aviso de depuração for cancelado, ele espera a aba visível.
 - O catálogo do Google não informa o nome nem o tamanho do arquivo.
 - A classificação é por regras; o que elas não resolvem fica Indefinido
   (Pendente) até a revisão ou um modelo visual local.

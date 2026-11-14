@@ -2,6 +2,27 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.22 — 14/11/2026
+
+- Percurso do iCloud sem depender da tela: a extensão se conecta à aba do
+  iCloud pelo protocolo de depuração do Chrome (permissão `debugger`) e liga a
+  emulação de foco; a página continua se achando visível e desenhando com a
+  janela coberta ou a tela bloqueada. Desliga ao fim, parada ou erro, e religa
+  se o percurso voltar a esperar a aba. O Chrome mostra o aviso de depuração
+  enquanto roda.
+- O pedido de energia passa a ser `system`: o notebook não dorme durante as
+  leituras, mas a tela apaga e bloqueia normalmente (respeita a política de
+  bloqueio do notebook).
+- "Continuar de onde parou": um aviso sem posição (como "aguardando a aba")
+  apagava a posição salva e o percurso recomeçava do início; agora mantém a
+  última fração lida (`src/core/progress.js`).
+- Textos do painel, do guia e do celular atualizados: não é mais preciso
+  deixar a tela desbloqueada.
+
+Verificação: 72 testes passando. Uso real: com a tela bloqueada (aba
+`hidden`), a emulação levou a aba a `visible`, com quadros e timers normais;
+o percurso retomado nessas condições avançou de 0,2% para 1% em 45 s.
+
 ## 0.2.21 — 14/11/2026
 
 - Tela acesa durante as leituras: a extensão pede ao Chrome para manter a

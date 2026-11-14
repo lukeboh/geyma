@@ -26,7 +26,7 @@ const GUIAS = {
     { sel: '#dups', titulo: 'Cópias repetidas', texto: 'A mesma foto guardada mais de uma vez no mesmo serviço. A de melhor qualidade fica; as outras são cópias que você pode marcar como Descartar.<br><br><b>Toque num cartão</b> para ver as cópias ao lado da que fica.' },
   ],
   leituras: [
-    { sel: '#leituras', titulo: 'O que o notebook está fazendo', texto: 'Quantas fotos o notebook já leu de cada serviço e quando. Esta tela se atualiza sozinha.<br><br>O percurso do iCloud só anda com a tela do notebook <b>desbloqueada</b> e a janela do iCloud visível.' },
+    { sel: '#leituras', titulo: 'O que o notebook está fazendo', texto: 'Quantas fotos o notebook já leu de cada serviço e quando. Esta tela se atualiza sozinha.<br><br>Tudo funciona com a tela do notebook <b>bloqueada</b>; ele só não pode ser desligado nem fechado.' },
     { sel: '#recalcular', titulo: 'Recalcular', texto: 'Depois de uma leitura nova no notebook, toque aqui para refazer o cruzamento e atualizar os números.' },
   ],
 };

@@ -18,7 +18,7 @@ const TOURS = {
     {
       sel: '.card[data-site="icloud"]',
       title: '2. Percorra o iCloud Fotos',
-      text: 'Abra <b>icloud.com/photos</b> com a sua conta e clique em <b>Percorrer biblioteca</b>. O Geyma abre o iCloud numa janela própria e rola a grade como uma pessoa.<br><br><b>Deixe essa janela visível, sem nada por cima e com a tela desbloqueada</b>, até terminar (cerca de 1h30). Se precisar parar, use <b>Parar</b> e depois <b>Continuar de onde parou</b>.',
+      text: 'Abra <b>icloud.com/photos</b> com a sua conta e clique em <b>Percorrer biblioteca</b>. O Geyma abre o iCloud numa janela própria e rola a grade como uma pessoa.<br><br>Pode cobrir a janela ou bloquear a tela: o Geyma mantém a página ativa (o Chrome mostra o aviso de depuração enquanto roda) e impede o notebook de dormir. Leva cerca de 1h30. Se precisar parar, use <b>Parar</b> e depois <b>Continuar de onde parou</b>.',
     },
     { sel: '#chart', title: 'Quantas fotos por ano', text: 'Este gráfico compara os dois serviços ano a ano. Quando os dois cartões acima disserem "concluído", vá para a etapa <b>Proteção</b>.' },
     { sel: '#ajuda', title: 'Ajuda quando quiser', text: 'Este guia aparece só na primeira vez. Para ver de novo, clique em <b>?</b>. O botão ao lado troca entre tema claro e escuro.' },

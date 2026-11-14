@@ -4,6 +4,7 @@ import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './cor
 import { putItems, patchItems, setMeta, getMeta } from './core/db.js';
 import { phashFromBase64 } from './core/phash-image.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
+import { mergeProgress } from './core/progress.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -16,13 +17,38 @@ chrome.action.onClicked.addListener(() => chrome.tabs.create({ url: chrome.runti
 const taskStates = {};
 function updateKeepAwake(task, state) {
   if (task) taskStates[task] = state;
-  if (shouldKeepAwake(taskStates)) chrome.power.requestKeepAwake('display');
+  // 'system': o notebook não dorme, mas a tela pode apagar e bloquear normalmente
+  if (shouldKeepAwake(taskStates)) chrome.power.requestKeepAwake('system');
   else chrome.power.releaseKeepAwake();
+  if (task === 'icloud' && !shouldKeepAwake({ icloud: state })) releaseFocus();
 }
+
+// O percurso do iCloud depende de a página se achar visível (a grade só
+// carrega fotos novas quando desenha). Com a tela bloqueada ou a janela
+// coberta, o Chrome esconde a aba. A extensão se conecta à aba pelo protocolo
+// de depuração e liga a emulação de foco: a página continua se achando
+// visível e desenhando, sem depender da tela. Desliga ao fim do percurso.
+let focusTab = null;
+async function holdFocus(tabId) {
+  if (focusTab !== tabId) {
+    await releaseFocus();
+    try { await chrome.debugger.attach({ tabId }, '1.3'); } catch (err) { if (!/already attached/i.test(String(err.message || err))) throw err; }
+    focusTab = tabId;
+  }
+  await chrome.debugger.sendCommand({ tabId }, 'Emulation.setFocusEmulationEnabled', { enabled: true });
+  await chrome.debugger.sendCommand({ tabId }, 'Page.setWebLifecycleState', { state: 'active' }).catch(() => {});
+}
+async function releaseFocus() {
+  if (focusTab == null) return;
+  const tabId = focusTab;
+  focusTab = null;
+  await chrome.debugger.detach({ tabId }).catch(() => {});
+}
+chrome.debugger.onDetach.addListener((src) => { if (src.tabId === focusTab) focusTab = null; });
 
 const broadcast = (msg) => chrome.runtime.sendMessage({ kind: 'status', ...msg }).catch(() => {});
 
-async function handlePageEvent(site, type, payload) {
+async function handlePageEvent(site, type, payload, tabId) {
   if (type === 'google-batch') {
     const { items } = parseGoogleBatchText(payload.body);
     if (items.length) await putItems(items);
@@ -50,8 +76,10 @@ async function handlePageEvent(site, type, payload) {
     await setMeta('icloudLastError', { status: payload.status });
     broadcast({ site, event: 'error', status: payload.status });
   } else if (type === 'progress') {
-    await setMeta(`${payload.task}Progress`, payload);
+    await setMeta(`${payload.task}Progress`, mergeProgress((await getMeta(`${payload.task}Progress`))?.value, payload));
     updateKeepAwake(payload.task, payload.state);
+    // percurso esperando a aba aparecer: religa a emulação de foco (se a conexão caiu)
+    if (payload.task === 'icloud' && payload.state === 'aguardando' && tabId != null) await holdFocus(tabId).catch(() => {});
     // a conclusão do percurso do iCloud fica registrada mesmo depois de outro percurso parado
     if (payload.task === 'icloud' && payload.state === 'concluido') await setMeta('icloudCompleted', { at: Date.now() });
     broadcast({ site, event: 'progress', progress: payload });
@@ -66,7 +94,7 @@ async function findOrOpenTab(site) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'page-event') {
-    handlePageEvent(msg.site, msg.type, msg.payload).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
+    handlePageEvent(msg.site, msg.type, msg.payload, sender.tab?.id).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
     return false;
   }
   if (msg?.kind === 'phash') {
@@ -96,6 +124,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
       }
       if (msg.kind === 'start') updateKeepAwake(msg.site, 'lendo');
+      if (msg.site === 'icloud') {
+        if (msg.kind === 'start') await holdFocus(tab.id).catch((err) => broadcast({ site: 'icloud', event: 'falha', reason: `emulação de foco: ${err.message || err}` }));
+      }
       const startFrac = msg.site === 'icloud' && msg.resume ? (await getMeta('icloudProgress'))?.value?.frac || 0 : 0;
       const cmd = msg.kind === 'stop' ? 'stop' : msg.site === 'google' ? 'google-crawl' : 'icloud-walk';
       await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd, startFrac });
