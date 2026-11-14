@@ -126,6 +126,17 @@
       </div>
       <p class="hint">Itens do Google com o mesmo segundo de captura e as mesmas dimensões. A conferência baixa uma miniatura pequena de cada um, pela sua sessão do Google Fotos, e compara as imagens (pHash): iguais são cópias repetidas; diferentes são fotos tiradas em sequência. Nada será apagado sem a sua decisão.</p>
     </section>
+
+    <section class="panel" id="m-ic-box" hidden>
+      <h2>Desempate com as miniaturas do iCloud</h2>
+      <p id="m-ic"></p>
+      <div class="actions">
+        <button id="m-ic-run" class="primary">Conferir pelas miniaturas do iCloud</button>
+        <button id="m-ic-stop" hidden>Parar</button>
+        <span class="muted" id="m-ic-state" role="status"></span>
+      </div>
+      <p class="hint">Pares "a confirmar" e cópias reduzidas: a miniatura do iCloud diz qual foto do Google é a mesma. As URLs das miniaturas do iCloud são temporárias e vêm do percurso da biblioteca; se tiverem expirado, a conferência para e pede um novo percurso. Baixa só miniaturas (não consulta a Apple por conta própria), até 4 por vez.</p>
+    </section>
   </main>
 
   <main id="view-rev" role="tabpanel" aria-labelledby="tab-rev" hidden>

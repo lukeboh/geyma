@@ -2,7 +2,7 @@
 // e encaminha os comandos do painel para as abas dos serviços.
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
 import { putItems, patchItems, setMeta, getMeta } from './core/db.js';
-import { grayFromRgba, phashFromGray } from './core/phash.js';
+import { phashFromBase64 } from './core/phash-image.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -46,18 +46,6 @@ async function handlePageEvent(site, type, payload) {
     if (payload.task === 'icloud' && payload.state === 'concluido') await setMeta('icloudCompleted', { at: Date.now() });
     broadcast({ site, event: 'progress', progress: payload });
   }
-}
-
-// pHash de uma miniatura: reduz para 32×32 em tons de cinza e aplica a DCT
-const canvas = new OffscreenCanvas(32, 32);
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-async function phashFromBase64(b64) {
-  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  const bmp = await createImageBitmap(new Blob([bytes]), { resizeWidth: 32, resizeHeight: 32, resizeQuality: 'high' });
-  ctx.clearRect(0, 0, 32, 32);
-  ctx.drawImage(bmp, 0, 0);
-  bmp.close();
-  return phashFromGray(grayFromRgba(ctx.getImageData(0, 0, 32, 32).data));
 }
 
 async function findOrOpenTab(site) {

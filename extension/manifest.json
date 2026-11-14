@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Geyma",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Inventário local do Google Fotos e do iCloud Fotos para verificar se suas fotos estão protegidas em dois lugares.",
   "action": { "default_title": "Abrir o painel do Geyma" },
   "background": { "service_worker": "src/sw.js", "type": "module" },
   "permissions": ["storage", "unlimitedStorage", "tabs"],
-  "host_permissions": ["https://photos.google.com/*", "https://www.icloud.com/*", "https://photos.fife.usercontent.google.com/*", "https://lh3.googleusercontent.com/*"],
+  "host_permissions": ["https://photos.google.com/*", "https://www.icloud.com/*", "https://photos.fife.usercontent.google.com/*", "https://lh3.googleusercontent.com/*", "https://*.icloud-content.com/*"],
   "content_scripts": [
     {
       "matches": ["https://photos.google.com/*"],

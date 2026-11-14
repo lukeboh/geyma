@@ -73,10 +73,20 @@ export function matchLibraries(google, icloud, opts = {}) {
     return out;
   };
 
+  // Com o pHash dos dois lados, a imagem decide: candidatos claramente
+  // diferentes saem, e os mais parecidos vêm primeiro.
+  const byImage = (a, c) => {
+    if (!a.phash) return c;
+    const scored = c.map((x) => ({ ...x, d: hamming(a.phash, x.g.phash) }));
+    return scored
+      .filter((x) => x.d === null || x.d < DIFFERENT_MIN)
+      .sort((x, y) => (x.d ?? 99) - (y.d ?? 99) || (x.rel === y.rel ? x.dt - y.dt : x.rel === 'igual' ? -1 : 1));
+  };
+
   const cands = new Map(); // id do iCloud -> candidatos
   const demand = new Map(); // id do Google -> quantos itens do iCloud o querem
   for (const a of A) {
-    const c = candidatesOf(a);
+    const c = byImage(a, candidatesOf(a));
     cands.set(a.id, c);
     for (const { g } of c) demand.set(g.id, (demand.get(g.id) || 0) + 1);
   }
@@ -88,13 +98,23 @@ export function matchLibraries(google, icloud, opts = {}) {
   const soIcloud = [];
   for (const a of order) {
     const c = cands.get(a.id);
-    const pick = c.find(({ g }) => !usedG.has(g.id));
+    let pick = c.find(({ g }) => !usedG.has(g.id));
+    // mesma imagem já usada por outro item do iCloud (duplicata no iCloud):
+    // o conteúdo está no Google, então o item conta como "em ambos"
+    let reused = false;
+    if (!pick && a.phash) {
+      const twin = c.find((x) => x.d !== undefined && x.d !== null && x.d <= SAME_MAX);
+      if (twin) { pick = twin; reused = true; }
+    }
     if (!pick) { soIcloud.push(a); continue; }
     usedG.add(pick.g.id);
+    const imageConfirmed = pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX;
     // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
     const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
-    const disputed = (c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1;
+    const disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
     const pair = { a, g: pick.g, dt: pick.dt };
+    if (imageConfirmed) pair.confirmadoPorImagem = true;
+    if (reused) pair.duplicataNoIcloud = true;
     if (pick.rel === 'reduzida') {
       pair.cls = 'reduzida';
       pair.menor = a.w * a.h < pick.g.w * pick.g.h ? 'icloud' : 'google';

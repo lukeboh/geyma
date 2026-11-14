@@ -4,6 +4,7 @@ import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { patchItems } from './src/core/db.js';
 import { sendPlan, effectiveDecision } from './src/core/plan.js';
+import { phashFromBlob } from './src/core/phash-image.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -45,6 +46,8 @@ export function initProtection() {
   $('r-next').addEventListener('click', () => { page++; renderList(); });
   $('r-csv').addEventListener('click', exportCsv);
   $('m-phash').addEventListener('click', startPhash);
+  $('m-ic-run').addEventListener('click', runIcloudCheck);
+  $('m-ic-stop').addEventListener('click', () => { if (icJob) icJob.stop = true; });
   $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
   const cls = $('r-cls');
   cls.append(new Option('Todas', ''));
@@ -121,6 +124,59 @@ function renderProtection() {
   renderDup();
   renderCategories();
   renderPlan();
+  renderIcloudCheck();
+}
+
+// ---------- desempate pelo iCloud ----------
+let icJob = null;
+function renderIcloudCheck() {
+  const need = data.icloudPhashNeeded || [];
+  const disputed = data.summary.totals.confirmar + data.summary.totals.reduzida;
+  $('m-ic-box').hidden = !disputed;
+  $('m-ic').innerHTML = need.length
+    ? `<b>${fmt.format(need.length)}</b> itens do iCloud têm miniatura guardada e podem desempatar pares.`
+    : `Nenhum item com miniatura do iCloud guardada para desempatar. As miniaturas chegam no próximo percurso da biblioteca do iCloud (aba Inventário).`;
+  $('m-ic-run').hidden = !need.length || Boolean(icJob);
+}
+
+async function runIcloudCheck() {
+  const need = data?.icloudPhashNeeded || [];
+  if (!need.length || icJob) return;
+  icJob = { stop: false, done: 0, failed: 0, expired: 0 };
+  $('m-ic-run').hidden = true;
+  $('m-ic-stop').hidden = false;
+  const queue = [...need];
+  let batch = [];
+  const flush = async () => { if (batch.length) { const b = batch; batch = []; await patchItems(b); } };
+  const show = (msg) => { $('m-ic-state').textContent = msg || `conferindo… ${fmt.format(icJob.done)} de ${fmt.format(need.length)} (falhas: ${fmt.format(icJob.failed)})`; };
+  const worker = async () => {
+    while (queue.length && !icJob.stop) {
+      const it = queue.shift();
+      try {
+        const res = await fetch(it.url.replace('${f}', 'thumb.jpg'));
+        if (!res.ok) {
+          icJob.failed++;
+          if ([401, 403, 404, 410].includes(res.status)) icJob.expired++;
+          // as primeiras falharem todas: URLs expiradas, não insiste
+          if (icJob.done === 0 && icJob.expired >= 8) icJob.stop = 'expiradas';
+          continue;
+        }
+        batch.push({ id: it.id, phash: await phashFromBlob(await res.blob()) });
+        icJob.done++;
+        if (batch.length >= 50) await flush();
+        if (icJob.done % 50 === 0) show();
+      } catch { icJob.failed++; }
+    }
+  };
+  show();
+  await Promise.all(Array.from({ length: 4 }, worker));
+  await flush();
+  const why = icJob.stop === 'expiradas' ? 'as URLs das miniaturas expiraram: percorra a biblioteca do iCloud de novo e tente outra vez'
+    : icJob.stop ? 'parada por você' : 'concluída';
+  show(`${why}: ${fmt.format(icJob.done)} de ${fmt.format(need.length)} conferidos, ${fmt.format(icJob.failed)} falhas.`);
+  icJob = null;
+  $('m-ic-stop').hidden = true;
+  compute();
 }
 
 const GB = (bytes) => `${(bytes / 1024 ** 3).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} GB`;

@@ -27,6 +27,13 @@ function phashNeeded(pendingIds, pairs, google) {
   return [...need].map((id) => id.slice(2));
 }
 
+/** Itens do iCloud com miniatura e sem pHash em pares que a imagem decidiria (disputados ou reduzidos). */
+function icloudPhashNeeded(pairs) {
+  return pairs
+    .filter((p) => (p.cls === 'confirmar' || p.cls === 'reduzida') && p.a.thumb && !p.a.phash)
+    .map((p) => ({ id: p.a.id, url: p.a.thumb, at: p.a.thumbAt || 0 }));
+}
+
 self.onmessage = async () => {
   try {
     const [google, icloud, progress, completed, counts, phashProgress] = await Promise.all([
@@ -67,6 +74,7 @@ self.onmessage = async () => {
         pendentes: analysis.pendentes,
       },
       phashNeeded: phashNeeded(analysis.pendingIds, result.pairs, google),
+      icloudPhashNeeded: icloudPhashNeeded(result.pairs),
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,

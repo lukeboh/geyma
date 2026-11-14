@@ -2,6 +2,27 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.10 — 14/11/2026
+
+- Motor: com o pHash do iCloud, a imagem decide o par. Candidatos claramente
+  diferentes saem; o mais parecido vem primeiro; par confirmado pela imagem
+  vira "Em ambos" mesmo havendo disputa; foto diferente de todos os candidatos
+  fica "Só no iCloud"; duas cópias da mesma foto no iCloud com uma no Google
+  contam as duas como "Em ambos".
+- Painel: quadro "Desempate com as miniaturas do iCloud", que baixa as
+  miniaturas guardadas no percurso (até 4 por vez, sem consultar a Apple por
+  conta própria), calcula o pHash e recalcula o cruzamento; para se as URLs
+  temporárias tiverem expirado e pede um novo percurso.
+- `src/core/phash-image.js`: pHash a partir de imagem, comum ao service
+  worker e ao painel.
+- Permissão de host para o CDN de miniaturas do iCloud.
+
+Verificação: 56 testes passando (3 novos do desempate pela imagem). No
+navegador: service worker refatorado calculou o pHash dos últimos itens do
+Google; o quadro novo aparece e informa que ainda não há miniaturas do iCloud
+guardadas. O desempate pelo iCloud ainda não foi exercitado: depende de um
+novo percurso do iCloud com a tela desbloqueada.
+
 ## 0.2.9 — 14/11/2026
 
 - Miniaturas na Revisão: o inventário passa a guardar a URL da miniatura

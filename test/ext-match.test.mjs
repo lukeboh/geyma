@@ -123,3 +123,28 @@ test('par disputado informa os candidatos do Google', () => {
   const unico = matchLibraries([g(1, T, 4032, 3024)], [a(1, T, 4032, 3024)]);
   assert.equal(unico.pairs[0].candidatos, undefined);
 });
+
+test('pHash do iCloud escolhe o candidato certo numa rajada', () => {
+  const google = [withHash(g(1, T, 4032, 3024), P1), withHash(g(2, T, 4032, 3024), P2)];
+  const r = matchLibraries(google, [withHash(a(1, T + 300, 4032, 3024), '0000000000000001')]);
+  assert.equal(r.pairs[0].g.id, 'g:2');
+  assert.equal(r.pairs[0].cls, 'ambos');
+  assert.equal(r.pairs[0].confirmadoPorImagem, true);
+});
+
+test('pHash do iCloud diferente de todos os candidatos: só no iCloud', () => {
+  const google = [withHash(g(1, T, 4032, 3024), P1)];
+  const r = matchLibraries(google, [withHash(a(1, T, 4032, 3024), P2)]);
+  assert.equal(r.pairs.length, 0);
+  assert.equal(r.soIcloud.length, 1);
+  assert.equal(r.soGoogle.length, 1);
+});
+
+test('duas cópias da mesma foto no iCloud e uma no Google: ambas em ambos', () => {
+  const google = [withHash(g(1, T, 4032, 3024), P1)];
+  const icloud = [withHash(a(1, T, 4032, 3024), P1), withHash(a(2, T + 10, 4032, 3024), P1b)];
+  const r = matchLibraries(google, icloud);
+  assert.equal(r.pairs.length, 2);
+  assert.ok(r.pairs.every((p) => p.cls === 'ambos'));
+  assert.equal(r.pairs.filter((p) => p.duplicataNoIcloud).length, 1);
+});
