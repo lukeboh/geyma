@@ -1,6 +1,8 @@
 // Abas 2 (Proteção) e 3 (Revisão) do painel: cruzamento das bibliotecas,
 // visão por ano e lista filtrável para revisar item a item.
 import { CLASSES } from './src/core/match.js';
+import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
+import { patchItems } from './src/core/db.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -25,16 +27,22 @@ let busy = false;
 export function initProtection() {
   document.body.append($('tooltip'));
   $('m-refresh').addEventListener('click', compute);
-  for (const id of ['r-cls', 'r-year', 'r-kind']) $(id).addEventListener('change', () => { page = 0; renderList(); });
+  for (const id of ['r-cls', 'r-cat', 'r-dec', 'r-year', 'r-kind']) $(id).addEventListener('change', () => { page = 0; renderList(); });
+  for (const [k, l] of Object.entries(CATEGORIES)) $('r-cat').append(new Option(l, k));
+  for (const [k, l] of Object.entries(DECISIONS)) $('r-dec').append(new Option(l, k));
+  for (const b of document.querySelectorAll('#r-batch button[data-dec]')) b.addEventListener('click', () => askBatch(b.dataset.dec));
+  $('r-confirm-yes').addEventListener('click', confirmBatch);
+  $('r-confirm-no').addEventListener('click', cancelBatch);
   $('r-prev').addEventListener('click', () => { page = Math.max(0, page - 1); renderList(); });
   $('r-next').addEventListener('click', () => { page++; renderList(); });
   $('r-csv').addEventListener('click', exportCsv);
   $('m-phash').addEventListener('click', startPhash);
   $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
   const cls = $('r-cls');
+  cls.append(new Option('Todas', ''));
   for (const k of ORDER) cls.append(new Option(CLASSES[k], k));
   cls.append(new Option('Cópias repetidas no Google (conferidas)', 'dupGoogle'));
-  cls.value = 'soIcloud';
+  cls.value = '';
 }
 
 /** Calcula na primeira visita; depois só quando pedido (Recalcular) ou quando o iCloud termina. */
@@ -94,7 +102,7 @@ function renderProtection() {
     const btn = document.createElement('button');
     btn.textContent = 'Ver lista';
     btn.disabled = !t[k];
-    btn.addEventListener('click', () => { $('r-cls').value = k; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
+    btn.addEventListener('click', () => { $('r-cls').value = k; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
     card.append(btn);
     box.append(card);
   }
@@ -103,6 +111,29 @@ function renderProtection() {
   drawStack(s.byYear);
 
   renderDup();
+  renderCategories();
+}
+
+function renderCategories() {
+  const counts = {};
+  for (const r of data.rows) counts[r.cat] = (counts[r.cat] || 0) + 1;
+  $('m-cat-box').hidden = !data.rows.length;
+  const box = $('m-cats');
+  box.innerHTML = '';
+  for (const [k, label] of Object.entries(CATEGORIES)) {
+    const el = document.createElement('article');
+    const sug = DECISIONS[suggestDecision(k)];
+    el.innerHTML = `<span>${label}</span><span class="n">${fmt.format(counts[k] || 0)}</span><span class="hint">sugestão: ${sug}</span>`;
+    const btn = document.createElement('button');
+    btn.textContent = 'Revisar';
+    btn.disabled = !counts[k];
+    btn.addEventListener('click', () => {
+      $('r-cls').value = ''; $('r-cat').value = k; $('r-dec').value = ''; page = 0; renderList();
+      document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' }));
+    });
+    el.append(btn);
+    box.append(el);
+  }
 }
 
 function renderDup() {
@@ -124,7 +155,11 @@ export function showPhashProgress(p) {
   const el = $('m-phash-state');
   if (!p) { el.textContent = ''; return; }
   const n = `${fmt.format(p.done || 0)} de ${fmt.format(p.total || 0)} miniaturas`;
-  const label = { lendo: `conferindo… ${n}`, concluido: `conferência concluída: ${n}`, parado: `parada por você: ${n}`, erro: `parou por erro do Google (${p.status || p.reason || '?'}): ${n}` }[p.state] || p.state;
+  // "lendo" gravado há mais de 2 min sem atualização = conferência interrompida
+  // (por exemplo, a extensão foi recarregada); o botão volta a funcionar
+  const stale = p.state === 'lendo' && p.at && Date.now() - p.at > 120000;
+  if (stale) p = { ...p, state: 'interrompida' };
+  const label = { interrompida: `interrompida em ${n}; clique para continuar`, lendo: `conferindo… ${n}`, concluido: `conferência concluída: ${n}`, parado: `parada por você: ${n}`, erro: `parou por erro do Google (${p.status || p.reason || '?'}): ${n}` }[p.state] || p.state;
   el.textContent = label;
   $('m-phash').disabled = p.state === 'lendo';
   $('m-phash-stop').hidden = p.state !== 'lendo';
@@ -212,6 +247,7 @@ function niceStep(raw) {
 // ---------- revisão ----------
 const PAGE = 50;
 let page = 0;
+let pendingBatch = null;
 
 function fillYears() {
   const sel = $('r-year');
@@ -222,12 +258,19 @@ function fillYears() {
   sel.value = years.includes(keep) ? keep : '';
 }
 
+// marcação em vigor: a do usuário ou, sem ela, a sugestão das regras
+const effective = (r) => r.decision || suggestDecision(r.cat);
+
 function filtered() {
   if (!data) return [];
   const cls = $('r-cls').value;
+  const cat = $('r-cat').value;
+  const dec = $('r-dec').value;
   const year = $('r-year').value;
   const kind = $('r-kind').value;
-  return data.rows.filter((r) => (cls === 'dupGoogle' ? r.dup : r.cls === cls)
+  return data.rows.filter((r) => (cls === '' || (cls === 'dupGoogle' ? r.dup : r.cls === cls))
+    && (!cat || r.cat === cat)
+    && (!dec || (dec === 'sugestao' ? !r.decision : r.decision === dec))
     && (!year || new Date(r.ts).getUTCFullYear() === Number(year))
     && (!kind || (kind === 'video') === Boolean(r.a?.video)))
     .sort((x, y) => y.ts - x.ts);
@@ -235,6 +278,15 @@ function filtered() {
 
 const dims = (o) => (o?.w ? `${o.w}×${o.h}` : '—');
 const mb = (n) => (n ? `${(n / 1048576).toFixed(1)} MB` : '');
+
+function renderReviewSummary() {
+  if (!data) return;
+  const counts = { pessoal: 0, pendente: 0, manter: 0, descartar: 0 };
+  let decided = 0;
+  for (const r of data.rows) { counts[effective(r)]++; if (r.decision) decided++; }
+  $('r-summary').innerHTML = `Marcadas por você: <b>${fmt.format(decided)}</b> de ${fmt.format(data.rows.length)} fotos. `
+    + `Em vigor (sua marcação ou a sugestão): ${Object.entries(DECISIONS).map(([k, l]) => `${l} ${fmt.format(counts[k])}`).join(' · ')}.`;
+}
 
 function renderList() {
   const rows = filtered();
@@ -244,26 +296,78 @@ function renderList() {
   $('r-page').textContent = `página ${page + 1} de ${pages}`;
   $('r-prev').disabled = page === 0;
   $('r-next').disabled = page >= pages - 1;
+  $('r-batch-n').textContent = fmt.format(rows.length);
+  for (const b of document.querySelectorAll('#r-batch button[data-dec]')) b.disabled = !rows.length;
+  cancelBatch();
+  renderReviewSummary();
   const tbody = document.querySelector('#r-table tbody');
   tbody.innerHTML = '';
   for (const r of rows.slice(page * PAGE, (page + 1) * PAGE)) {
     const tr = document.createElement('tr');
-    const note = r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : '';
-    tr.innerHTML = `<td>${when(r.ts)}</td><td><i class="swatch c-${r.cls}"></i> ${CLASSES[r.cls]}${note}</td><td class="name"></td><td>${dims(r.a)} ${mb(r.a?.size)}</td><td>${dims(r.g)}</td>`;
+    const note = r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : r.dup ? ' <span class="tag">cópia repetida</span>' : '';
+    tr.innerHTML = `<td>${when(r.ts)}</td><td><i class="swatch c-${r.cls}"></i> ${CLASSES[r.cls]}${note}</td><td class="cat"></td><td class="dec"></td><td class="name"></td><td>${dims(r.a)} ${mb(r.a?.size)}</td><td>${dims(r.g)}</td>`;
+    const cat = tr.querySelector('.cat');
+    cat.textContent = CATEGORIES[r.cat];
+    if (r.why) cat.title = r.why;
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Marcação');
+    sel.append(new Option(`sugestão: ${DECISIONS[suggestDecision(r.cat)]}`, ''));
+    for (const [k, l] of Object.entries(DECISIONS)) sel.append(new Option(l, k));
+    sel.value = r.decision || '';
+    sel.classList.toggle('suggested', !r.decision);
+    sel.addEventListener('change', async () => {
+      await decide([r], sel.value || null);
+      sel.classList.toggle('suggested', !r.decision);
+      renderReviewSummary();
+    });
+    tr.querySelector('.dec').append(sel);
     tr.querySelector('.name').textContent = r.a?.name || (r.a ? '(sem nome)' : '—');
     tbody.append(tr);
   }
 }
 
+/** Grava a marcação nos itens (os dois lados do par). null volta para a sugestão. */
+async function decide(rows, decision) {
+  const at = Date.now();
+  const patches = [];
+  for (const r of rows) {
+    r.decision = decision;
+    for (const id of r.ids) patches.push({ id, decision, decidedAt: decision ? at : null });
+  }
+  for (let i = 0; i < patches.length; i += 5000) await patchItems(patches.slice(i, i + 5000));
+}
+
+function askBatch(decision) {
+  const rows = filtered();
+  if (!rows.length) return;
+  pendingBatch = { decision, rows };
+  $('r-confirm-text').textContent = `Marcar ${fmt.format(rows.length)} itens como ${DECISIONS[decision]}? Isso só registra a sua decisão aqui; nada muda nos serviços.`;
+  $('r-confirm').hidden = false;
+}
+
+function cancelBatch() { pendingBatch = null; $('r-confirm').hidden = true; }
+
+async function confirmBatch() {
+  if (!pendingBatch) return;
+  const { decision, rows } = pendingBatch;
+  $('r-confirm-text').textContent = 'gravando…';
+  await decide(rows, decision);
+  $('r-msg').textContent = `${fmt.format(rows.length)} itens marcados como ${DECISIONS[decision]}.`;
+  renderList();
+}
+
 function exportCsv() {
   const rows = filtered();
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const lines = [['captura_utc', 'situacao', 'arquivo_icloud', 'icloud_dim', 'icloud_bytes', 'google_dim', 'video'].join(',')];
-  for (const r of rows) lines.push([new Date(r.ts).toISOString(), CLASSES[r.cls], r.a?.name, dims(r.a), r.a?.size, dims(r.g), r.a?.video ? 'sim' : ''].map(esc).join(','));
+  const lines = [['captura_utc', 'situacao', 'categoria', 'motivo', 'marcacao', 'arquivo_icloud', 'icloud_dim', 'icloud_bytes', 'google_dim', 'video'].join(',')];
+  for (const r of rows) {
+    lines.push([new Date(r.ts).toISOString(), CLASSES[r.cls], CATEGORIES[r.cat], r.why, r.decision ? DECISIONS[r.decision] : `sugestão: ${DECISIONS[suggestDecision(r.cat)]}`,
+      r.a?.name, dims(r.a), r.a?.size, dims(r.g), r.a?.video ? 'sim' : ''].map(esc).join(','));
+  }
   const blob = new Blob([`﻿${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `geyma-${$('r-cls').value}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `geyma-revisao-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }

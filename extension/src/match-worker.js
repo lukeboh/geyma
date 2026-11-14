@@ -1,15 +1,23 @@
 // Worker do cruzamento: lê o inventário, cruza as bibliotecas e devolve o resumo
 // e linhas compactas para a revisão, sem travar o painel.
 import { getItemsBySource, getMeta } from './core/db.js';
+import { classifyRow } from './core/classify.js';
 import { matchLibraries, summarizeMatch, googleSameSecondGroups, partialUntil, analyzeGoogleDuplicates } from './core/match.js';
 
-const row = (cls, a, g, extra = {}) => ({
-  cls,
-  ts: (a || g).ts,
-  a: a && { name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video },
-  g: g && { w: g.w, h: g.h },
-  ...extra,
-});
+const row = (cls, a, g, extra = {}) => {
+  const { cat, reasons } = classifyRow(a, g);
+  return {
+    cls,
+    ts: (a || g).ts,
+    ids: [a?.id, g?.id].filter(Boolean),
+    cat,
+    why: reasons.join('; '),
+    decision: a?.decision || g?.decision || null,
+    a: a && { name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video },
+    g: g && { w: g.w, h: g.h },
+    ...extra,
+  };
+};
 
 self.onmessage = async () => {
   try {
@@ -51,7 +59,7 @@ self.onmessage = async () => {
         pendentes: analysis.pendentes,
       },
       phashNeeded: analysis.pendingIds.map((id) => id.slice(2)),
-      phashProgress: phashProgress?.value || null,
+      phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,
     });

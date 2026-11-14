@@ -91,6 +91,12 @@
 
     <section class="classes" id="m-classes"></section>
 
+    <section class="panel" id="m-cat-box" hidden>
+      <h2>Pessoal ou lixo?</h2>
+      <p class="muted">Classificação por regras sobre os metadados, contando cada foto uma vez (o par conta como uma).</p>
+      <div id="m-cats" class="cat-grid"></div>
+    </section>
+
     <section class="panel">
       <div class="panel-head">
         <h2>Proteção por ano de captura</h2>
@@ -117,23 +123,40 @@
 
   <main id="view-rev" role="tabpanel" aria-labelledby="tab-rev" hidden>
     <section class="panel">
+      <p class="muted" id="r-summary"></p>
       <div class="filters">
         <label>Situação <select id="r-cls"></select></label>
+        <label>Categoria <select id="r-cat"><option value="">Todas</option></select></label>
+        <label>Marcação <select id="r-dec"><option value="">Todas</option><option value="sugestao">Sem marcação (sugestão)</option></select></label>
         <label>Ano <select id="r-year"><option value="">Todos</option></select></label>
         <label>Tipo <select id="r-kind"><option value="">Fotos e vídeos</option><option value="foto">Só fotos</option><option value="video">Só vídeos</option></select></label>
         <span class="muted" id="r-count" role="status"></span>
+      </div>
+      <div class="batch" id="r-batch">
+        <span>Marcar os <b id="r-batch-n">0</b> itens filtrados como:</span>
+        <button data-dec="pessoal">Pessoal</button>
+        <button data-dec="manter">Manter</button>
+        <button data-dec="pendente">Pendente</button>
+        <button data-dec="descartar">Descartar</button>
         <button id="r-csv">Exportar lista (CSV)</button>
       </div>
+      <div class="confirm" id="r-confirm" hidden>
+        <span id="r-confirm-text"></span>
+        <button id="r-confirm-yes" class="primary">Confirmar</button>
+        <button id="r-confirm-no">Cancelar</button>
+      </div>
+      <p class="muted" id="r-msg" role="status"></p>
       <div class="table-wrap">
         <table id="r-table">
-          <thead><tr><th>Captura</th><th>Situação</th><th>Arquivo no iCloud</th><th>iCloud</th><th>Google</th></tr></thead>
+          <thead><tr><th>Captura</th><th>Situação</th><th>Categoria</th><th>Marcação</th><th>Arquivo no iCloud</th><th>iCloud</th><th>Google</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
       <div class="pager"><button id="r-prev">Anteriores</button><span class="muted" id="r-page"></span><button id="r-next">Próximos</button></div>
-      <p class="hint">Em breve: miniaturas lado a lado e a marcação de cada item (Pessoal, Pendente, Manter, Descartar). O que for suspeito de lixo fica Pendente até você decidir, e nada é copiado antes disso.</p>
+      <p class="hint">A categoria vem de regras sobre os metadados (passe o mouse sobre ela para ver o motivo). Só o que é claramente pessoal é sugerido como Pessoal; o resto fica Pendente até você decidir, e nada Pendente ou para Descartar é copiado. Marcar não altera nada nos serviços. Em breve: miniaturas lado a lado.</p>
     </section>
   </main>
+
   <script type="module" src="dashboard.js"></script>
 </body>
 </html>

@@ -47,8 +47,8 @@ amostra, com a taxa de falso positivo medida contra um controle.
   candidato no mesmo segundo
 - [x] Aba Proteção e aba Revisão no painel, com cruzamento parcial enquanto o
   iCloud é lido (0.2.6)
-- [ ] Duplicatas dentro do Google (mesmo segundo e dimensões): confirmar por
-  pHash; numa amostra, a maioria era a mesma foto guardada duas vezes
+- [x] Duplicatas dentro do Google (mesmo segundo e dimensões) conferidas por
+  pHash calculado na extensão (0.2.7)
 - Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
   houver, nome como evidência
 - Tratamento de rajadas, Live Photos, HEIC × JPG e fusos horários
@@ -64,6 +64,10 @@ revisada manualmente.
 - Indicador da melhor cópia de cada foto
 
 ### 0.6 — Classificação e painel de proteção
+- [x] Regras baratas sobre metadados, com categoria, motivo e sugestão (0.2.8)
+- [x] Marcação de decisão por item e em lote, na aba Revisão (0.2.8)
+- [ ] Miniaturas lado a lado na revisão
+- [ ] Modelo visual local para o que as regras deixam como indefinido
 - Marcações da Apple, regras baratas e modelo visual local (CLIP)
 - Categorias: pessoal, print, internet, propaganda, documento, indefinido
   (indefinido conta como pessoal)

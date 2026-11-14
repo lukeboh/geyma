@@ -112,7 +112,7 @@
   // inventário), baixa as miniaturas pedidas em 128 px com a sessão da página e
   // envia os bytes para a extensão calcular o hash. Para no primeiro erro.
   // Sem setTimeout: em aba oculta o Chrome atrasa timers encadeados para 1 por
-  // minuto; o ritmo vem de no máximo 4 downloads simultâneos.
+  // minuto; o ritmo vem de no máximo 12 downloads simultâneos (cada um leva ~0,5 s).
   async function googleThumbs(keys) {
     const wanted = new Set(keys);
     const total = wanted.size;
@@ -152,7 +152,7 @@
         } catch { failed++; }
       }
     };
-    const workers = Array.from({ length: 4 }, worker);
+    const workers = Array.from({ length: 12 }, worker);
     while (wanted.size && !stopRequested && !fatal) {
       const { status, text } = await googleList(cursor);
       if (status !== 200) { fatal = status; break; }

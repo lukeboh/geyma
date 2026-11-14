@@ -2,6 +2,33 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.8 — 14/11/2026
+
+- Classificação por regras (`src/core/classify.js`, primeira parte da etapa
+  0.6): categorias Pessoal (câmera), Captura de tela, Recebida de mensageiro ou
+  rede social, Salva da internet ou de apps e Indefinido, com o motivo de cada
+  uma. Sinais do iCloud: tipo da Apple (captura de tela, Live Photo,
+  panorama…), app que importou (câmera, WhatsApp, Mensagens, Instagram,
+  ChatGPT…), padrões de nome (câmeras, data e hora, filme digitalizado, UUID)
+  e tamanho de tela. Do Google só há dimensões: regras conservadoras. Telas de
+  iPad e 1080×1920 ficaram fora da lista de telas (iguais a câmeras antigas e a
+  vídeos).
+- Marcação de decisão (Pessoal, Pendente, Manter, Descartar) gravada nos dois
+  itens do par; sem marcação vale a sugestão (só o claramente pessoal é
+  sugerido como Pessoal; o resto fica Pendente).
+- Revisão: filtros por situação, categoria, marcação, ano e tipo; marcação por
+  linha; marcação em lote dos itens filtrados com confirmação; resumo do que
+  está em vigor; CSV com categoria, motivo e marcação. Abre em "Todas".
+- Proteção: quadro "Pessoal ou lixo?" com a contagem por categoria e atalho
+  para revisar.
+- Conferência pelas miniaturas: 12 downloads simultâneos (cerca de 19 por
+  segundo no uso real, antes 7); estado "lendo" antigo sem atualização é
+  mostrado como interrompido e pode ser retomado.
+
+Verificação: 46 testes passando (8 novos do classificador). No navegador:
+filtros, contagens, gravação de uma marcação e volta à sugestão conferidas no
+inventário; conferência retomada só com os itens ainda sem hash.
+
 ## 0.2.7 — 14/11/2026
 
 - pHash na extensão (`src/core/phash.js`), idêntico ao da biblioteca Python
