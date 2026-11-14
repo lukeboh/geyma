@@ -460,6 +460,11 @@ function fillThumbs(td, r, link = true) {
     return img;
   };
   if (r.a?.thumb) add('Miniatura no iCloud', 'icloud').src = r.a.thumb.replace('${f}', 'thumb.jpg');
+  // cópia repetida: mostra a original ao lado, para conferir antes de decidir
+  if (r.dupOf?.thumb) {
+    const img = add('Original no Google (esta linha é uma cópia dela)', 'original');
+    googleThumb(r.dupOf.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
+  }
   if (r.g?.thumb) {
     const img = add(link ? 'Miniatura no Google (clique para abrir no Google Fotos)' : 'Miniatura no Google', 'google');
     googleThumb(r.g.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
@@ -505,7 +510,7 @@ function renderGrid() {
     const cap = document.createElement('span');
     cap.className = 'cap';
     const dec = r.decision ? DECISIONS[r.decision] : `sugestão: ${DECISIONS[suggestDecision(r.cat)]}`;
-    cap.textContent = `${day(r.ts)} · ${dec}`;
+    cap.textContent = `${r.dup ? 'cópia · ' : ''}${day(r.ts)} · ${dec}`;
     tile.title = `${CATEGORIES[r.cat]}${r.why ? ` (${r.why})` : ''}${r.a?.name ? ` · ${r.a.name}` : ''}`;
     tile.append(box, pic, cap);
     grid.append(tile);

@@ -177,3 +177,4 @@ select { font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid 
 .tile .pic { display: flex; gap: 4px; }
 .tile .pic .thumb { width: 100%; height: auto; aspect-ratio: 1; margin: 0; flex: 1; }
 .tile .cap { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thumb.original { border: 2px dashed var(--series-google); opacity: 0.85; }

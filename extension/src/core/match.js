@@ -140,10 +140,11 @@ export function samePicture(x, y) {
  * Classifica os grupos de mesmo segundo do Google pelo pHash.
  * Cada grupo vira agrupamentos de imagens iguais; o que passa do primeiro de
  * cada agrupamento é duplicata confirmada.
- * @returns {{confirmados, extrasConfirmados, diferentes, incertos, pendentes, pendingIds, extraIds}}
+ * @returns {{confirmados, extrasConfirmados, diferentes, incertos, pendentes, pendingIds, extraIds, extraOf}}
+ *   extraOf: id da cópia -> id do primeiro item do agrupamento (a "original")
  */
 export function analyzeGoogleDuplicates(groups) {
-  const out = { confirmados: 0, extrasConfirmados: 0, diferentes: 0, incertos: 0, pendentes: 0, pendingIds: [], extraIds: [] };
+  const out = { confirmados: 0, extrasConfirmados: 0, diferentes: 0, incertos: 0, pendentes: 0, pendingIds: [], extraIds: [], extraOf: {} };
   for (const l of groups) {
     const missing = l.filter((g) => !g.phash);
     if (missing.length) {
@@ -160,7 +161,7 @@ export function analyzeGoogleDuplicates(groups) {
       clusters.push([g]);
     }
     const extras = clusters.reduce((n, cl) => n + cl.length - 1, 0);
-    for (const cl of clusters) for (const g of cl.slice(1)) out.extraIds.push(g.id);
+    for (const cl of clusters) for (const g of cl.slice(1)) { out.extraIds.push(g.id); out.extraOf[g.id] = cl[0].id; }
     if (extras) { out.confirmados++; out.extrasConfirmados += extras; }
     else if (uncertain) out.incertos++;
     else out.diferentes++;

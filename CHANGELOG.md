@@ -2,6 +2,15 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.11 — 14/11/2026
+
+- Revisão das cópias repetidas do Google: cada cópia aparece ao lado da
+  original (borda tracejada), na lista e na grade, e a legenda da grade indica
+  "cópia". O motor informa de qual item cada cópia é repetição (`extraOf`).
+
+Verificação: 56 testes passando. No navegador: filtro "Cópias repetidas no
+Google" em grade, com original e cópia lado a lado.
+
 ## 0.2.10 — 14/11/2026
 
 - Motor: com o pHash do iCloud, a imagem decide o par. Candidatos claramente

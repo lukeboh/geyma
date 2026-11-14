@@ -54,9 +54,14 @@ self.onmessage = async () => {
     const dupGroups = googleSameSecondGroups(scope);
     const analysis = analyzeGoogleDuplicates(dupGroups);
     const extra = new Set(analysis.extraIds);
+    const googleById = new Map(google.map((g) => [g.id, g]));
     const rows = [
       ...result.pairs.map((p) => row(p.cls, p.a, p.g, p.menor ? { menor: p.menor } : {})),
-      ...result.soGoogle.map((g) => row('soGoogle', null, g, extra.has(g.id) ? { dup: true } : {})),
+      ...result.soGoogle.map((g) => {
+        if (!extra.has(g.id)) return row('soGoogle', null, g);
+        const orig = googleById.get(analysis.extraOf[g.id]);
+        return row('soGoogle', null, g, { dup: true, dupOf: orig ? { thumb: orig.thumb || null, key: orig.id.slice(2), w: orig.w, h: orig.h } : null });
+      }),
       ...result.soIcloud.map((a) => row('soIcloud', a, null)),
     ];
     self.postMessage({

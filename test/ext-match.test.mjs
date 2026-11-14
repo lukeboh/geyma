@@ -112,6 +112,7 @@ test('duplicatas do Google classificadas pelo pHash', async () => {
   assert.equal(r.diferentes, 1);
   assert.equal(r.pendentes, 1);
   assert.deepEqual(r.pendingIds, ['g:7']);
+  assert.deepEqual(r.extraOf, { 'g:2': 'g:1', 'g:3': 'g:1' });
   assert.equal(r.incertos, 1);
 });
 
