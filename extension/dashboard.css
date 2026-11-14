@@ -562,3 +562,63 @@ a.thumb:hover { transform: scale(1.06); }
 }
 
 .dup-grid article .n { color: var(--texto); }
+
+/* ---------- guia passo a passo ---------- */
+.top-btns { display: flex; gap: 8px; }
+.tour { position: fixed; inset: 0; z-index: 100; }
+.tour-spot {
+  position: fixed;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(4, 8, 30, 0.62), 0 0 0 2px var(--acento-2), 0 0 28px color-mix(in srgb, var(--acento-2) 55%, transparent);
+  transition: left 0.35s var(--mola), top 0.35s var(--mola), width 0.35s var(--mola), height 0.35s var(--mola), opacity 0.2s;
+  pointer-events: none;
+}
+.tour.center::before { content: ""; position: fixed; inset: 0; background: rgba(4, 8, 30, 0.62); }
+.tour-card {
+  position: fixed;
+  padding: 16px 18px 14px;
+  border-radius: var(--raio-g);
+  border: 1px solid var(--borda);
+  background: color-mix(in srgb, var(--fundo-2) 72%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: var(--sombra), inset 0 1px 0 var(--borda-luz);
+  color: var(--texto);
+  transition: left 0.35s var(--mola), top 0.35s var(--mola);
+}
+.tour-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: var(--raio-g) var(--raio-g) 0 0;
+  background: linear-gradient(90deg, var(--acento), var(--acento-2));
+}
+.tour-top { display: flex; justify-content: space-between; align-items: center; }
+.tour-count { font-size: 12px; color: var(--texto-3); letter-spacing: 0.04em; }
+.tour-close { border: 0; background: transparent; box-shadow: none; font-size: 20px; line-height: 1; padding: 2px 8px; color: var(--texto-2); }
+.tour-card h3 { margin: 6px 0 6px; font-size: 18px; font-weight: 700; font-stretch: 108%; }
+.tour-card p { margin: 0; color: var(--texto-2); font-size: 14.5px; line-height: 1.55; }
+.tour-card p b { color: var(--texto); }
+.tour-dots { display: flex; gap: 6px; margin: 14px 0 10px; }
+.tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--borda); transition: width 0.3s var(--mola), background 0.3s; }
+.tour-dots i.on { width: 20px; border-radius: 4px; background: linear-gradient(90deg, var(--acento), var(--acento-2)); }
+.tour-actions { display: flex; align-items: center; gap: 8px; }
+.tour-gap { flex: 1; }
+.tour-skip { border: 0; background: transparent; box-shadow: none; color: var(--texto-3); padding: 8px 6px; }
+.tour-skip:hover { color: var(--texto); background: transparent; }
+.nothumb {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px dashed var(--borda);
+  background: var(--vidro);
+  color: var(--texto-3);
+  font-size: 10.5px;
+  line-height: 1.2;
+  text-align: center;
+  padding: 4px;
+}
+.tile .pic .nothumb { width: 100%; height: auto; aspect-ratio: 1; font-size: 12px; }

@@ -20,7 +20,8 @@ sessão da Apple).
 
 ## Usar
 
-O painel tem três etapas.
+O painel tem três etapas. Na primeira visita a cada uma, um **guia passo a
+passo** explica a tela; o botão **?** do topo repete o guia.
 
 1. **Inventário**
    - Entre no [Google Fotos](https://photos.google.com/) e no

@@ -72,11 +72,20 @@ produto (ver [ESTRATEGIA.md](ESTRATEGIA.md)).
 - **A categoria precisa mostrar o motivo** (passar o mouse): sem isso, a
   sugestão "Pendente" parece arbitrária.
 
+## Guia passo a passo
+
+Na primeira visita a cada etapa, um guia destaca uma parte da tela por vez e
+explica o que fazer (o resto da tela escurece). Voltar, Próximo, Pular guia e
+Esc; setas do teclado também funcionam. O botão **?** do topo repete o guia da
+etapa aberta. Passos cujo quadro ainda não existe (por exemplo, sem dados) são
+pulados; o guia da Revisão troca para a grade quando explica a seleção.
+Pedido do usuário: o painel não era fácil de entender sozinho.
+
 ## Próximos passos de interface
 
 - Grade de miniaturas grandes para revisar um filtro inteiro de uma vez
   (selecionar as exceções e marcar o resto em lote), com atalhos de teclado.
 - Comparação lado a lado para os pares "a confirmar" e para as duplicatas.
 - Espaço que cada decisão libera ou ocupa, ao lado do botão de lote.
-- Assistente de início: extensão instalada, sessões abertas, janela do
-  iCloud, tamanho das miniaturas.
+- Assistente de início que verifica de verdade: extensão instalada, sessões
+  abertas, janela do iCloud, tamanho das miniaturas.

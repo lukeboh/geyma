@@ -1,6 +1,7 @@
 import { getItemsBySource, getMeta } from './src/core/db.js';
 import { summarize } from './src/core/normalize.js';
 import { initProtection, ensureComputed, compute, hasData, showPhashProgress } from './protection.js';
+import { startTour, maybeTour } from './tour.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -14,17 +15,28 @@ const STATE_LABEL = {
   ocupado: 'já em execução',
 };
 
-function describe(progress) {
-  if (!progress) return { text: 'não iniciado', error: false };
+const quando = (ts) => new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+/** Texto da situação de uma leitura. meta = {value, at} gravado pela extensão. */
+function describe(meta, completed) {
+  const progress = meta?.value;
+  const doneNote = completed?.at && progress?.state !== 'concluido' ? ` · último percurso completo em ${quando(completed.at)}` : '';
+  if (!progress) return { text: completed?.at ? `concluído em ${quando(completed.at)}` : 'não iniciado', error: false };
+  // "lendo"/"aguardando" sem notícia há mais de 10 min: a leitura não está mais rodando
+  // (extensão recarregada, aba fechada) ou espera a aba ficar visível há muito tempo
+  if (['lendo', 'aguardando'].includes(progress.state) && meta.at && Date.now() - meta.at > 600000) {
+    const pct = typeof progress.frac === 'number' ? ` em ${Math.round(progress.frac * 100)}% da grade` : '';
+    return { text: `sem notícias desde ${quando(meta.at)}${pct}; use Continuar de onde parou${doneNote}`, error: false };
+  }
   const base = STATE_LABEL[progress.state] || progress.state;
   const extra = progress.reason || (progress.status ? `servidor respondeu ${progress.status}` : '');
   const pct = typeof progress.frac === 'number' && progress.state !== 'concluido' ? ` (${Math.round(progress.frac * 100)}% da grade)` : '';
   const pages = progress.pages ? ` — ${progress.pages} páginas` : '';
-  return { text: `${base}${pct}${pages}${extra ? ` — ${extra}` : ''}`, error: progress.state === 'erro' };
+  return { text: `${base}${pct}${pages}${extra ? ` — ${extra}` : ''}${doneNote}`, error: progress.state === 'erro' };
 }
 
-function setState(el, progress) {
-  const d = describe(progress);
+function setState(el, meta, completed) {
+  const d = describe(meta, completed);
   el.textContent = d.text;
   el.classList.toggle('state-erro', d.error);
 }
@@ -35,22 +47,23 @@ async function render() {
   if (rendering) { pending = true; return; }
   rendering = true;
   try {
-    const [g, a, gp, ap, counts] = await Promise.all([
+    const [g, a, gp, ap, counts, done] = await Promise.all([
       getItemsBySource('google'),
       getItemsBySource('icloud'),
       getMeta('googleProgress'),
       getMeta('icloudProgress'),
       getMeta('icloudCounts'),
+      getMeta('icloudCompleted'),
     ]);
     const gs = summarize(g);
     const as = summarize(a);
     $('g-total').textContent = fmt.format(gs.total);
     $('g-range').textContent = gs.total ? `${day(gs.from)} a ${day(gs.to)}` : '—';
-    setState($('g-state'), gp?.value);
+    setState($('g-state'), gp);
     $('a-total').textContent = fmt.format(as.total);
     $('a-range').textContent = as.total ? `${day(as.from)} a ${day(as.to)}` : '—';
     $('a-videos').textContent = as.total ? fmt.format(as.videos) : '—';
-    setState($('a-state'), ap?.value);
+    setState($('a-state'), ap, done);
 
     const c = counts?.value || {};
     const appleTotal = c.CPLAssetByAssetDateWithoutHiddenOrDeleted;
@@ -191,9 +204,12 @@ function showTab(name) {
     $(`tab-${k}`).setAttribute('aria-selected', String(k === name));
   }
   try { history.replaceState(null, '', `#${name}`); } catch {}
-  if (name === 'inv') render();
-  else ensureComputed();
+  if (name === 'inv') { render(); maybeTour('inv'); }
+  else { ensureComputed(); if (hasData()) maybeTour(name); }
 }
+// Proteção e Revisão: o guia espera os dados do cruzamento (os quadros só aparecem com eles)
+document.addEventListener('geyma-ready', () => { if (current !== 'inv') maybeTour(current, 300); });
+$('ajuda').addEventListener('click', () => startTour(current));
 for (const k of Object.keys(TABS)) $(`tab-${k}`).addEventListener('click', () => showTab(k));
 document.addEventListener('geyma-tab', (e) => showTab(e.detail));
 initProtection();

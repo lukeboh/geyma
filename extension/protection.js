@@ -78,6 +78,7 @@ export function compute() {
     renderProtection();
     fillYears();
     renderList();
+    document.dispatchEvent(new CustomEvent('geyma-ready'));
   };
   worker.postMessage('run');
 }
@@ -484,7 +485,14 @@ function fillThumbs(td, r, link = true) {
     const img = add(link ? 'Miniatura no Google (clique para abrir no Google Fotos)' : 'Miniatura no Google', 'google');
     googleThumb(r.g.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
   }
-  if (!td.children.length) td.innerHTML = '<span class="hint">sem miniatura</span>';
+  if (!td.children.length) {
+    const none = document.createElement('span');
+    none.className = 'nothumb';
+    none.textContent = 'sem miniatura';
+    // itens do iCloud ganham miniatura no próximo percurso da biblioteca
+    none.title = r.a ? 'A miniatura do iCloud chega no próximo percurso da biblioteca (aba Inventário).' : 'Miniatura indisponível.';
+    td.append(none);
+  }
 }
 
 /** Grava a marcação nos itens (os dois lados do par). null volta para a sugestão. */

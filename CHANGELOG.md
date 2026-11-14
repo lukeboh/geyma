@@ -2,6 +2,24 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.17 — 14/11/2026
+
+- Guia passo a passo (`extension/tour.js`), pedido pelo usuário: na primeira
+  visita a cada etapa (Inventário, Proteção, Revisão), destaca uma parte da
+  tela por vez e explica o que fazer; Voltar, Próximo, Pular guia, Esc e setas;
+  botão "?" no topo repete o guia. O cartão do guia se posiciona abaixo, acima
+  ou ao lado do trecho destacado sem cobri-lo; passos sem quadro na tela são
+  pulados; na Revisão, o guia troca para a grade ao explicar a seleção.
+- Situação da leitura sem notícias há mais de 10 min aparece como "sem
+  notícias desde…" (antes ficava "aguardando" para sempre), com a data do
+  último percurso completo do iCloud; registro retroativo da conclusão do
+  primeiro percurso.
+- Itens sem miniatura (iCloud, até o próximo percurso) ganham um marcador de
+  lugar com explicação, em vez de texto sobre a caixa de seleção.
+
+Verificação: 65 testes passando; guias das três etapas percorridos no
+navegador, com capturas de tela dos passos.
+
 ## 0.2.16 — 14/11/2026
 
 - Revisão: miniaturas do Google em PNG (como capturas de tela) eram
