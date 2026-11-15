@@ -1,7 +1,7 @@
 // Service worker: recebe os dados das páginas, normaliza, grava no inventário
 // e encaminha os comandos do painel para as abas dos serviços.
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
-import { putItems, patchItems, setMeta, getMeta } from './core/db.js';
+import { putItems, patchItems, setMeta, getMeta, putThumbs, thumbIds } from './core/db.js';
 import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
 import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
@@ -47,17 +47,26 @@ async function releaseFocus() {
 }
 chrome.debugger.onDetach.addListener((src) => { if (src.tabId === focusTab) focusTab = null; });
 
-// Desempate durante o percurso: baixa a miniatura dos itens do iCloud que a
-// imagem decidiria assim que o percurso os vê (as URLs expiram em horas).
+// Miniaturas do iCloud durante o percurso (as URLs expiram em horas): baixa
+// assim que o percurso as vê, calcula a impressão digital dos itens que a
+// imagem decidiria e guarda a miniatura dos que só estão no iCloud ou são
+// cópias repetidas nele.
 const thumbQueue = new ThumbQueue({
   concurrency: 8,
-  hash: async (url) => {
+  work: async (url, need) => {
     const res = await fetch(url, { credentials: 'omit' });
     if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
-    return phashFromBlob(await res.blob());
+    const blob = await res.blob();
+    const got = {};
+    if (need.phash) got.phash = await phashFromBlob(blob);
+    if (need.keep) got.blob = blob;
+    return got;
   },
-  save: async (patches) => {
-    await patchItems(patches);
+  save: async (results) => {
+    const hashes = results.filter((r) => r.phash).map((r) => ({ id: r.id, phash: r.phash }));
+    const blobs = results.filter((r) => r.blob).map((r) => ({ id: r.id, blob: r.blob }));
+    if (hashes.length) await patchItems(hashes);
+    if (blobs.length) await putThumbs(blobs);
     const st = thumbQueue.stats();
     await setMeta('icloudPhashLive', st);
     broadcast({ site: 'icloud', event: 'phash-icloud', ...st });
@@ -65,7 +74,12 @@ const thumbQueue = new ThumbQueue({
 });
 let wantedLoaded = false;
 async function offerIcloudThumbs(items) {
-  if (!wantedLoaded) { thumbQueue.setWanted((await getMeta('icloudPhashWanted'))?.value || []); wantedLoaded = true; }
+  if (!wantedLoaded) {
+    const [phash, keep, have] = await Promise.all([getMeta('icloudPhashWanted'), getMeta('icloudThumbKeep'), thumbIds()]);
+    const saved = new Set(have);
+    thumbQueue.setWanted(phash?.value || [], (keep?.value || []).filter((id) => !saved.has(id)));
+    wantedLoaded = true;
+  }
   thumbQueue.offer(items);
 }
 

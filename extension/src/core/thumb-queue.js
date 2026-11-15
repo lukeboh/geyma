@@ -1,39 +1,53 @@
-// Desempate durante o percurso do iCloud: as URLs das miniaturas do iCloud
-// expiram em poucas horas, então cada miniatura que interessa é baixada e
-// resumida (pHash) assim que o percurso a vê, e não depois.
+// Miniaturas do iCloud durante o percurso: as URLs expiram em poucas horas,
+// então cada miniatura que interessa é baixada assim que o percurso a vê, e
+// não depois. Uma única descarga serve aos dois usos:
 //
-// `wanted` são os itens do iCloud que a imagem decidiria (pares a confirmar ou
-// reduzidos, candidatas a duplicata), calculados no último cruzamento.
+// - `phash`: itens que a imagem decidiria (pares a confirmar ou reduzidos,
+//   candidatas a duplicata); guarda só a impressão digital.
+// - `keep`: itens que só existem no iCloud ou são cópias repetidas nele; guarda
+//   a própria miniatura no notebook, para a revisão funcionar depois que a
+//   URL expirar.
 
 export const thumbUrl = (u) => u.replace('${f}', 'thumb.jpg');
 
 export class ThumbQueue {
   /**
-   * @param {{ concurrency?: number, hash: (url: string) => Promise<string>, save: (patches: {id: string, phash: string}[]) => Promise<void>, batch?: number }} o
+   * @param {{ concurrency?: number, batch?: number,
+   *   work: (url: string, need: {phash: boolean, keep: boolean}) => Promise<object>,
+   *   save: (results: object[]) => Promise<void> }} o
+   *   `work` devolve os campos obtidos ({phash}, {blob} ou ambos); `save` grava um lote de {id, ...campos}.
    */
-  constructor({ concurrency = 8, hash, save, batch = 50 }) {
-    Object.assign(this, { concurrency, hash, save, batchSize: batch });
-    this.wanted = new Set();
+  constructor({ concurrency = 8, work, save, batch = 50 }) {
+    Object.assign(this, { concurrency, work, save, batchSize: batch });
+    this.phashIds = new Set();
+    this.keepIds = new Set();
     this.queue = [];
     this.seen = new Set();
     this.pending = [];
     this.active = 0;
     this.done = 0;
+    this.kept = 0;
     this.failed = 0;
     this.expired = 0;
     this.idle = Promise.resolve();
     this._resolveIdle = null;
   }
 
-  setWanted(ids) { this.wanted = new Set(ids); }
+  /** Quais itens precisam da impressão digital e quais devem ter a miniatura guardada. */
+  setWanted(phashIds = [], keepIds = []) {
+    this.phashIds = new Set(phashIds);
+    this.keepIds = new Set(keepIds);
+  }
 
-  /** Recebe itens recém-lidos; entram na fila os desejados, com miniatura e ainda sem pHash. */
+  /** Recebe itens recém-lidos; entram na fila os que têm miniatura e ainda precisam de algo. */
   offer(items) {
     let n = 0;
     for (const it of items) {
-      if (!it.thumb || it.phash || !this.wanted.has(it.id) || this.seen.has(it.id)) continue;
+      if (!it.thumb || this.seen.has(it.id)) continue;
+      const need = { phash: this.phashIds.has(it.id) && !it.phash, keep: this.keepIds.has(it.id) };
+      if (!need.phash && !need.keep) continue;
       this.seen.add(it.id);
-      this.queue.push({ id: it.id, url: thumbUrl(it.thumb) });
+      this.queue.push({ id: it.id, url: thumbUrl(it.thumb), need });
       n++;
     }
     if (n) this._pump();
@@ -45,8 +59,12 @@ export class ThumbQueue {
     while (this.active < this.concurrency && this.queue.length) {
       const it = this.queue.shift();
       this.active++;
-      this.hash(it.url)
-        .then((phash) => { this.pending.push({ id: it.id, phash }); this.done++; })
+      this.work(it.url, it.need)
+        .then((got) => {
+          this.pending.push({ id: it.id, ...got });
+          if (got.phash) this.done++;
+          if (got.blob) this.kept++;
+        })
         .catch((err) => { this.failed++; if ([401, 403, 404, 410].includes(err?.status)) this.expired++; })
         .finally(async () => {
           this.active--;
@@ -64,5 +82,5 @@ export class ThumbQueue {
     await this.save(b);
   }
 
-  stats() { return { done: this.done, failed: this.failed, expired: this.expired, queued: this.queue.length + this.active }; }
+  stats() { return { done: this.done, kept: this.kept, failed: this.failed, expired: this.expired, queued: this.queue.length + this.active }; }
 }

@@ -111,12 +111,13 @@ async function api(fn, ...callArgs) {
 const THUMB_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(usercontent\.google\.com|googleusercontent\.com|icloud-content\.com)\//;
 const cache = new Map();
 const CACHE_MAX = 2500;
-async function thumb(url) {
-  if (cache.has(url)) { const v = cache.get(url); cache.delete(url); cache.set(url, v); return v; }
-  const r = await api('thumb', url);
+async function thumb(url, id) {
+  const key = id || url;
+  if (cache.has(key)) { const v = cache.get(key); cache.delete(key); cache.set(key, v); return v; }
+  const r = await api('thumb', url, id || null);
   if (!r?.ok) return null;
   const v = { type: r.type, body: Buffer.from(r.b64, 'base64') };
-  cache.set(url, v);
+  cache.set(key, v);
   if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
   return v;
 }
@@ -191,7 +192,9 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/thumb') {
       const u = url.searchParams.get('u') || '';
       if (!THUMB_HOSTS.test(u)) return send(res, 400, 'endereço não permitido');
-      const t = await thumb(u);
+      const id = url.searchParams.get('id') || '';
+      if (id && !/^a:[A-Za-z0-9-]{1,80}$/.test(id)) return send(res, 400, 'item inválido');
+      const t = await thumb(u, id);
       if (!t) return send(res, 404, 'miniatura indisponível');
       return send(res, 200, t.body, { 'content-type': t.type, 'cache-control': 'private, max-age=86400' });
     }

@@ -43,7 +43,7 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
 }
-const thumbUrl = (u) => `/api/thumb?u=${encodeURIComponent(u)}`;
+const thumbUrl = (th) => `/api/thumb?u=${encodeURIComponent(th.url)}${th.id ? `&id=${encodeURIComponent(th.id)}` : ''}`;
 
 // ---------- navegação ----------
 function mostrar(nome) {
@@ -160,7 +160,7 @@ async function carregarLinhas() {
       img.loading = 'lazy';
       img.alt = '';
       img.className = `${th.side.startsWith('google') ? 'google' : 'icloud'}${th.side.endsWith('fica') ? ' fica' : ''}`;
-      img.src = thumbUrl(th.url);
+      img.src = thumbUrl(th);
       img.onerror = () => img.remove();
       imgs.append(img);
     }
@@ -231,7 +231,7 @@ function abrirDetalhe(i) {
   const nomes = { icloud: 'iCloud', google: 'Google', 'google-fica': 'Google (fica)', 'icloud-fica': 'iCloud (fica)' };
   $('det-fotos').replaceChildren(...l.thumbs.map((t) => {
     const f = document.createElement('figure');
-    f.innerHTML = `<img alt="" src="${esc(thumbUrl(t.url))}"><figcaption>${esc(nomes[t.side] || t.side)}</figcaption>`;
+    f.innerHTML = `<img alt="" src="${esc(thumbUrl(t))}"><figcaption>${esc(nomes[t.side] || t.side)}</figcaption>`;
     return f;
   }));
   $('det-titulo').textContent = `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`;

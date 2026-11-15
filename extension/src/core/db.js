@@ -1,6 +1,6 @@
 // Inventário local da extensão (IndexedDB na origem da extensão).
 const DB_NAME = 'geyma';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise = null;
 
@@ -10,10 +10,14 @@ export function openDb() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      const items = db.createObjectStore('items', { keyPath: 'id' });
-      items.createIndex('source', 'source');
-      items.createIndex('ts', 'ts');
-      db.createObjectStore('meta', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('items')) {
+        const items = db.createObjectStore('items', { keyPath: 'id' });
+        items.createIndex('source', 'source');
+        items.createIndex('ts', 'ts');
+      }
+      if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
+      // miniaturas do iCloud guardadas no notebook (as URLs da Apple expiram)
+      if (!db.objectStoreNames.contains('thumbs')) db.createObjectStore('thumbs', { keyPath: 'id' });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -59,6 +63,24 @@ export function patchItems(patches) {
     }
     return patches.length;
   });
+}
+
+/** Guarda miniaturas ([{id, blob}]). */
+export function putThumbs(list) {
+  return tx('thumbs', 'readwrite', (store) => {
+    for (const t of list) store.put({ id: t.id, blob: t.blob, at: Date.now() });
+    return list.length;
+  });
+}
+
+/** Miniatura guardada de um item (Blob) ou null. */
+export function getThumb(id) {
+  return tx('thumbs', 'readonly', (store) => store.get(id)).then((r) => r?.blob || null);
+}
+
+/** Ids com miniatura guardada. */
+export function thumbIds() {
+  return tx('thumbs', 'readonly', (store) => store.getAllKeys());
 }
 
 export function countBySource(source) {

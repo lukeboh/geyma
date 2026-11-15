@@ -2,7 +2,7 @@
 // visão por ano e lista filtrável para revisar item a item.
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
-import { patchItems } from './src/core/db.js';
+import { patchItems, getThumb } from './src/core/db.js';
 import { sendPlan, effectiveDecision } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
@@ -140,7 +140,7 @@ function renderIcloudCheck() {
   $('m-ic').innerHTML = need.length
     ? `<b>${fmt.format(need.length)}</b> itens do iCloud têm miniatura guardada e podem desempatar pares.`
     : data.icloudPhashWanted
-      ? `<b>${fmt.format(data.icloudPhashWanted)}</b> itens do iCloud precisam da imagem para desempatar. O próximo percurso da biblioteca do iCloud (aba Inventário) confere cada um assim que o vê, sem outro passo.`
+      ? `<b>${fmt.format(data.icloudPhashWanted)}</b> itens do iCloud precisam da imagem para desempatar. O próximo percurso da biblioteca do iCloud (aba Inventário) confere cada um assim que o vê, sem outro passo, e guarda no notebook a miniatura das fotos que só estão no iCloud ou têm cópias repetidas nele (${fmt.format(data.icloudThumbKeep || 0)} itens), para a revisão funcionar depois que os links da Apple expirarem.`
       : `Nenhum item do iCloud precisa da imagem para desempatar.`;
   $('m-ic-run').hidden = !need.length || Boolean(icJob);
 }
@@ -451,6 +451,15 @@ function pumpThumbs() {
   }
 }
 
+// iCloud: a miniatura guardada no notebook, se houver; senão a URL (temporária)
+const icloudCache = new Map();
+function icloudThumb(img, it) {
+  const url = it.thumb.replace('${f}', 'thumb.jpg');
+  if (!it.id) { img.src = url; return; }
+  if (!icloudCache.has(it.id)) icloudCache.set(it.id, getThumb(it.id).then((b) => (b ? URL.createObjectURL(b) : null)).catch(() => null));
+  icloudCache.get(it.id).then((src) => { img.src = src || url; });
+}
+
 function fillThumbs(td, r, link = true) {
   const add = (label, side) => {
     const fig = document.createElement('a');
@@ -465,9 +474,9 @@ function fillThumbs(td, r, link = true) {
     td.append(fig);
     return img;
   };
-  if (r.a?.thumb) add('Miniatura no iCloud', 'icloud').src = r.a.thumb.replace('${f}', 'thumb.jpg');
+  if (r.a?.thumb) icloudThumb(add('Miniatura no iCloud', 'icloud'), r.a);
   // cópia repetida: mostra a cópia que fica ao lado, para conferir antes de decidir
-  if (r.dupOfIcloud?.thumb) add('Cópia que fica no iCloud (esta linha é uma repetição dela)', 'original icloud-orig').src = r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg');
+  if (r.dupOfIcloud?.thumb) icloudThumb(add('Cópia que fica no iCloud (esta linha é uma repetição dela)', 'original icloud-orig'), r.dupOfIcloud);
   if (r.dupOf?.thumb) {
     const img = add('Cópia que fica no Google (esta linha é uma repetição dela)', 'original');
     googleThumb(r.dupOf.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });

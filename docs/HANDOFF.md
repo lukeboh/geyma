@@ -178,7 +178,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
    a lista dos itens que a imagem decidiria (`icloudPhashWanted`) e o service
    worker baixa a miniatura de cada um quando o percurso o vê. As URLs das
    miniaturas do iCloud expiram em horas (410 depois de ~6 h); o botão
-   "Conferir pelas miniaturas do iCloud" só serve logo após um percurso.
+   "Conferir pelas miniaturas do iCloud" só serve logo após um percurso. O
+   mesmo percurso guarda no notebook (depósito `thumbs`) a miniatura dos itens
+   que só estão no iCloud ou têm cópias nele (0.2.25), para a revisão.
 4. Qualidade (0.5): indicar a melhor cópia; cópias reduzidas do Google.
 5. Envio curado (0.7): decidir o caminho (ver pendências), começando pelas
    fotos (pouco volume) e tratando os vídeos à parte.

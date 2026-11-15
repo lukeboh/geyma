@@ -14,7 +14,7 @@ const row = (cls, a, g, extra = {}) => {
     cat,
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
-    a: a && { name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, thumb: a.thumb || null, thumbAt: a.thumbAt || null },
+    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, thumb: a.thumb || null, thumbAt: a.thumbAt || null },
     g: g && { w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2) },
     ...extra,
   };
@@ -46,6 +46,15 @@ function icloudPhashWanted(pairs, dupPending, icloudById) {
   return [...ids];
 }
 
+/** Itens do iCloud cuja miniatura fica guardada no notebook: os que só estão no iCloud e as cópias repetidas nele (com a que fica). */
+function icloudThumbKeep(soIcloud, dupA) { // (+ candidatas a duplicata)
+  const ids = new Set(soIcloud.map((x) => x.id));
+  for (const [id, c] of dupA.copies) { ids.add(id); if (c.keeper) ids.add(c.keeper); }
+  // candidatas ainda sem desempate podem virar cópias neste mesmo percurso
+  for (const id of dupA.pendingIds) ids.add(id);
+  return [...ids];
+}
+
 /** Resumo de duplicatas de um serviço para o painel. */
 const dupSummary = (items, d) => ({
   candidatos: candidateGroups(items).length,
@@ -59,7 +68,7 @@ const dupSummary = (items, d) => ({
 });
 
 /** Miniatura da cópia a manter, para mostrar ao lado da cópia na revisão. */
-const keeperInfo = (it, side) => it && { thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
+const keeperInfo = (it, side) => it && { id: it.id, thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
 
 self.onmessage = async () => {
   try {
@@ -99,6 +108,8 @@ self.onmessage = async () => {
     ];
     const wanted = icloudPhashWanted(result.pairs, dupA.pendingIds, icloudById);
     await setMeta('icloudPhashWanted', wanted);
+    const keep = icloudThumbKeep(result.soIcloud, dupA);
+    await setMeta('icloudThumbKeep', keep);
     self.postMessage({
       ok: true,
       complete,
@@ -108,6 +119,7 @@ self.onmessage = async () => {
       phashNeeded: phashNeeded(dupG.pendingIds, result.pairs, google),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       icloudPhashWanted: wanted.length,
+      icloudThumbKeep: keep.length,
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,

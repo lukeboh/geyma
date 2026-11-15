@@ -7,7 +7,7 @@ import { filterRows, decisionCounts } from './src/core/review.js';
 import { sendPlan } from './src/core/plan.js';
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
-import { getMeta } from './src/core/db.js';
+import { getMeta, getThumb } from './src/core/db.js';
 
 const THUMB_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(usercontent\.google\.com|googleusercontent\.com|icloud-content\.com)\//;
 
@@ -24,8 +24,8 @@ function rowIndex(data) {
 
 const thumbsOf = (r) => {
   const t = [];
-  if (r.a?.thumb) t.push({ side: 'icloud', url: r.a.thumb.replace('${f}', 'thumb.jpg') });
-  if (r.dupOfIcloud?.thumb) t.push({ side: 'icloud-fica', url: r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg') });
+  if (r.a?.thumb) t.push({ side: 'icloud', url: r.a.thumb.replace('${f}', 'thumb.jpg'), id: r.a.id });
+  if (r.dupOfIcloud?.thumb) t.push({ side: 'icloud-fica', url: r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg'), id: r.dupOfIcloud.id });
   if (r.dupOf?.thumb) t.push({ side: 'google-fica', url: `${r.dupOf.thumb}=w320-h320-c` });
   if (r.g?.thumb) t.push({ side: 'google', url: `${r.g.thumb}=w320-h320-c` });
   return t;
@@ -106,12 +106,20 @@ window.geymaApi = {
   },
 
   /** Miniatura pelo navegador (com a sessão do Google, quando precisa). Só domínios de imagem dos serviços. */
-  async thumb(url) {
+  async thumb(url, id) {
     if (!THUMB_HOSTS.test(url)) throw new Error('endereço não permitido');
-    const res = await fetch(url, { credentials: url.includes('icloud-content.com') ? 'omit' : 'include' });
-    const type = res.headers.get('content-type') || '';
-    if (!res.ok || !type.startsWith('image/')) return { ok: false, status: res.status };
-    const b = new Uint8Array(await res.arrayBuffer());
+    // iCloud: a miniatura guardada no notebook vale mesmo depois que a URL expira
+    const saved = typeof id === 'string' && id.startsWith('a:') ? await getThumb(id).catch(() => null) : null;
+    let type, b;
+    if (saved) {
+      type = saved.type || 'image/jpeg';
+      b = new Uint8Array(await saved.arrayBuffer());
+    } else {
+      const res = await fetch(url, { credentials: url.includes('icloud-content.com') ? 'omit' : 'include' });
+      type = res.headers.get('content-type') || '';
+      if (!res.ok || !type.startsWith('image/')) return { ok: false, status: res.status };
+      b = new Uint8Array(await res.arrayBuffer());
+    }
     let s = '';
     for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
     return { ok: true, type, b64: btoa(s) };

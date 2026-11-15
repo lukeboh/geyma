@@ -2,6 +2,23 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.25 — 14/11/2026
+
+- Miniaturas do iCloud guardadas no notebook: as URLs da Apple expiram em
+  horas, e as fotos que só estão no iCloud sumiam da revisão. Durante o
+  percurso, a mesma descarga que calcula a impressão digital guarda a
+  miniatura (cerca de 70 KB) dos itens que só estão no iCloud, das cópias
+  repetidas nele, das que ficam e das candidatas a duplicata. Ficam num
+  depósito novo do inventário (`thumbs`, IndexedDB versão 2).
+- Painel e celular mostram a miniatura guardada quando existe, e a URL
+  quando não; o servidor do celular aceita o item (`id`) junto da URL.
+
+Verificação: 78 testes passando. Uso real: o cruzamento separou 8.398 itens
+para a impressão digital e 32.145 para guardar; no primeiro minuto do
+percurso, 577 miniaturas guardadas e nenhuma falha. Pelo servidor do celular,
+uma URL expirada com o item devolve a miniatura guardada (200), e sem o item
+devolve 404.
+
 ## 0.2.24 — 14/11/2026
 
 - Guia passo a passo (painel e celular): a faixa colorida no topo do cartão
