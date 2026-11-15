@@ -2,6 +2,16 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.24 — 14/11/2026
+
+- Guia passo a passo (painel e celular): a faixa colorida no topo do cartão
+  passava das bordas arredondadas. Era um `::before` de 3 px com o raio do
+  cartão, e o canto não cabia nessa altura; virou uma camada do fundo do
+  próprio cartão, recortada pelos cantos.
+
+Verificação: 77 testes passando (o novo `ui-guia-faixa` falha com o CSS
+antigo); cartão conferido em captura ampliada no painel.
+
 ## 0.2.23 — 14/11/2026
 
 - Desempate pelas miniaturas do iCloud durante o próprio percurso: o
