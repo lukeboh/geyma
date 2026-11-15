@@ -94,6 +94,7 @@
       <p id="m-headline" class="headline">Calculando o cruzamento…</p>
       <p class="muted" id="m-sub"></p>
       <div class="actions"><button id="m-refresh">Recalcular</button><span class="muted" id="m-time"></span></div>
+      <p class="calc-prog" id="m-prog" role="status" hidden><progress max="7"></progress> <span></span></p>
     </section>
 
     <section class="classes" id="m-classes"></section>
@@ -152,6 +153,7 @@
 
   <main id="view-rev" role="tabpanel" aria-labelledby="tab-rev" hidden>
     <section class="panel">
+      <p class="calc-prog" id="r-prog" role="status" hidden><progress max="7"></progress> <span></span></p>
       <p class="muted" id="r-summary"></p>
       <div class="filters">
         <label>Situação <select id="r-cls"></select></label>

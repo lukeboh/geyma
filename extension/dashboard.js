@@ -1,7 +1,7 @@
 import { getItemsBySource, getMeta } from './src/core/db.js';
-import { summarize } from './src/core/normalize.js';
-import { initProtection, ensureComputed, compute, hasData, showPhashProgress } from './protection.js';
+import { initProtection, ensureComputed, compute, hasData, showPhashProgress, abrirFotoDoLink } from './protection.js';
 import { startTour, maybeTour } from './tour.js';
+import { visorAberto } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -41,22 +41,36 @@ function setState(el, meta, completed) {
   el.classList.toggle('state-erro', d.error);
 }
 
+let contagem = null;
+/** Conta o inventário do zero, fora da tela (só quando ainda não há contagem guardada). */
+function contarUmaVez() {
+  contagem ??= new Promise((resolve) => {
+    $('g-total').textContent = $('a-total').textContent = 'contando…';
+    const w = new Worker('src/match-worker.js', { type: 'module' });
+    w.onmessage = (e) => { if (e.data.progresso) return; w.terminate(); contagem = null; resolve(e.data.resumo || null); };
+    w.postMessage('resumo');
+  });
+  return contagem;
+}
+
 let rendering = false;
 let pending = false;
 async function render() {
   if (rendering) { pending = true; return; }
   rendering = true;
   try {
-    const [g, a, gp, ap, counts, done] = await Promise.all([
-      getItemsBySource('google'),
-      getItemsBySource('icloud'),
+    const [inv, gp, ap, counts, done] = await Promise.all([
+      getMeta('inventario'),
       getMeta('googleProgress'),
       getMeta('icloudProgress'),
       getMeta('icloudCounts'),
       getMeta('icloudCompleted'),
     ]);
-    const gs = summarize(g);
-    const as = summarize(a);
+    // contagem mantida a cada gravação; sem ela (primeira vez), conta uma vez no worker
+    const resumo = inv?.value?.resumo || await contarUmaVez();
+    const vazio = { total: 0, videos: 0, from: null, to: null, byYear: {} };
+    const gs = resumo?.google || vazio;
+    const as = resumo?.icloud || vazio;
     $('g-total').textContent = fmt.format(gs.total);
     $('g-range').textContent = gs.total ? `${day(gs.from)} a ${day(gs.to)}` : '—';
     setState($('g-state'), gp);
@@ -196,7 +210,11 @@ $('export').addEventListener('click', async () => {
 // ---------- abas ----------
 const TABS = { inv: 'view-inv', prot: 'view-prot', rev: 'view-rev' };
 let current = 'inv';
-function showTab(name) {
+function showTab(rota) {
+  // rota = aba, opcionalmente com a foto de um link: rev?foto=<id>
+  let [name, query = ''] = String(rota || '').split('?');
+  const foto = new URLSearchParams(query).get('foto');
+  if (foto) name = 'rev';
   if (!TABS[name]) name = 'inv';
   current = name;
   for (const [k, view] of Object.entries(TABS)) {
@@ -205,10 +223,13 @@ function showTab(name) {
   }
   try { history.replaceState(null, '', `#${name}`); } catch {}
   if (name === 'inv') { render(); maybeTour('inv'); }
+  else if (foto) { ensureComputed(); abrirFotoDoLink(foto); }
   else { ensureComputed(); if (hasData()) maybeTour(name); }
 }
+// link colado numa aba já aberta: só o trecho depois de # muda
+addEventListener('hashchange', () => { if (location.hash.includes('foto=')) showTab(location.hash.slice(1)); });
 // Proteção e Revisão: o guia espera os dados do cruzamento (os quadros só aparecem com eles)
-document.addEventListener('geyma-ready', () => { if (current !== 'inv') maybeTour(current, 300); });
+document.addEventListener('geyma-ready', () => { if (current !== 'inv' && !visorAberto()) maybeTour(current, 300); });
 $('ajuda').addEventListener('click', () => startTour(current));
 for (const k of Object.keys(TABS)) $(`tab-${k}`).addEventListener('click', () => showTab(k));
 document.addEventListener('geyma-tab', (e) => showTab(e.detail));
@@ -253,8 +274,8 @@ const aplicar = () => document.querySelectorAll(TATEIS).forEach(tatil);
 new MutationObserver(aplicar).observe(document.body, { childList: true, subtree: true });
 aplicar();
 
-// O inventário tem centenas de milhares de itens: redesenha no máximo a cada
-// 5 s e só com a aba Inventário aberta.
+// Redesenha no máximo a cada 5 s e só com a aba Inventário aberta (lê só a
+// contagem guardada, não os itens).
 let timer = null;
 let lastIcloudState = null;
 chrome.runtime.onMessage.addListener((msg) => {

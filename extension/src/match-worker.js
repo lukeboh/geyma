@@ -1,6 +1,8 @@
 // Worker do cruzamento: lê o inventário, cruza as bibliotecas e devolve o resumo
 // e linhas compactas para a revisão, sem travar o painel.
-import { getItemsBySource, getMeta, setMeta } from './core/db.js';
+import { getItemsBySource, getMeta, setMeta, putCache, setInventorySummary, registrarDecisoes } from './core/db.js';
+import { summarize } from './core/normalize.js';
+import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
 import { matchLibraries, summarizeMatch, partialUntil } from './core/match.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
@@ -72,8 +74,34 @@ const dupSummary = (items, d) => ({
 /** Miniatura da cópia a manter, para mostrar ao lado da cópia na revisão. */
 const keeperInfo = (it, side) => it && { id: it.id, med: it.med || null, thumbAt: it.thumbAt || null, thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
 
-self.onmessage = async () => {
+// avisa o painel de cada etapa (com o tempo da anterior, para achar gargalos)
+let t0 = 0;
+let tEtapa = 0;
+const etapa = (k) => {
+  const agora = performance.now();
+  self.postMessage({ progresso: { etapa: k, i: ETAPAS.findIndex((e) => e.k === k), n: ETAPAS.length, ms: Math.round(agora - tEtapa), total: Math.round(agora - t0) } });
+  tEtapa = agora;
+};
+
+/** Só o resumo do inventário (quando ainda não há contagem guardada). */
+async function soResumo() {
+  const versao = (await getMeta('inventario'))?.value?.versao || 0;
+  const [google, icloud] = await Promise.all([getItemsBySource('google'), getItemsBySource('icloud')]);
+  const resumo = { google: summarize(google), icloud: summarize(icloud) };
+  await setInventorySummary(resumo, versao);
+  self.postMessage({ ok: true, resumo });
+}
+
+self.onmessage = async (e) => {
+  if (e.data === 'resumo') {
+    try { await soResumo(); } catch (err) { self.postMessage({ ok: false, reason: String(err.message || err) }); }
+    return;
+  }
+  t0 = tEtapa = performance.now();
+  const lidoEm = Date.now();
   try {
+    const versao = (await getMeta('inventario'))?.value?.versao || 0;
+    etapa('ler');
     const [google, icloud, progress, completed, counts, phashProgress] = await Promise.all([
       getItemsBySource('google'),
       getItemsBySource('icloud'),
@@ -85,12 +113,15 @@ self.onmessage = async () => {
     // percurso concluído alguma vez, ou inventário do tamanho do total oficial da Apple
     const appleTotal = counts?.value?.CPLAssetByAssetDateWithoutHiddenOrDeleted;
     const complete = Boolean(completed) || progress?.value?.state === 'concluido' || Boolean(appleTotal && icloud.length >= appleTotal);
+    etapa('cruzar');
     const until = complete ? null : partialUntil(icloud);
     const result = matchLibraries(google, icloud, { until: until ?? Infinity });
     const summary = summarizeMatch(result);
     const scopeG = until ? google.filter((g) => g.ts <= until) : google;
     const scopeA = until ? icloud.filter((x) => x.ts <= until) : icloud;
+    etapa('dupG');
     const dupG = analyzeDuplicates(scopeG);
+    etapa('dupA');
     const dupA = analyzeDuplicates(scopeA);
     const googleById = new Map(google.map((g) => [g.id, g]));
     const icloudById = new Map(icloud.map((x) => [x.id, x]));
@@ -103,6 +134,7 @@ self.onmessage = async () => {
       if (ca) { extra.dupIcloud = true; extra.dupOfIcloud = keeperInfo(icloudById.get(ca.keeper), 'icloud'); extra.dupEvidenceIcloud = ca.evidence; }
       return extra;
     };
+    etapa('lista');
     const rows = [
       ...result.pairs.map((p) => row(p.cls, p.a, p.g, { ...(p.menor ? { menor: p.menor } : {}), ...dupInfo(p.a, p.g) })),
       ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
@@ -112,7 +144,8 @@ self.onmessage = async () => {
     await setMeta('icloudPhashWanted', wanted);
     const keep = icloudThumbKeep(result.soIcloud, dupA, result.pairs);
     await setMeta('icloudThumbKeep', keep);
-    self.postMessage({
+    etapa('guardar');
+    const out = {
       ok: true,
       complete,
       until,
@@ -125,7 +158,18 @@ self.onmessage = async () => {
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,
-    });
+      versao,
+      lidoEm,
+      calculadoEm: Date.now(),
+    };
+    // contagem do inventário refeita do zero e datas do iCloud em ordem (para achar uma foto na grade)
+    await setInventorySummary({ google: summarize(google), icloud: summarize(icloud) }, versao);
+    await setMeta('icloudTs', icloud.map((x) => x.ts).sort((x, y) => x - y));
+    self.postMessage(out);
+    // guarda depois de entregar: o painel não espera a gravação
+    await putCache('cruzamento', out);
+    await registrarDecisoes({}, lidoEm);
+    etapa('fim');
   } catch (err) {
     self.postMessage({ ok: false, reason: String(err.message || err) });
   }

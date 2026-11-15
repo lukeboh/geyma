@@ -2,7 +2,7 @@
 // chama estas funções pela porta de depuração do Chrome de automação; a
 // extensão continua sendo a única fonte de verdade (inventário, cruzamento,
 // marcações). Nada aqui altera os serviços: marcar só grava a decisão.
-import { getData, whenComputed, decideRows, compute, isBusy } from './protection.js';
+import { getData, whenComputed, decideRows, recomputeAndWait, isBusy, calcProgress } from './protection.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { sendPlan } from './src/core/plan.js';
 import { CLASSES } from './src/core/match.js';
@@ -62,6 +62,9 @@ window.geymaApi = {
       appleTotal: counts?.value?.CPLAssetByAssetDateWithoutHiddenOrDeleted || null,
       inventory: data?.counts || null,
       busy: isBusy(),
+      calc: calcProgress(),
+      calculadoEm: data?.calculadoEm || null,
+      painel: `${location.origin}/dashboard.html`,
     };
   },
 
@@ -138,8 +141,7 @@ window.geymaApi = {
 
   /** Recalcula o cruzamento (por exemplo, depois de uma leitura). */
   async recompute() {
-    compute();
-    await whenComputed();
+    await recomputeAndWait();
     return true;
   },
 };

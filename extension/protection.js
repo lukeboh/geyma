@@ -2,7 +2,8 @@
 // visão por ano e lista filtrável para revisar item a item.
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
-import { patchItems, getThumb } from './src/core/db.js';
+import { patchItems, getThumb, getCache, getMeta, registrarDecisoes } from './src/core/db.js';
+import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cache.js';
 import { sendPlan, effectiveDecision } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
@@ -13,6 +14,7 @@ const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
 const pct = (n, d) => (d ? `${Math.round((100 * n) / d)}%` : '—');
 const day = (ts) => new Date(ts).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+const local = (ts) => new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 const when = (ts) => new Date(ts).toLocaleString('pt-BR', { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'medium' });
 
 // ordem fixa das classes (empilhamento, legenda, cartões); a cor segue a classe
@@ -31,7 +33,7 @@ let busy = false;
 
 export function initProtection() {
   document.body.append($('tooltip'));
-  $('m-refresh').addEventListener('click', compute);
+  $('m-refresh').addEventListener('click', () => compute());
   for (const id of ['r-cls', 'r-cat', 'r-dec', 'r-year', 'r-kind']) $(id).addEventListener('change', () => { page = 0; renderList(); });
   for (const [k, l] of Object.entries(CATEGORIES)) $('r-cat').append(new Option(l, k));
   for (const [k, l] of Object.entries(DECISIONS)) $('r-dec').append(new Option(l, k));
@@ -60,28 +62,78 @@ export function initProtection() {
   cls.value = '';
 }
 
-/** Calcula na primeira visita; depois só quando pedido (Recalcular) ou quando o iCloud termina. */
+/**
+ * Primeira visita: mostra o último cruzamento guardado na hora e, se o
+ * inventário mudou depois dele, recalcula em segundo plano. Sem cruzamento
+ * guardado, calcula mostrando as etapas.
+ */
+let carregandoCache = null;
 export function ensureComputed() {
-  if (!data && !busy) compute();
+  if (data || busy) return carregandoCache || Promise.resolve();
+  carregandoCache ??= (async () => {
+    setCalc({ etapa: 'abrindo o último cruzamento guardado…' });
+    let cache = null;
+    let versao = 0;
+    try {
+      [cache, versao] = await Promise.all([getCache('cruzamento'), getMeta('inventario').then((m) => m?.value?.versao || 0)]);
+    } catch { cache = null; }
+    if (cache?.rows && !data) {
+      const recentes = (await getMeta('decisoesRecentes').catch(() => null))?.value;
+      aplicarDecisoes(cache.rows, recentes, cache.lidoEm || 0);
+      mostrar(cache);
+      if (desatualizado(cache, versao)) compute({ motivo: 'o inventário mudou depois do último cálculo; atualizando em segundo plano' });
+      else setCalc(null);
+    } else if (!data) compute();
+    carregandoCache = null;
+  })();
+  return carregandoCache;
 }
 
-export function compute() {
+/** Andamento do cálculo, nas abas Proteção e Revisão. p = {etapa, i, n, total} ou null (parado). */
+let ultimoAndamento = null;
+function setCalc(p) {
+  ultimoAndamento = p;
+  for (const id of ['m-prog', 'r-prog']) {
+    const box = $(id);
+    if (!box) continue;
+    box.hidden = !p;
+    if (!p) continue;
+    const bar = box.querySelector('progress');
+    if (typeof p.i === 'number') { bar.max = p.n; bar.value = p.i; } else bar.removeAttribute('value');
+    const seg = p.total ? ` · ${Math.round(p.total / 1000)} s` : '';
+    box.querySelector('span').textContent = `${p.motivo ? `${p.motivo} — ` : ''}${p.etapa}${seg}`;
+  }
+  $('m-time').textContent = p ? '' : (data?.calculadoEm ? `calculado em ${local(data.calculadoEm)}` : '');
+}
+
+function mostrar(d) {
+  data = d;
+  renderProtection();
+  fillYears();
+  renderList();
+  document.dispatchEvent(new CustomEvent('geyma-ready'));
+}
+
+export function compute({ motivo = '' } = {}) {
   if (busy) return;
   busy = true;
   $('m-refresh').disabled = true;
-  $('m-time').textContent = 'calculando…';
-  const t0 = performance.now();
+  setCalc({ etapa: textoEtapa('ler'), i: 0, n: 7, motivo });
   worker ??= new Worker('src/match-worker.js', { type: 'module' });
   worker.onmessage = (e) => {
+    const p = e.data.progresso;
+    if (p) {
+      // o worker continua guardando depois de entregar; só o andamento interessa aqui
+      if (busy) setCalc({ ...p, etapa: textoEtapa(p.etapa), motivo });
+      if (p.etapa === 'fim') console.debug('[geyma] cruzamento', p);
+      return;
+    }
+    if (e.data.resumo) return;
     busy = false;
     $('m-refresh').disabled = false;
-    if (!e.data.ok) { $('m-headline').textContent = `Não foi possível cruzar: ${e.data.reason}`; $('m-time').textContent = ''; return; }
-    data = e.data;
-    $('m-time').textContent = `calculado em ${((performance.now() - t0) / 1000).toFixed(1)} s`;
-    renderProtection();
-    fillYears();
-    renderList();
-    document.dispatchEvent(new CustomEvent('geyma-ready'));
+    if (!e.data.ok) { setCalc(null); $('m-headline').textContent = `Não foi possível cruzar: ${e.data.reason}`; return; }
+    mostrar(e.data);
+    setCalc(null);
   };
   worker.postMessage('run');
 }
@@ -383,7 +435,7 @@ function renderList() {
   const PAGE = pageSize();
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   page = Math.min(page, pages - 1);
-  $('r-count').textContent = data ? `${fmt.format(rows.length)} itens` : 'abra a aba Proteção para calcular';
+  $('r-count').textContent = data ? `${fmt.format(rows.length)} itens` : 'calculando o cruzamento…';
   $('r-page').textContent = `página ${page + 1} de ${pages}`;
   $('r-prev').disabled = page === 0;
   $('r-next').disabled = page >= pages - 1;
@@ -486,25 +538,57 @@ const RENOVANDO = 'buscando um link novo no iCloud (alguns segundos)…';
 const SEM_ICLOUD = 'Não deu para trazer esta foto do iCloud agora (o link da Apple expirou e a renovação falhou). Confira se a aba do iCloud Fotos está aberta no notebook.';
 const dimsTxt = (it) => (it?.w && it?.h ? `${it.w}×${it.h}` : '');
 
-/** Abre as fotos da linha em tamanho grande, lado a lado quando há mais de uma. */
+// miniatura inicial no visualizador quando a linha não está na tela (aberta por link)
+const thumbInicial = (it, side) => {
+  if (side === 'google') return googleThumb(it.thumb);
+  const url = it.thumb.replace('${f}', 'thumb.jpg');
+  if (!it.id) return url;
+  if (!icloudCache.has(it.id)) icloudCache.set(it.id, getThumb(it.id).then((b) => (b ? URL.createObjectURL(b) : null)).catch(() => null));
+  return icloudCache.get(it.id).then((src) => src || url);
+};
+
+/** Link que abre esta linha no painel (para copiar e mandar). */
+export const linkDaFoto = (r) => `${location.origin}${location.pathname}#rev?foto=${encodeURIComponent(r.ids[0])}`;
+
+/** Abre as fotos da linha em tamanho grande, lado a lado quando há mais de uma. td = célula com as miniaturas já carregadas (opcional). */
 function verFotos(r, td) {
-  const imgs = [...td.querySelectorAll('img')];
+  const imgs = td ? [...td.querySelectorAll('img')] : [];
   const fotos = [];
-  const src = (i) => imgs[i]?.currentSrc || imgs[i]?.src || '';
   let i = 0;
+  const src = (it, side) => { const img = imgs[i++]; return img?.currentSrc || img?.src || thumbInicial(it, side); };
   if (r.a?.thumb) {
-    fotos.push({ src: src(i++), rotulo: 'iCloud', semImagem: SEM_ICLOUD, info: [dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), carregando: icloudGrande(r.a) ? null : RENOVANDO });
+    fotos.push({ src: src(r.a, 'icloud'), rotulo: 'iCloud', semImagem: SEM_ICLOUD, info: [dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), carregando: icloudGrande(r.a) ? null : RENOVANDO });
   }
   if (r.dupOfIcloud?.thumb) {
-    fotos.push({ src: src(i++), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: icloudGrandeOuRenova(r.dupOfIcloud), carregando: icloudGrande(r.dupOfIcloud) ? null : RENOVANDO });
+    fotos.push({ src: src(r.dupOfIcloud, 'icloud'), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: icloudGrandeOuRenova(r.dupOfIcloud), carregando: icloudGrande(r.dupOfIcloud) ? null : RENOVANDO });
   }
   if (r.dupOf?.thumb) {
-    fotos.push({ src: src(i++), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });
+    fotos.push({ src: src(r.dupOf, 'google'), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });
   }
   if (r.g?.thumb) {
-    fotos.push({ src: src(i++), rotulo: 'Google', info: dimsTxt(r.g), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
+    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: dimsTxt(r.g), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
   }
-  if (fotos.length) abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}`);
+  if (!fotos.length) return false;
+  // a barra de endereço passa a identificar a foto: copiar o endereço também serve
+  const link = linkDaFoto(r);
+  const antes = location.hash;
+  try { history.replaceState(null, '', link); } catch {}
+  const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais' };
+  const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
+  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
+    link,
+    aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },
+  });
+  return true;
+}
+
+/** Abre a foto de um link (#rev?foto=<id>): a linha que contém o item, na lista e no visualizador. */
+export async function abrirFotoDoLink(id) {
+  const d = await whenComputed();
+  const r = d.rows.find((x) => x.ids.includes(id) || x.dupOf?.id === id || x.dupOfIcloud?.id === id);
+  if (!r) { $('r-msg').textContent = `A foto do link (${id}) não está no cruzamento atual.`; return false; }
+  if (!verFotos(r, null)) $('r-msg').textContent = `A foto do link (${id}) não tem miniatura para mostrar.`;
+  return true;
 }
 
 function fillThumbs(td, r, link = true) {
@@ -554,7 +638,9 @@ async function decide(rows, decision) {
     r.decision = decision;
     for (const id of r.ids) patches.push({ id, decision, decidedAt: decision ? at : null });
   }
-  for (let i = 0; i < patches.length; i += 5000) await patchItems(patches.slice(i, i + 5000));
+  // marcar não muda o cruzamento: não invalida o resultado guardado, só entra na lista de marcações recentes
+  for (let i = 0; i < patches.length; i += 5000) await patchItems(patches.slice(i, i + 5000), { versao: false });
+  await registrarDecisoes(Object.fromEntries(patches.map((p) => [p.id, { d: decision, at }])));
 }
 
 function askBatch(decision, rows = filtered(), what = 'itens') {
@@ -655,10 +741,20 @@ export const getData = () => data;
 export const isBusy = () => busy;
 /** Espera o cruzamento estar pronto (calcula se ainda não houver). */
 export function whenComputed() {
-  if (data && !busy) return Promise.resolve(data);
-  if (!busy) compute();
-  return new Promise((resolve) => document.addEventListener('geyma-ready', () => resolve(data), { once: true }));
+  // o cruzamento guardado serve enquanto o novo é calculado em segundo plano
+  if (data) return Promise.resolve(data);
+  const pronto = new Promise((resolve) => document.addEventListener('geyma-ready', () => resolve(data), { once: true }));
+  ensureComputed();
+  return pronto;
 }
+/** Recalcula e espera o resultado novo. */
+export function recomputeAndWait() {
+  const pronto = new Promise((resolve) => document.addEventListener('geyma-ready', () => resolve(data), { once: true }));
+  compute();
+  return pronto;
+}
+/** Andamento do cálculo em curso (para o celular), ou null. */
+export const calcProgress = () => (busy ? ultimoAndamento : null);
 /** Marca linhas vindas do celular e atualiza o painel aberto. */
 export async function decideRows(rows, decision) {
   await decide(rows, decision);

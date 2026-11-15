@@ -2,6 +2,33 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.29 — 15/11/2026
+
+- Painel abre rápido: o último cruzamento fica guardado no notebook
+  (IndexedDB v3, área `cache`) e aparece na hora; só é refeito, em segundo
+  plano, quando o inventário mudou de verdade (meta `inventario.versao`, que
+  ignora os links novos da Apple a cada passada). Marcações feitas depois do
+  cálculo valem por cima do resultado guardado (`decisoesRecentes`,
+  `src/core/calc-cache.js`) e não forçam recálculo.
+- Andamento do cálculo nas abas Proteção e Revisão: barra com a etapa
+  (lendo, cruzando, cópias no Google, cópias no iCloud, lista, guardando) e o
+  tempo decorrido.
+- Inventário sem ler os itens: contagem por serviço e por ano mantida a cada
+  gravação (`src/core/inv-summary.js`) e refeita do zero a cada cruzamento.
+- Renovação de link do iCloud usa as datas em ordem guardadas pelo
+  cruzamento, em vez de percorrer o índice (o primeiro pedido ficava lento).
+- Links copiáveis: abrir uma foto põe o endereço `#rev?foto=<id>` na barra e
+  o visualizador ganhou "Copiar link"; abrir esse link (ou colá-lo numa aba
+  já aberta) mostra a mesma foto. No celular, "Copiar link desta foto" na
+  ficha e no visualizador (sem HTTPS, mostra o link para copiar à mão). O
+  título do visualizador diz por que a foto é tida como cópia.
+
+Verificação: 91 testes passando (`ext-inv-summary`). Uso real: abrir o
+painel com o cruzamento guardado levou 3,7 s até os números (antes, de 25 a
+58 s calculando); aba Inventário em 2,3 s (antes, cerca de 9 s lendo os
+itens, repetidos a cada 5 s durante leituras); link de uma cópia repetida
+abriu as três versões lado a lado.
+
 ## 0.2.28 — 15/11/2026
 
 - Link novo para foto do iCloud sob demanda: ao abrir no visualizador uma

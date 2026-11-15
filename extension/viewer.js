@@ -30,6 +30,7 @@ function montar() {
     <div class="visor-barra">
       <span class="visor-titulo"></span>
       <div class="visor-acoes">
+        <button type="button" class="visor-btn visor-link" hidden title="Copiar um link que abre estas fotos (para mandar a quem vai investigar)">Copiar link</button>
         <label class="visor-sync" title="Ampliar e mover todas as fotos juntas"><input type="checkbox" checked> Mover juntas</label>
         <button type="button" class="visor-btn" data-z="-" aria-label="Reduzir">−</button>
         <button type="button" class="visor-btn" data-z="0" aria-label="Caber na tela">1:1</button>
@@ -45,7 +46,9 @@ function montar() {
     titulo: raiz.querySelector('.visor-titulo'),
     paineis: raiz.querySelector('.visor-paineis'),
     sync: raiz.querySelector('.visor-sync input'),
+    link: raiz.querySelector('.visor-link'),
   };
+  ui.link.addEventListener('click', () => copiarLink(estado?.link));
   raiz.querySelector('.visor-fechar').addEventListener('click', fecharVisor);
   raiz.querySelectorAll('[data-z]').forEach((b) => b.addEventListener('click', () => {
     const z = b.dataset.z;
@@ -74,6 +77,22 @@ function montar() {
   });
   addEventListener('resize', () => estado && aplicar());
   return ui;
+}
+
+/**
+ * Copia o link; onde a área de transferência não existe (página sem HTTPS,
+ * como o celular pela rede local), mostra o link selecionado para copiar à mão.
+ */
+async function copiarLink(link) {
+  if (!link) return;
+  const b = ui.link;
+  try {
+    await navigator.clipboard.writeText(link);
+    b.textContent = 'Link copiado';
+  } catch {
+    window.prompt('Copie o link:', link);
+  }
+  setTimeout(() => { b.textContent = 'Copiar link'; }, 2000);
 }
 
 /** Amplia a vista por um fator, mantendo fixo o ponto (fx, fy) da área (0..1). */
@@ -186,14 +205,18 @@ function ligarGestos(v, i) {
  * @param {{ src: string, grande?: () => Promise<string|null>, rotulo: string, info?: string, link?: string, semImagem?: string, carregando?: string }[]} fotos
  *   src: imagem já disponível (miniatura); grande: busca a versão maior;
  *   semImagem: o que dizer se nenhuma imagem carregar.
+ *   src pode ser uma Promise (miniatura que ainda está chegando).
  * @param {string} [titulo]
+ * @param {{ link?: string, aoFechar?: () => void }} [opcoes] link: o que "Copiar link" copia.
  */
-export function abrirVisor(fotos, titulo = '') {
+export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   montar();
+  if (estado) fecharVisor();
   ui.titulo.textContent = titulo;
   ui.paineis.replaceChildren();
   ui.paineis.dataset.n = String(fotos.length);
-  estado = { vistas: [], ativo: 0 };
+  estado = { vistas: [], ativo: 0, link: opcoes.link || null, aoFechar: opcoes.aoFechar || null };
+  ui.link.hidden = !opcoes.link;
   fotos.forEach((f, i) => {
     const painel = document.createElement('figure');
     painel.className = 'visor-painel';
@@ -209,7 +232,9 @@ export function abrirVisor(fotos, titulo = '') {
     let temImagem = false;
     img.onload = () => { temImagem = true; aviso.hidden = true; img.hidden = false; };
     img.onerror = () => { if (!temImagem) { aviso.hidden = false; img.hidden = true; } };
-    if (f.src) img.src = f.src; else { aviso.hidden = false; img.hidden = true; }
+    // sem miniatura e sem versão grande, avisa já; com a grande a caminho, espera por ela
+    const semNada = () => { if (!temImagem && !f.grande) { aviso.hidden = false; img.hidden = true; } };
+    Promise.resolve(f.src).then((src) => { if (src) img.src = src; else semNada(); }, semNada);
     area.append(img, aviso);
     const leg = document.createElement('figcaption');
     leg.innerHTML = '<b></b> <span class="visor-info"></span> <span class="visor-carregando">carregando a versão grande…</span>';
@@ -231,7 +256,10 @@ export function abrirVisor(fotos, titulo = '') {
     ligarGestos(v, i);
     const carregando = leg.querySelector('.visor-carregando');
     if (!f.grande) { carregando.remove(); return; }
-    const semGrande = () => { if (temImagem) carregando.textContent = 'versão grande indisponível; mostrando a miniatura'; else carregando.remove(); };
+    const semGrande = () => {
+      if (temImagem) carregando.textContent = 'versão grande indisponível; mostrando a miniatura';
+      else { carregando.remove(); aviso.hidden = false; img.hidden = true; }
+    };
     f.grande().then((src) => {
       if (!src || !estado?.vistas.includes(v)) { semGrande(); return; }
       const pre = new Image();
@@ -248,7 +276,9 @@ export function abrirVisor(fotos, titulo = '') {
 
 export function fecharVisor() {
   if (!estado) return;
+  const aoFechar = estado.aoFechar;
   estado = null;
+  aoFechar?.();
   ui.raiz.hidden = true;
   ui.paineis.replaceChildren();
   document.documentElement.classList.remove('visor-aberto');

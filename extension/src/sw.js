@@ -110,7 +110,11 @@ async function refreshIcloud(id) {
   if (shouldKeepAwake({ icloud: taskStates.icloud })) return { ok: false, erro: 'o percurso do iCloud está rodando; a foto ganha link novo quando ele passar por ela' };
   const [tab] = await chrome.tabs.query({ url: SITES.icloud.match });
   if (!tab) return { ok: false, erro: 'abra o iCloud Fotos no Chrome do notebook' };
-  if (!tsCache || Date.now() - tsCache.at > 30 * 60 * 1000) tsCache = { at: Date.now(), list: await icloudTsSorted() };
+  if (!tsCache || Date.now() - tsCache.at > 30 * 60 * 1000) {
+    // datas em ordem guardadas pelo último cruzamento; sem elas, percorre o índice (lento)
+    const guardadas = (await getMeta('icloudTs'))?.value;
+    tsCache = { at: Date.now(), list: Array.isArray(guardadas) && guardadas.length ? guardadas : await icloudTsSorted() };
+  }
   const sorted = tsCache.list;
   await holdFocus(tab.id).catch(() => {});
   const t0 = Date.now();

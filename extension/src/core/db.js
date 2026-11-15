@@ -1,6 +1,9 @@
 // Inventário local da extensão (IndexedDB na origem da extensão).
+import { applyChange } from './inv-summary.js';
+import { juntarDecisoes } from './calc-cache.js';
+
 const DB_NAME = 'geyma';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise = null;
 
@@ -18,6 +21,8 @@ export function openDb() {
       if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
       // miniaturas do iCloud guardadas no notebook (as URLs da Apple expiram)
       if (!db.objectStoreNames.contains('thumbs')) db.createObjectStore('thumbs', { keyPath: 'id' });
+      // resultados prontos (o último cruzamento), para o painel abrir na hora
+      if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -38,31 +43,103 @@ function tx(store, mode, fn) {
   );
 }
 
+// meta 'inventario' = { versao, resumo }: versao muda a cada gravação que afeta
+// o cruzamento (o painel compara com a do cruzamento guardado); resumo é a
+// contagem por serviço (inv-summary.js), null até o primeiro cruzamento.
+function touchInventory(meta, change) {
+  const req = meta.get('inventario');
+  req.onsuccess = () => {
+    const v = req.result?.value || { versao: 0, resumo: null };
+    if (change && v.resumo) change(v.resumo);
+    meta.put({ key: 'inventario', value: { ...v, versao: Date.now() }, at: Date.now() });
+  };
+}
+
+const CAMPOS_CRUZAMENTO = ['source', 'ts', 'w', 'h', 'video', 'size', 'phash', 'filename', 'fileType'];
+
 /**
  * Grava itens mesclando com o registro existente: campos calculados depois
  * (como o pHash) sobrevivem a uma nova leitura, e seenAt guarda a primeira vez
- * em que o item foi visto.
+ * em que o item foi visto. Mantém o resumo do inventário em dia.
  */
 export function putItems(items) {
   const now = Date.now();
-  return tx('items', 'readwrite', (store) => {
+  return openDb().then((db) => new Promise((resolve, reject) => {
+    const t = db.transaction(['items', 'meta'], 'readwrite');
+    const store = t.objectStore('items');
+    const trocas = [];
+    let falta = items.length;
+    const fim = () => {
+      // links novos da Apple (a cada passada) não mudam o cruzamento
+      const relevantes = trocas.filter(([a, d]) => !a || CAMPOS_CRUZAMENTO.some((k) => a[k] !== d[k]));
+      if (relevantes.length) touchInventory(t.objectStore('meta'), (resumo) => { for (const [a, d] of relevantes) applyChange(resumo, a, d); });
+    };
     for (const it of items) {
       const req = store.get(it.id);
-      req.onsuccess = () => store.put({ ...req.result, ...it, seenAt: req.result?.seenAt ?? now });
+      req.onsuccess = () => {
+        const novo = { ...req.result, ...it, seenAt: req.result?.seenAt ?? now };
+        store.put(novo);
+        trocas.push([req.result, novo]);
+        if (--falta === 0) fim();
+      };
     }
-    return items.length;
-  });
+    if (!items.length) resolve(0);
+    t.oncomplete = () => resolve(items.length);
+    t.onerror = () => reject(t.error);
+    t.onabort = () => reject(t.error);
+  }));
 }
 
-/** Acrescenta campos a itens já existentes ([{id, ...campos}]); ignora ids ausentes. */
-export function patchItems(patches) {
-  return tx('items', 'readwrite', (store) => {
+/**
+ * Acrescenta campos a itens já existentes ([{id, ...campos}]); ignora ids
+ * ausentes. versao: false para mudanças que não alteram o cruzamento (marcações).
+ */
+export function patchItems(patches, { versao = true } = {}) {
+  return openDb().then((db) => new Promise((resolve, reject) => {
+    const t = db.transaction(['items', 'meta'], 'readwrite');
+    const store = t.objectStore('items');
     for (const p of patches) {
       const req = store.get(p.id);
       req.onsuccess = () => { if (req.result) store.put({ ...req.result, ...p }); };
     }
-    return patches.length;
+    if (versao && patches.length) touchInventory(t.objectStore('meta'));
+    t.oncomplete = () => resolve(patches.length);
+    t.onerror = () => reject(t.error);
+    t.onabort = () => reject(t.error);
+  }));
+}
+
+/**
+ * Grava o resumo do inventário calculado do zero, se nada mudou desde a
+ * leitura (versaoLida); senão a contagem incremental segue valendo.
+ */
+export function setInventorySummary(resumo, versaoLida) {
+  return tx('meta', 'readwrite', (meta) => {
+    const req = meta.get('inventario');
+    req.onsuccess = () => {
+      const v = req.result?.value || { versao: 0 };
+      if ((v.versao || 0) === (versaoLida || 0)) meta.put({ key: 'inventario', value: { ...v, resumo }, at: Date.now() });
+    };
   });
+}
+
+/**
+ * Lista curta das marcações feitas depois do último cruzamento (calc-cache.js).
+ * novas = { id: { d, at } }; lidoAte descarta as que o cruzamento já leu.
+ */
+export function registrarDecisoes(novas, lidoAte = 0) {
+  return tx('meta', 'readwrite', (meta) => {
+    const req = meta.get('decisoesRecentes');
+    req.onsuccess = () => meta.put({ key: 'decisoesRecentes', value: juntarDecisoes(req.result?.value, novas, lidoAte), at: Date.now() });
+  });
+}
+
+export function putCache(key, value) {
+  return tx('cache', 'readwrite', (store) => { store.put(value, key); });
+}
+
+export function getCache(key) {
+  return tx('cache', 'readonly', (store) => store.get(key)).then((r) => r ?? null);
 }
 
 /** Guarda miniaturas ([{id, blob}]). */
@@ -123,7 +200,8 @@ export function clearSource(source) {
   return openDb().then(
     (db) =>
       new Promise((resolve, reject) => {
-        const t = db.transaction('items', 'readwrite');
+        const t = db.transaction(['items', 'meta'], 'readwrite');
+        touchInventory(t.objectStore('meta'), (resumo) => { delete resumo[source]; });
         const idx = t.objectStore('items').index('source');
         idx.openCursor(IDBKeyRange.only(source)).onsuccess = (e) => {
           const c = e.target.result;

@@ -626,3 +626,9 @@ a.thumb:hover { transform: scale(1.06); }
   padding: 4px;
 }
 .tile .pic .nothumb { width: 100%; height: auto; aspect-ratio: 1; font-size: 12px; }
+
+/* andamento do cruzamento (etapas do cálculo em segundo plano) */
+.calc-prog { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; font-size: 13px; color: var(--texto-2, inherit); }
+.calc-prog[hidden] { display: none; }
+.calc-prog progress { flex: none; width: 160px; height: 8px; accent-color: var(--acento); }
+.inv-nota { font-size: 12px; }

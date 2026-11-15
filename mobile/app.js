@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js';
+import { abrirVisor } from './viewer.js?v=0.2.29';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -229,10 +229,23 @@ $('sel-aplicar').addEventListener('click', () => {
 // ---------- detalhe ----------
 const NOMES = { icloud: 'iCloud', google: 'Google', 'google-fica': 'Google (a que fica)', 'icloud-fica': 'iCloud (a que fica)' };
 
+// link do painel do notebook que abre esta foto (para mandar a quem vai investigar)
+let painelUrl = null;
+async function linkDa(l) {
+  if (!painelUrl) painelUrl = (await get('/api/status')).painel;
+  return `${painelUrl}#rev?foto=${encodeURIComponent(l.ids[0])}`;
+}
+async function copiarLinkDa(l) {
+  const link = await linkDa(l);
+  // a página do celular não é HTTPS: sem área de transferência, mostra o link para copiar à mão
+  try { await navigator.clipboard.writeText(link); toast('Link copiado.'); } catch { window.prompt('Copie o link:', link); }
+}
+
 /** Fotos da linha em tamanho grande, lado a lado (uma em cima da outra no celular). */
-function verGrande(l) {
+async function verGrande(l) {
   if (!l.thumbs.length) return;
   $('detalhe').hidden = true;
+  const link = await linkDa(l).catch(() => null);
   abrirVisor(l.thumbs.map((t) => ({
     src: thumbUrl(t),
     rotulo: NOMES[t.side] || t.side,
@@ -246,7 +259,7 @@ function verGrande(l) {
         return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
       } : null,
     carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,
-  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`);
+  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link });
 }
 
 function abrirDetalhe(i) {
@@ -259,6 +272,7 @@ function abrirDetalhe(i) {
   }));
   $('det-ver').hidden = !l.thumbs.length;
   $('det-ver').onclick = () => verGrande(l);
+  $('det-link').onclick = () => copiarLinkDa(l).catch((e) => toast(`Não foi possível: ${e.message}`));
   $('det-titulo').textContent = `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`;
   const info = [
     ['Categoria', resumo.labels.categories[l.cat]],
