@@ -32,11 +32,14 @@ amostra, com a taxa de falso positivo medida contra um controle.
 - [x] Inventário local de metadados, sem URLs nem fotos (0.2.1)
 - [x] Contagens oficiais do iCloud por categoria (0.2.1), que chegam ao
   inventário desde que o hook roda no iframe do app de Fotos (0.2.5)
-- [ ] Validação em uso real: inventário completo dos dois lados
+- [x] Validação em uso real: inventário completo dos dois lados (Google lido
+  inteiro; percurso do iCloud concluído com 100% do total oficial) (0.2.22)
 - [ ] Impressão digital das miniaturas (pHash), calculada só para os pares e
-  grupos que precisam de desempate (não para a biblioteca inteira)
-- [ ] Percurso do iCloud numa janela própria e com as miniaturas no menor
-  tamanho, ajustados pela extensão
+  grupos que precisam de desempate (não para a biblioteca inteira): Google
+  feito (0.2.10); iCloud durante o próprio percurso (0.2.23), em validação
+- [x] Percurso do iCloud numa janela própria e com as miniaturas no menor
+  tamanho, ajustados pela extensão (0.2.17), e sem depender da tela: anda com
+  a janela coberta e a tela bloqueada (0.2.22)
 
 **Critério:** inventário completo dos dois lados, retomável, sem queda de sessão.
 

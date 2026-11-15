@@ -2,7 +2,8 @@
 // e encaminha os comandos do painel para as abas dos serviços.
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
 import { putItems, patchItems, setMeta, getMeta } from './core/db.js';
-import { phashFromBase64 } from './core/phash-image.js';
+import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
+import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
 
@@ -46,6 +47,28 @@ async function releaseFocus() {
 }
 chrome.debugger.onDetach.addListener((src) => { if (src.tabId === focusTab) focusTab = null; });
 
+// Desempate durante o percurso: baixa a miniatura dos itens do iCloud que a
+// imagem decidiria assim que o percurso os vê (as URLs expiram em horas).
+const thumbQueue = new ThumbQueue({
+  concurrency: 8,
+  hash: async (url) => {
+    const res = await fetch(url, { credentials: 'omit' });
+    if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
+    return phashFromBlob(await res.blob());
+  },
+  save: async (patches) => {
+    await patchItems(patches);
+    const st = thumbQueue.stats();
+    await setMeta('icloudPhashLive', st);
+    broadcast({ site: 'icloud', event: 'phash-icloud', ...st });
+  },
+});
+let wantedLoaded = false;
+async function offerIcloudThumbs(items) {
+  if (!wantedLoaded) { thumbQueue.setWanted((await getMeta('icloudPhashWanted'))?.value || []); wantedLoaded = true; }
+  thumbQueue.offer(items);
+}
+
 const broadcast = (msg) => chrome.runtime.sendMessage({ kind: 'status', ...msg }).catch(() => {});
 
 async function handlePageEvent(site, type, payload, tabId) {
@@ -55,7 +78,7 @@ async function handlePageEvent(site, type, payload, tabId) {
     broadcast({ site, event: 'items', added: items.length });
   } else if (type === 'icloud-records') {
     const items = parseIcloudQuery(JSON.parse(payload.body));
-    if (items.length) await putItems(items);
+    if (items.length) { await putItems(items); await offerIcloudThumbs(items); }
     broadcast({ site, event: 'items', added: items.length });
   } else if (type === 'icloud-counts') {
     const counts = parseIcloudCounts(payload.request, JSON.parse(payload.body));
@@ -124,6 +147,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
       }
       if (msg.kind === 'start') updateKeepAwake(msg.site, 'lendo');
+      if (msg.kind === 'start' && msg.site === 'icloud') wantedLoaded = false;
       if (msg.site === 'icloud') {
         if (msg.kind === 'start') await holdFocus(tab.id).catch((err) => broadcast({ site: 'icloud', event: 'falha', reason: `emulação de foco: ${err.message || err}` }));
       }

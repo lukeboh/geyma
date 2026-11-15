@@ -168,14 +168,17 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 ## 7. Próximos passos
 
-1. **Com o usuário, com a tela desbloqueada:** validar o percurso do iCloud
-   com a janela própria e o ajuste automático das miniaturas, e o botão
-   "Continuar de onde parou" (falta para fechar a etapa 0.3 e marcar 0.3.0).
+1. Fechar a etapa 0.3: conferir o desempate do iCloud feito durante o
+   percurso (0.2.23) e exercitar "Continuar de onde parou" depois da correção
+   da posição salva (0.2.22); então marcar 0.3.0. O percurso já anda com a
+   tela bloqueada (emulação de foco pela permissão `debugger`).
 2. Revisar as categorias com as miniaturas e ajustar as regras com o que o
    usuário corrigir.
-3. Depois desse percurso, rodar "Conferir pelas miniaturas do iCloud" na aba
-   Proteção: resolve os pares "a confirmar" restantes (as URLs das miniaturas
-   do iCloud são temporárias; rodar logo após o percurso).
+3. O desempate pelo iCloud agora roda dentro do percurso: o cruzamento grava
+   a lista dos itens que a imagem decidiria (`icloudPhashWanted`) e o service
+   worker baixa a miniatura de cada um quando o percurso o vê. As URLs das
+   miniaturas do iCloud expiram em horas (410 depois de ~6 h); o botão
+   "Conferir pelas miniaturas do iCloud" só serve logo após um percurso.
 4. Qualidade (0.5): indicar a melhor cópia; cópias reduzidas do Google.
 5. Envio curado (0.7): decidir o caminho (ver pendências), começando pelas
    fotos (pouco volume) e tratando os vídeos à parte.

@@ -1,6 +1,6 @@
 // Worker do cruzamento: lê o inventário, cruza as bibliotecas e devolve o resumo
 // e linhas compactas para a revisão, sem travar o painel.
-import { getItemsBySource, getMeta } from './core/db.js';
+import { getItemsBySource, getMeta, setMeta } from './core/db.js';
 import { classifyRow } from './core/classify.js';
 import { matchLibraries, summarizeMatch, partialUntil } from './core/match.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
@@ -36,6 +36,14 @@ function icloudPhashNeeded(pairs, dupPending, icloudById) {
   }
   for (const id of dupPending) { const a = icloudById.get(id); if (a?.thumb && !a.phash) need.set(id, a); }
   return [...need.values()].map((a) => ({ id: a.id, url: a.thumb, at: a.thumbAt || 0 }));
+}
+
+/** Itens do iCloud sem pHash que a imagem decidiria, com ou sem miniatura: o próximo percurso baixa a miniatura deles na hora em que a vê. */
+function icloudPhashWanted(pairs, dupPending, icloudById) {
+  const ids = new Set();
+  for (const p of pairs) if ((p.cls === 'confirmar' || p.cls === 'reduzida') && !p.a.phash) ids.add(p.a.id);
+  for (const id of dupPending) if (!icloudById.get(id)?.phash) ids.add(id);
+  return [...ids];
 }
 
 /** Resumo de duplicatas de um serviço para o painel. */
@@ -89,6 +97,8 @@ self.onmessage = async () => {
       ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
       ...result.soIcloud.map((x) => row('soIcloud', x, null, dupInfo(x, null))),
     ];
+    const wanted = icloudPhashWanted(result.pairs, dupA.pendingIds, icloudById);
+    await setMeta('icloudPhashWanted', wanted);
     self.postMessage({
       ok: true,
       complete,
@@ -97,6 +107,7 @@ self.onmessage = async () => {
       dup: { google: dupSummary(scopeG, dupG), icloud: dupSummary(scopeA, dupA) },
       phashNeeded: phashNeeded(dupG.pendingIds, result.pairs, google),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
+      icloudPhashWanted: wanted.length,
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
       counts: { google: google.length, icloud: icloud.length },
       rows,

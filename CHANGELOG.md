@@ -2,6 +2,22 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.23 — 14/11/2026
+
+- Desempate pelas miniaturas do iCloud durante o próprio percurso: o
+  cruzamento grava quais itens do iCloud a imagem decidiria (pares a
+  confirmar ou reduzidos e candidatas a duplicata, sem pHash) e o service
+  worker baixa e resume a miniatura de cada um assim que o percurso a vê, com
+  8 downloads simultâneos (`src/core/thumb-queue.js`). Antes era um passo
+  separado, e as URLs (temporárias) expiravam antes dele: 6 h depois do
+  percurso anterior, todas respondiam 410.
+- Aba Proteção: sem miniaturas guardadas, diz quantos itens o próximo
+  percurso vai conferir.
+
+Verificação: 75 testes passando. Uso real: lista com 26.101 itens; no
+percurso iniciado às 22h19, os primeiros itens desejados (a partir de 2008)
+foram baixados e resumidos durante a leitura, sem falhas.
+
 ## 0.2.22 — 14/11/2026
 
 - Percurso do iCloud sem depender da tela: a extensão se conecta à aba do

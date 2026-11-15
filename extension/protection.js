@@ -139,7 +139,9 @@ function renderIcloudCheck() {
   $('m-ic-box').hidden = !disputed;
   $('m-ic').innerHTML = need.length
     ? `<b>${fmt.format(need.length)}</b> itens do iCloud têm miniatura guardada e podem desempatar pares.`
-    : `Nenhum item com miniatura do iCloud guardada para desempatar. As miniaturas chegam no próximo percurso da biblioteca do iCloud (aba Inventário).`;
+    : data.icloudPhashWanted
+      ? `<b>${fmt.format(data.icloudPhashWanted)}</b> itens do iCloud precisam da imagem para desempatar. O próximo percurso da biblioteca do iCloud (aba Inventário) confere cada um assim que o vê, sem outro passo.`
+      : `Nenhum item do iCloud precisa da imagem para desempatar.`;
   $('m-ic-run').hidden = !need.length || Boolean(icJob);
 }
 
