@@ -2,6 +2,17 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.26 — 15/11/2026
+
+- Uso real: percurso completo do iCloud com o desempate e a guarda de
+  miniaturas, com a tela bloqueada, sem falhas nem URLs expiradas. Quase
+  todos os pares "a confirmar" foram resolvidos pela imagem, e as cópias
+  repetidas dentro do iCloud passaram a ser confirmadas pela imagem.
+- Roadmap: impressão digital dos dois lados concluída. Falta exercitar
+  "Continuar de onde parou" com a correção da 0.2.22 para fechar a etapa 0.3.
+
+Verificação: 78 testes passando; cruzamento recalculado no painel.
+
 ## 0.2.25 — 14/11/2026
 
 - Miniaturas do iCloud guardadas no notebook: as URLs da Apple expiram em

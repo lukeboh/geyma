@@ -34,9 +34,10 @@ amostra, com a taxa de falso positivo medida contra um controle.
   inventário desde que o hook roda no iframe do app de Fotos (0.2.5)
 - [x] Validação em uso real: inventário completo dos dois lados (Google lido
   inteiro; percurso do iCloud concluído com 100% do total oficial) (0.2.22)
-- [ ] Impressão digital das miniaturas (pHash), calculada só para os pares e
+- [x] Impressão digital das miniaturas (pHash), calculada só para os pares e
   grupos que precisam de desempate (não para a biblioteca inteira): Google
-  feito (0.2.10); iCloud durante o próprio percurso (0.2.23), em validação
+  (0.2.10); iCloud durante o próprio percurso (0.2.23), validado em uso real
+  com miniaturas guardadas para a revisão (0.2.25)
 - [x] Percurso do iCloud numa janela própria e com as miniaturas no menor
   tamanho, ajustados pela extensão (0.2.17), e sem depender da tela: anda com
   a janela coberta e a tela bloqueada (0.2.22)
