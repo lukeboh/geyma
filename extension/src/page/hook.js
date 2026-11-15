@@ -264,6 +264,27 @@
       }
     }
   }
+  // Renovar o link de uma foto: rola a grade até a posição dela, como uma
+  // pessoa faria, e deixa o próprio site carregar aquela região (com links
+  // novos). Não altera o andamento do percurso.
+  async function icloudGoto(target) {
+    icloudError = 0;
+    for (let i = 0; i < 6 && document.visibilityState !== 'visible'; i++) await sleep(500);
+    if (document.visibilityState !== 'visible') { post('goto-done', { erro: 'aba oculta' }); return; }
+    const el = findScroller();
+    if (!el) { post('goto-done', { erro: 'grade de fotos não encontrada' }); return; }
+    const max = el.scrollHeight - el.clientHeight;
+    el.scrollTop = Math.round(target * max);
+    await humanPause(2200);
+    // um passo para cada lado: carrega as vizinhas (cópias da mesma data)
+    for (const d of [0.6, -1.2, 0.6]) {
+      if (icloudError || stopRequested) break;
+      el.scrollTop += Math.round(el.clientHeight * d);
+      await humanPause(1100);
+    }
+    post('goto-done', icloudError ? { erro: `HTTP ${icloudError}`, status: icloudError } : { frac: frac(el) });
+  }
+
   const isPhotosFrame = () => /\/applications\/photos/.test(location.pathname)
     || (window.top === window && !document.querySelector('iframe[src*="/applications/photos"]'));
   const frac = (el) => el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight);
@@ -274,12 +295,14 @@
     if (cmd === 'stop') { stopRequested = true; wakeWaiter?.(); return; }
     // O app de Fotos do iCloud roda num iframe (/applications/photos…); o script
     // é injetado em todos os frames, mas só o frame do app percorre a grade.
-    if (cmd === 'icloud-walk' && !isPhotosFrame()) return;
+    if ((cmd === 'icloud-walk' || cmd === 'icloud-goto') && !isPhotosFrame()) return;
+    if (cmd === 'icloud-goto' && running) { post('goto-done', { erro: 'percurso em andamento' }); return; }
     if (running) { post('progress', { task: SITE, state: 'ocupado' }); return; }
     stopRequested = false;
     const job = cmd === 'google-crawl' && SITE === 'google' ? googleCrawl()
       : cmd === 'google-thumbs' && SITE === 'google' ? googleThumbs(keys || [])
       : cmd === 'icloud-walk' && SITE === 'icloud' ? icloudWalk(Number(startFrac) || 0)
+      : cmd === 'icloud-goto' && SITE === 'icloud' ? icloudGoto(Number(startFrac) || 0)
       : null;
     if (!job) return;
     running = job.catch((err) => post('progress', { task: SITE, state: 'erro', reason: String(err.message || err) })).finally(() => { running = null; });

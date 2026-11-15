@@ -237,9 +237,15 @@ function verGrande(l) {
     src: thumbUrl(t),
     rotulo: NOMES[t.side] || t.side,
     info: t.dims || '',
-    semImagem: t.side.startsWith('icloud') ? 'A miniatura do iCloud desta foto expirou (os links da Apple valem algumas horas) e não foi guardada. Pares reduzidos ou a confirmar passam a ser guardados no próximo percurso do iCloud.' : 'Imagem indisponível (a sessão do Google no notebook pode ter saído).',
+    semImagem: t.side.startsWith('icloud') ? 'Não deu para trazer esta foto do iCloud agora (o link da Apple expirou e a renovação falhou). Confira se a aba do iCloud Fotos está aberta no notebook.' : 'Imagem indisponível (a sessão do Google no notebook pode ter saído).',
     // versão grande pelo servidor do notebook; sem ela, fica a miniatura (a guardada, no iCloud)
-    grande: t.full ? async () => `/api/thumb?u=${encodeURIComponent(t.full)}` : null,
+    grande: t.full ? async () => `/api/thumb?u=${encodeURIComponent(t.full)}`
+      : t.id ? async () => {
+        // link do iCloud vencido: o notebook rola a grade do iCloud até a foto e traz um link novo
+        const r = await (await fetch(`/api/icloud-grande?id=${encodeURIComponent(t.id)}`)).json();
+        return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
+      } : null,
+    carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,
   })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`);
 }
 

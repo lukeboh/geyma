@@ -83,6 +83,26 @@ export function thumbIds() {
   return tx('thumbs', 'readonly', (store) => store.getAllKeys());
 }
 
+export function getItem(id) {
+  return tx('items', 'readonly', (store) => store.get(id)).then((r) => r || null);
+}
+
+/** Datas (ts) de todas as fotos do iCloud, em ordem, sem carregar os itens. */
+export function icloudTsSorted() {
+  return openDb().then((db) => new Promise((resolve, reject) => {
+    const out = [];
+    const t = db.transaction('items', 'readonly');
+    t.objectStore('items').index('ts').openKeyCursor().onsuccess = (e) => {
+      const c = e.target.result;
+      if (!c) return;
+      if (String(c.primaryKey).startsWith('a:')) out.push(c.key);
+      c.continue();
+    };
+    t.oncomplete = () => resolve(out);
+    t.onerror = () => reject(t.error);
+  }));
+}
+
 export function countBySource(source) {
   return tx('items', 'readonly', (store) => store.index('source').count(source));
 }

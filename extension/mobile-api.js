@@ -128,6 +128,14 @@ window.geymaApi = {
     return { ok: true, type, b64: btoa(s) };
   },
 
+  /** Link novo de uma foto do iCloud (a extensão rola a grade do site até ela). Devolve a URL da versão maior disponível. */
+  async icloudRefresh(id) {
+    if (typeof id !== 'string' || !id.startsWith('a:')) throw new Error('item inválido');
+    const r = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id });
+    if (!r?.ok) return { ok: false, erro: r?.erro || 'sem link novo' };
+    return { ok: true, url: (r.med || r.thumb).replace('${f}', r.med ? 'med.jpg' : 'thumb.jpg') };
+  },
+
   /** Recalcula o cruzamento (por exemplo, depois de uma leitura). */
   async recompute() {
     compute();

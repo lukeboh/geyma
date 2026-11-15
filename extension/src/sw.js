@@ -1,7 +1,9 @@
 // Service worker: recebe os dados das páginas, normaliza, grava no inventário
 // e encaminha os comandos do painel para as abas dos serviços.
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
-import { putItems, patchItems, setMeta, getMeta, putThumbs, thumbIds } from './core/db.js';
+import { putItems, patchItems, setMeta, getMeta, putThumbs, thumbIds, getItem, icloudTsSorted } from './core/db.js';
+import { estimateFrac, nextFrac } from './core/icloud-locate.js';
+import { ICLOUD_URL_VALIDA_MS } from './core/viewer-src.js';
 import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
 import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
@@ -83,6 +85,62 @@ async function offerIcloudThumbs(items) {
   thumbQueue.offer(items);
 }
 
+// ---------- renovar o link de uma foto do iCloud ----------
+// Rola a grade do site até a data da foto (como no percurso, sem consultas
+// próprias) e espera o site carregar aquela região com links novos. Uma
+// renovação por vez; até 5 tentativas, corrigindo a posição pelas datas que
+// chegaram.
+let refreshChain = Promise.resolve();
+let gotoWaiter = null;
+let seenRange = null;
+let tsCache = null;
+function noteRefreshed(items) {
+  if (!seenRange) return;
+  for (const it of items) {
+    if (it.ts < seenRange.min) seenRange.min = it.ts;
+    if (it.ts > seenRange.max) seenRange.max = it.ts;
+  }
+}
+const freshOf = (it, since) => it && it.thumbAt > since && { thumb: it.thumb, med: it.med || null, thumbAt: it.thumbAt };
+
+async function refreshIcloud(id) {
+  const it = await getItem(id);
+  if (!it || it.source !== 'icloud') return { ok: false, erro: 'foto não encontrada no inventário' };
+  if (it.thumbAt && Date.now() - it.thumbAt < ICLOUD_URL_VALIDA_MS) return { ok: true, thumb: it.thumb, med: it.med || null, thumbAt: it.thumbAt };
+  if (shouldKeepAwake({ icloud: taskStates.icloud })) return { ok: false, erro: 'o percurso do iCloud está rodando; a foto ganha link novo quando ele passar por ela' };
+  const [tab] = await chrome.tabs.query({ url: SITES.icloud.match });
+  if (!tab) return { ok: false, erro: 'abra o iCloud Fotos no Chrome do notebook' };
+  if (!tsCache || Date.now() - tsCache.at > 30 * 60 * 1000) tsCache = { at: Date.now(), list: await icloudTsSorted() };
+  const sorted = tsCache.list;
+  await holdFocus(tab.id).catch(() => {});
+  const t0 = Date.now();
+  let pos = estimateFrac(sorted, it.ts);
+  try {
+    for (let tent = 0; tent < 5; tent++) {
+      seenRange = { min: Infinity, max: -Infinity };
+      const done = new Promise((r) => { gotoWaiter = r; setTimeout(() => r({ erro: 'o iCloud demorou demais' }), 30000); });
+      await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd: 'icloud-goto', startFrac: pos });
+      const res = await done;
+      gotoWaiter = null;
+      const novo = freshOf(await getItem(id), t0);
+      if (novo) return { ok: true, ...novo, tentativas: tent + 1 };
+      if (res.erro) return { ok: false, erro: res.erro };
+      const r = seenRange;
+      const prox = nextFrac(sorted, it.ts, pos, Number.isFinite(r.min) ? r.min : null, Number.isFinite(r.max) ? r.max : null);
+      if (prox == null || prox === pos) {
+        // nada novo chegou ou a data já estava no intervalo: só um último ajuste fino
+        if (tent > 0) break;
+        pos = Math.min(1, pos + 0.002);
+      } else pos = prox;
+    }
+    return { ok: false, erro: 'não achei a foto na grade do iCloud' };
+  } finally {
+    seenRange = null;
+    gotoWaiter = null;
+    if (!shouldKeepAwake({ icloud: taskStates.icloud })) await releaseFocus();
+  }
+}
+
 const broadcast = (msg) => chrome.runtime.sendMessage({ kind: 'status', ...msg }).catch(() => {});
 
 async function handlePageEvent(site, type, payload, tabId) {
@@ -92,7 +150,7 @@ async function handlePageEvent(site, type, payload, tabId) {
     broadcast({ site, event: 'items', added: items.length });
   } else if (type === 'icloud-records') {
     const items = parseIcloudQuery(JSON.parse(payload.body));
-    if (items.length) { await putItems(items); await offerIcloudThumbs(items); }
+    if (items.length) { await putItems(items); await offerIcloudThumbs(items); noteRefreshed(items); }
     broadcast({ site, event: 'items', added: items.length });
   } else if (type === 'icloud-counts') {
     const counts = parseIcloudCounts(payload.request, JSON.parse(payload.body));
@@ -112,6 +170,8 @@ async function handlePageEvent(site, type, payload, tabId) {
   } else if (type === 'icloud-error') {
     await setMeta('icloudLastError', { status: payload.status });
     broadcast({ site, event: 'error', status: payload.status });
+  } else if (type === 'goto-done') {
+    gotoWaiter?.(payload);
   } else if (type === 'progress') {
     await setMeta(`${payload.task}Progress`, mergeProgress((await getMeta(`${payload.task}Progress`))?.value, payload));
     updateKeepAwake(payload.task, payload.state);
@@ -133,6 +193,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'page-event') {
     handlePageEvent(msg.site, msg.type, msg.payload, sender.tab?.id).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
     return false;
+  }
+  if (msg?.kind === 'icloud-refresh') {
+    const job = refreshChain.then(() => refreshIcloud(String(msg.id)));
+    refreshChain = job.catch(() => {});
+    job.then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
+    return true;
   }
   if (msg?.kind === 'phash') {
     (async () => {

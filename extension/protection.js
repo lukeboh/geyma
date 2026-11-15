@@ -470,7 +470,20 @@ async function googleBlob(url) {
   return res.ok && type.startsWith('image/') ? URL.createObjectURL(await res.blob()) : null;
 }
 
-const SEM_ICLOUD = 'A miniatura do iCloud desta foto expirou (os links da Apple valem algumas horas) e não foi guardada. Pares reduzidos ou a confirmar passam a ser guardados no próximo percurso do iCloud.';
+/** Versão grande do iCloud: a média se o link ainda vale; senão pede ao percurso um link novo (rola a grade até a foto). */
+function icloudGrandeOuRenova(it) {
+  const med = icloudGrande(it);
+  if (med) return async () => med;
+  if (!it.id) return null;
+  return async () => {
+    const r = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id: it.id });
+    if (!r?.ok) throw new Error(r?.erro || 'sem link novo');
+    return (r.med || r.thumb || '').replace('${f}', r.med ? 'med.jpg' : 'thumb.jpg') || null;
+  };
+}
+const RENOVANDO = 'buscando um link novo no iCloud (alguns segundos)…';
+
+const SEM_ICLOUD = 'Não deu para trazer esta foto do iCloud agora (o link da Apple expirou e a renovação falhou). Confira se a aba do iCloud Fotos está aberta no notebook.';
 const dimsTxt = (it) => (it?.w && it?.h ? `${it.w}×${it.h}` : '');
 
 /** Abre as fotos da linha em tamanho grande, lado a lado quando há mais de uma. */
@@ -480,12 +493,10 @@ function verFotos(r, td) {
   const src = (i) => imgs[i]?.currentSrc || imgs[i]?.src || '';
   let i = 0;
   if (r.a?.thumb) {
-    const med = icloudGrande(r.a);
-    fotos.push({ src: src(i++), rotulo: 'iCloud', semImagem: SEM_ICLOUD, info: [dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: med ? async () => med : null });
+    fotos.push({ src: src(i++), rotulo: 'iCloud', semImagem: SEM_ICLOUD, info: [dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), carregando: icloudGrande(r.a) ? null : RENOVANDO });
   }
   if (r.dupOfIcloud?.thumb) {
-    const med = icloudGrande(r.dupOfIcloud);
-    fotos.push({ src: src(i++), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: med ? async () => med : null });
+    fotos.push({ src: src(i++), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: icloudGrandeOuRenova(r.dupOfIcloud), carregando: icloudGrande(r.dupOfIcloud) ? null : RENOVANDO });
   }
   if (r.dupOf?.thumb) {
     fotos.push({ src: src(i++), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });

@@ -19,7 +19,7 @@ test('scripts do iCloud são injetados em todos os frames', () => {
   assert.ok(icloud.some((c) => !c.world && c.js.includes('src/page/relay.js')));
 });
 
-test('hook percorre a grade só no frame do app de Fotos', () => {
+test('hook percorre e rola a grade só no frame do app de Fotos', () => {
   const hook = readFileSync(new URL('../extension/src/page/hook.js', import.meta.url), 'utf8');
-  assert.match(hook, /cmd === 'icloud-walk' && !isPhotosFrame\(\)/);
+  assert.ok(hook.includes("if ((cmd === 'icloud-walk' || cmd === 'icloud-goto') && !isPhotosFrame()) return;"));
 });

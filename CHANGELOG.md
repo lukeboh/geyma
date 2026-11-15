@@ -2,6 +2,26 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.28 — 15/11/2026
+
+- Link novo para foto do iCloud sob demanda: ao abrir no visualizador uma
+  foto do iCloud com o link vencido, a extensão rola a grade do site do
+  iCloud até a data dela (como no percurso, sem consultas próprias) e o site
+  carrega aquela região com links novos; o visualizador troca a imagem
+  sozinho. A posição é estimada pela ordem da data entre todas as fotos do
+  iCloud e corrigida pelas datas que chegaram, em até 5 tentativas
+  (`src/core/icloud-locate.js`); uma renovação por vez; com a tela bloqueada,
+  pela emulação de foco. Renova também as vizinhas da mesma data.
+- Celular: `GET /api/icloud-grande?id=` pede o link novo ao notebook.
+- Confirmado no uso real que a grade traz a versão média (`resJPEGMedRes`)
+  na maioria das fotos (273 de 315 na amostra); sem ela, vem a miniatura.
+
+Verificação: 85 testes passando (`ext-icloud-locate`). Uso real: fotos de
+2023, 2016 e 2011 com links vencidos renovadas na primeira tentativa (cerca
+de 7 s; 21 s na primeira, que lê as datas); no painel, par "a confirmar"
+aberto com o lado do iCloud em 2.365 px; pelo servidor do celular, link
+novo em 7 s e imagem entregue.
+
 ## 0.2.27 — 15/11/2026
 
 - Visualizador de fotos em tamanho grande (`extension/viewer.js` e

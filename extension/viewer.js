@@ -183,7 +183,7 @@ function ligarGestos(v, i) {
 
 /**
  * Abre o visualizador.
- * @param {{ src: string, grande?: () => Promise<string|null>, rotulo: string, info?: string, link?: string, semImagem?: string }[]} fotos
+ * @param {{ src: string, grande?: () => Promise<string|null>, rotulo: string, info?: string, link?: string, semImagem?: string, carregando?: string }[]} fotos
  *   src: imagem já disponível (miniatura); grande: busca a versão maior;
  *   semImagem: o que dizer se nenhuma imagem carregar.
  * @param {string} [titulo]
@@ -214,6 +214,7 @@ export function abrirVisor(fotos, titulo = '') {
     const leg = document.createElement('figcaption');
     leg.innerHTML = '<b></b> <span class="visor-info"></span> <span class="visor-carregando">carregando a versão grande…</span>';
     leg.querySelector('b').textContent = f.rotulo;
+    if (f.carregando) leg.querySelector('.visor-carregando').textContent = f.carregando;
     leg.querySelector('.visor-info').textContent = f.info || '';
     if (f.link) {
       const a = document.createElement('a');
