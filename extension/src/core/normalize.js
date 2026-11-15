@@ -95,6 +95,8 @@ export function normalizeIcloudPair(asset, master) {
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
     // miniatura JPEG (URL temporária assinada pela Apple); thumbAt diz quando foi vista
     thumb: typeof m('resJPEGThumbRes')?.downloadURL === 'string' ? m('resJPEGThumbRes').downloadURL : null,
+    // versão média em JPEG (também temporária), para ver a foto grande logo depois do percurso
+    med: typeof m('resJPEGMedRes')?.downloadURL === 'string' ? m('resJPEGMedRes').downloadURL : null,
     thumbAt: Date.now(),
   };
 }

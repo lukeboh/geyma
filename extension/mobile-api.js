@@ -8,6 +8,7 @@ import { sendPlan } from './src/core/plan.js';
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { getMeta, getThumb } from './src/core/db.js';
+import { googleGrande, icloudGrande } from './src/core/viewer-src.js';
 
 const THUMB_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(usercontent\.google\.com|googleusercontent\.com|icloud-content\.com)\//;
 
@@ -24,10 +25,12 @@ function rowIndex(data) {
 
 const thumbsOf = (r) => {
   const t = [];
-  if (r.a?.thumb) t.push({ side: 'icloud', url: r.a.thumb.replace('${f}', 'thumb.jpg'), id: r.a.id });
-  if (r.dupOfIcloud?.thumb) t.push({ side: 'icloud-fica', url: r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg'), id: r.dupOfIcloud.id });
-  if (r.dupOf?.thumb) t.push({ side: 'google-fica', url: `${r.dupOf.thumb}=w320-h320-c` });
-  if (r.g?.thumb) t.push({ side: 'google', url: `${r.g.thumb}=w320-h320-c` });
+  // full: a versão grande para o visualizador (Google pela sessão; iCloud só enquanto a URL vale)
+  const dims = (it) => (it?.w && it?.h ? `${it.w}×${it.h}` : '');
+  if (r.a?.thumb) t.push({ side: 'icloud', url: r.a.thumb.replace('${f}', 'thumb.jpg'), id: r.a.id, full: icloudGrande(r.a), dims: dims(r.a) });
+  if (r.dupOfIcloud?.thumb) t.push({ side: 'icloud-fica', url: r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg'), id: r.dupOfIcloud.id, full: icloudGrande(r.dupOfIcloud), dims: dims(r.dupOfIcloud) });
+  if (r.dupOf?.thumb) t.push({ side: 'google-fica', url: `${r.dupOf.thumb}=w320-h320-c`, full: googleGrande(r.dupOf.thumb, 2000), dims: dims(r.dupOf) });
+  if (r.g?.thumb) t.push({ side: 'google', url: `${r.g.thumb}=w320-h320-c`, full: googleGrande(r.g.thumb, 2000), dims: dims(r.g) });
   return t;
 };
 

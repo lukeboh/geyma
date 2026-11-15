@@ -10,7 +10,8 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icone.svg">
   <title>Geyma</title>
-  <link rel="stylesheet" href="/app.css?v=0.2.25">
+  <link rel="stylesheet" href="/app.css?v=0.2.27">
+  <link rel="stylesheet" href="/viewer.css?v=0.2.27">
 </head>
 <body>
   <div class="aurora" aria-hidden="true"></div>
@@ -91,6 +92,7 @@
   <div class="folha-fundo" id="detalhe" hidden>
     <div class="folha vidro detalhe" role="dialog" aria-modal="true" aria-labelledby="det-titulo">
       <div class="det-fotos" id="det-fotos"></div>
+      <button class="largo" id="det-ver" type="button">Ver em tamanho grande</button>
       <h3 id="det-titulo"></h3>
       <dl id="det-info"></dl>
       <div class="det-marcar" id="det-marcar"></div>
@@ -107,6 +109,6 @@
     <button id="nav-leituras" data-tela="leituras"><span class="ic">↻</span>Leituras</button>
   </nav>
 
-  <script type="module" src="/app.js?v=0.2.25"></script>
+  <script type="module" src="/app.js?v=0.2.27"></script>
 </body>
 </html>

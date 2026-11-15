@@ -18,7 +18,7 @@ const GUIAS = {
   ],
   revisar: [
     { sel: '.filtros', titulo: 'Escolha o que revisar', texto: 'Filtre por situação, categoria, marcação e ano. Um bom começo: <b>Categoria = Captura de tela</b>, ou <b>Situação = Cópias no Google</b>.' },
-    { sel: '#grade', titulo: 'As fotos', texto: '<b>Toque</b> numa foto para selecionar. <b>Segure</b> para ver os detalhes, as duas versões lado a lado e marcar só ela.<br><br>Faixa azul embaixo: Google; laranja: iCloud. Nas cópias, a foto com <b>borda tracejada</b> é a que fica.' },
+    { sel: '#grade', titulo: 'As fotos', texto: '<b>Toque</b> numa foto para selecionar. <b>Segure</b> para ver os detalhes e marcar só ela; ali, toque numa foto para vê-la grande, com as versões uma sobre a outra, ampliando e movendo juntas.<br><br>Faixa azul embaixo: Google; laranja: iCloud. Nas cópias, a foto com <b>borda tracejada</b> é a que fica.' },
     { sel: '#selecao', titulo: 'Marque várias de uma vez', texto: 'O jeito rápido: selecione só as fotos que <b>fogem da regra</b>, escolha <b>O resto da página</b> e a marcação, e toque em <b>Marcar</b>. Por exemplo, numa página de capturas de tela, selecione as que quer guardar e marque o resto como Descartar.' },
     { sel: '.paginas', titulo: 'Mais fotos', texto: 'São 30 fotos por página. Sempre aparece uma confirmação antes de marcar, e <b>marcar não apaga nada</b>: só registra a sua decisão.' },
   ],

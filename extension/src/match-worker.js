@@ -14,7 +14,7 @@ const row = (cls, a, g, extra = {}) => {
     cat,
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
-    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, thumb: a.thumb || null, thumbAt: a.thumbAt || null },
+    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null },
     g: g && { w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2) },
     ...extra,
   };
@@ -47,8 +47,10 @@ function icloudPhashWanted(pairs, dupPending, icloudById) {
 }
 
 /** Itens do iCloud cuja miniatura fica guardada no notebook: os que só estão no iCloud e as cópias repetidas nele (com a que fica). */
-function icloudThumbKeep(soIcloud, dupA) { // (+ candidatas a duplicata)
+function icloudThumbKeep(soIcloud, dupA, pairs) { // (+ candidatas a duplicata e pares a comparar)
   const ids = new Set(soIcloud.map((x) => x.id));
+  // pares em que comparar as duas versões importa: um lado reduzido ou ainda a confirmar
+  for (const p of pairs) if (p.cls === 'reduzida' || p.cls === 'confirmar') ids.add(p.a.id);
   for (const [id, c] of dupA.copies) { ids.add(id); if (c.keeper) ids.add(c.keeper); }
   // candidatas ainda sem desempate podem virar cópias neste mesmo percurso
   for (const id of dupA.pendingIds) ids.add(id);
@@ -68,7 +70,7 @@ const dupSummary = (items, d) => ({
 });
 
 /** Miniatura da cópia a manter, para mostrar ao lado da cópia na revisão. */
-const keeperInfo = (it, side) => it && { id: it.id, thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
+const keeperInfo = (it, side) => it && { id: it.id, med: it.med || null, thumbAt: it.thumbAt || null, thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
 
 self.onmessage = async () => {
   try {
@@ -108,7 +110,7 @@ self.onmessage = async () => {
     ];
     const wanted = icloudPhashWanted(result.pairs, dupA.pendingIds, icloudById);
     await setMeta('icloudPhashWanted', wanted);
-    const keep = icloudThumbKeep(result.soIcloud, dupA);
+    const keep = icloudThumbKeep(result.soIcloud, dupA, result.pairs);
     await setMeta('icloudThumbKeep', keep);
     self.postMessage({
       ok: true,

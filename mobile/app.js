@@ -1,6 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
+import { abrirVisor } from './viewer.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -226,14 +227,32 @@ $('sel-aplicar').addEventListener('click', () => {
 });
 
 // ---------- detalhe ----------
+const NOMES = { icloud: 'iCloud', google: 'Google', 'google-fica': 'Google (a que fica)', 'icloud-fica': 'iCloud (a que fica)' };
+
+/** Fotos da linha em tamanho grande, lado a lado (uma em cima da outra no celular). */
+function verGrande(l) {
+  if (!l.thumbs.length) return;
+  $('detalhe').hidden = true;
+  abrirVisor(l.thumbs.map((t) => ({
+    src: thumbUrl(t),
+    rotulo: NOMES[t.side] || t.side,
+    info: t.dims || '',
+    semImagem: t.side.startsWith('icloud') ? 'A miniatura do iCloud desta foto expirou (os links da Apple valem algumas horas) e não foi guardada. Pares reduzidos ou a confirmar passam a ser guardados no próximo percurso do iCloud.' : 'Imagem indisponível (a sessão do Google no notebook pode ter saído).',
+    // versão grande pelo servidor do notebook; sem ela, fica a miniatura (a guardada, no iCloud)
+    grande: t.full ? async () => `/api/thumb?u=${encodeURIComponent(t.full)}` : null,
+  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`);
+}
+
 function abrirDetalhe(i) {
   const l = linhas[i];
-  const nomes = { icloud: 'iCloud', google: 'Google', 'google-fica': 'Google (fica)', 'icloud-fica': 'iCloud (fica)' };
   $('det-fotos').replaceChildren(...l.thumbs.map((t) => {
     const f = document.createElement('figure');
-    f.innerHTML = `<img alt="" src="${esc(thumbUrl(t))}"><figcaption>${esc(nomes[t.side] || t.side)}</figcaption>`;
+    f.innerHTML = `<img alt="" src="${esc(thumbUrl(t))}"><figcaption>${esc(NOMES[t.side] || t.side)}</figcaption>`;
+    f.addEventListener('click', () => verGrande(l));
     return f;
   }));
+  $('det-ver').hidden = !l.thumbs.length;
+  $('det-ver').onclick = () => verGrande(l);
   $('det-titulo').textContent = `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`;
   const info = [
     ['Categoria', resumo.labels.categories[l.cat]],

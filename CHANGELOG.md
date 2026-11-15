@@ -2,6 +2,31 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.27 — 15/11/2026
+
+- Visualizador de fotos em tamanho grande (`extension/viewer.js` e
+  `viewer.css`, usados pelo painel e pelo celular): uma foto ou as versões da
+  linha lado a lado (no celular, uma sobre a outra), com zoom e movimento em
+  paralelo ("Mover juntas", pode desligar). Roda, pinça, arrastar, duplo
+  clique ou toque duplo, botões − 1:1 + e teclado (+ − 0, setas, Esc).
+  Abre com a miniatura e troca pela versão grande quando ela chega.
+- Painel: na lista, clicar na miniatura abre o visualizador; na grade, o
+  clique continua selecionando e a lupa ⤢ abre. O link para o Google Fotos
+  passou para dentro do visualizador. Celular: no detalhe (segurar a foto),
+  tocar numa foto ou em "Ver em tamanho grande".
+- Versão grande: Google pela sessão (=w2400/=w2000, sem corte); iCloud pela
+  versão média em JPEG (`resJPEGMedRes`, agora guardada no inventário)
+  enquanto a URL vale (até 4 h depois do percurso); depois, a miniatura
+  guardada. Sem nenhuma imagem, o painel explica o motivo.
+- Miniaturas guardadas passam a incluir o lado do iCloud dos pares
+  "cópia reduzida" e "a confirmar", que são os que se quer comparar (vale a
+  partir do próximo percurso).
+
+Verificação: 81 testes passando (`ext-viewer-src`, versão média no
+`ext-normalize`). Uso real: no painel, par reduzido e cópia do iCloud abertos
+lado a lado, zoom pela roda aplicado igual nas duas; no celular emulado, o
+detalhe abre o visualizador com as duas versões empilhadas.
+
 ## 0.2.26 — 15/11/2026
 
 - Uso real: percurso completo do iCloud com o desempate e a guarda de

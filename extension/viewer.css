@@ -1,0 +1,112 @@
+/* Visualizador de fotos (viewer.js), compartilhado pelo painel e pelo celular.
+   Fundo sempre escuro, nos dois temas: as fotos são o conteúdo. */
+.visor {
+  --v-fundo: #050817;
+  --v-texto: #eef2ff;
+  --v-texto-2: #aab6dc;
+  --v-borda: rgba(255, 255, 255, 0.16);
+  --v-acento: #4f8dff;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: var(--v-fundo);
+  color: var(--v-texto);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.visor[hidden] { display: none; }
+html.visor-aberto, html.visor-aberto body { overflow: hidden; }
+
+.visor-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--v-borda);
+}
+.visor-titulo { font-weight: 600; font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.visor-acoes { display: flex; align-items: center; gap: 6px; flex: none; }
+.visor-sync { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--v-texto-2); margin-right: 6px; cursor: pointer; }
+.visor-sync input { accent-color: var(--v-acento); width: 16px; height: 16px; margin: 0; }
+.visor-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid var(--v-borda);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--v-texto);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+}
+.visor-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.visor-btn:focus-visible { outline: 2px solid var(--v-acento); outline-offset: 2px; }
+.visor-fechar { font-size: 22px; }
+
+.visor-paineis {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  background: var(--v-borda);
+}
+.visor-painel { margin: 0; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--v-fundo); }
+.visor-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  touch-action: none;
+  cursor: zoom-in;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.visor-area.ampliada { cursor: grab; }
+.visor-sem {
+  position: absolute; inset: 0; margin: 0;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 24px; font-size: 14px; line-height: 1.5; color: var(--v-texto-2);
+}
+.visor-sem[hidden], .visor-area img[hidden] { display: none; }
+.visor-area.ampliada:active { cursor: grabbing; }
+.visor-area img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  /* sem will-change: ampliada, a imagem ganhava linhas finas (emendas de textura) */
+}
+.visor-painel figcaption {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--v-texto-2);
+  border-top: 1px solid var(--v-borda);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+.visor-painel figcaption b { color: var(--v-texto); font-weight: 600; }
+.visor-painel figcaption a { color: var(--v-acento); }
+.visor-carregando { color: var(--v-texto-2); font-style: italic; }
+.visor-dica { margin: 0; padding: 6px 14px 10px; font-size: 12px; color: var(--v-texto-2); text-align: center; }
+
+/* tela estreita: uma foto em cima da outra; a dica some (gestos de toque são os usuais) */
+@media (max-width: 720px) {
+  .visor-paineis { grid-auto-flow: row; grid-auto-rows: 1fr; grid-auto-columns: auto; }
+  .visor-sync { font-size: 12px; }
+  .visor-btn[data-z="+"], .visor-btn[data-z="-"] { display: none; }
+  .visor-dica { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .visor-area img { transition: transform 0.06s linear; }
+}

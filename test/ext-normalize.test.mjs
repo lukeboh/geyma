@@ -142,4 +142,12 @@ test('miniatura do iCloud vem do master, com o instante em que foi vista', () =>
   assert.ok(item.thumbAt >= antes);
   const [semMini] = parseIcloudQuery({ records: [{ ...master, fields: { ...master.fields, resJPEGThumbRes: undefined } }, asset] });
   assert.equal(semMini.thumb, null);
+  assert.equal(semMini.med, null);
+});
+
+test('versão média do iCloud vem do master quando existe', () => {
+  const master = { recordName: 'M1', recordType: 'CPLMaster', fields: { itemType: { value: 'public.jpeg' }, resJPEGMedRes: { value: { downloadURL: 'https://cvws.icloud-content.com/B/m/${f}?o=1' } } } };
+  const asset = { recordName: 'A1', recordType: 'CPLAsset', fields: { assetDate: { value: 1700000000000 }, masterRef: { value: { recordName: 'M1' } } } };
+  const [item] = parseIcloudQuery({ records: [master, asset] });
+  assert.equal(item.med, 'https://cvws.icloud-content.com/B/m/${f}?o=1');
 });

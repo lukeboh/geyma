@@ -6,6 +6,8 @@ import { patchItems, getThumb } from './src/core/db.js';
 import { sendPlan, effectiveDecision } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
+import { abrirVisor } from './viewer.js';
+import { googleGrande, icloudGrande } from './src/core/viewer-src.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -460,12 +462,50 @@ function icloudThumb(img, it) {
   icloudCache.get(it.id).then((src) => { img.src = src || url; });
 }
 
+// ---------- foto grande ----------
+// Google: a foto grande também exige a sessão; busca com cookies e vira blob.
+async function googleBlob(url) {
+  const res = await fetch(url, { credentials: 'include' });
+  const type = res.headers.get('content-type') || '';
+  return res.ok && type.startsWith('image/') ? URL.createObjectURL(await res.blob()) : null;
+}
+
+const SEM_ICLOUD = 'A miniatura do iCloud desta foto expirou (os links da Apple valem algumas horas) e não foi guardada. Pares reduzidos ou a confirmar passam a ser guardados no próximo percurso do iCloud.';
+const dimsTxt = (it) => (it?.w && it?.h ? `${it.w}×${it.h}` : '');
+
+/** Abre as fotos da linha em tamanho grande, lado a lado quando há mais de uma. */
+function verFotos(r, td) {
+  const imgs = [...td.querySelectorAll('img')];
+  const fotos = [];
+  const src = (i) => imgs[i]?.currentSrc || imgs[i]?.src || '';
+  let i = 0;
+  if (r.a?.thumb) {
+    const med = icloudGrande(r.a);
+    fotos.push({ src: src(i++), rotulo: 'iCloud', semImagem: SEM_ICLOUD, info: [dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: med ? async () => med : null });
+  }
+  if (r.dupOfIcloud?.thumb) {
+    const med = icloudGrande(r.dupOfIcloud);
+    fotos.push({ src: src(i++), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: med ? async () => med : null });
+  }
+  if (r.dupOf?.thumb) {
+    fotos.push({ src: src(i++), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });
+  }
+  if (r.g?.thumb) {
+    fotos.push({ src: src(i++), rotulo: 'Google', info: dimsTxt(r.g), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
+  }
+  if (fotos.length) abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}`);
+}
+
 function fillThumbs(td, r, link = true) {
   const add = (label, side) => {
     const fig = document.createElement('a');
     fig.className = `thumb ${side}`;
-    fig.title = label;
-    if (link && side === 'google' && r.g?.key) { fig.href = `https://photos.google.com/photo/${r.g.key}`; fig.target = '_blank'; fig.rel = 'noopener'; }
+    // na lista, clicar abre a foto grande; na grade, clicar seleciona (a lupa abre)
+    if (link) {
+      fig.title = `${label} · clique para ver em tamanho grande`;
+      fig.href = '#';
+      fig.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); verFotos(r, td); });
+    } else fig.title = label;
     const img = document.createElement('img');
     img.alt = label;
     img.loading = 'lazy';
@@ -482,7 +522,7 @@ function fillThumbs(td, r, link = true) {
     googleThumb(r.dupOf.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
   }
   if (r.g?.thumb) {
-    const img = add(link ? 'Miniatura no Google (clique para abrir no Google Fotos)' : 'Miniatura no Google', 'google');
+    const img = add('Miniatura no Google', 'google');
     googleThumb(r.g.thumb).then((src) => { if (src) img.src = src; else img.parentElement.classList.add('missing'); });
   }
   if (!td.children.length) {
@@ -530,6 +570,14 @@ function renderGrid() {
     const pic = document.createElement('div');
     pic.className = 'pic';
     fillThumbs(pic, r, false);
+    const ver = document.createElement('button');
+    ver.type = 'button';
+    ver.className = 'tile-ver';
+    ver.textContent = '⤢';
+    ver.title = 'Ver em tamanho grande';
+    ver.setAttribute('aria-label', 'Ver em tamanho grande');
+    ver.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); verFotos(r, pic); });
+    pic.append(ver);
     const cap = document.createElement('span');
     cap.className = 'cap';
     const dec = r.decision ? DECISIONS[r.decision] : `sugestão: ${DECISIONS[suggestDecision(r.cat)]}`;
