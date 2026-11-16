@@ -4,7 +4,7 @@ import { getItemsBySource, getMeta, setMeta, putCache, setInventorySummary, regi
 import { summarize } from './core/normalize.js';
 import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
-import { matchLibraries, summarizeMatch, partialUntil } from './core/match.js';
+import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded } from './core/match.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 
 const row = (cls, a, g, extra = {}) => {
@@ -21,14 +21,6 @@ const row = (cls, a, g, extra = {}) => {
     ...extra,
   };
 };
-
-/** Itens do Google sem pHash que ajudariam a decidir: grupos de duplicatas e candidatos de pares disputados. */
-function phashNeeded(pendingIds, pairs, google) {
-  const hasHash = new Set(google.filter((g) => g.phash).map((g) => g.id));
-  const need = new Set(pendingIds);
-  for (const p of pairs) for (const id of p.candidatos || []) if (!hasHash.has(id)) need.add(id);
-  return [...need].map((id) => id.slice(2));
-}
 
 /** Itens do iCloud com miniatura e sem pHash que a imagem decidiria: pares disputados ou reduzidos e candidatas a duplicata. */
 function icloudPhashNeeded(pairs, dupPending, icloudById) {
@@ -136,7 +128,13 @@ self.onmessage = async (e) => {
     };
     etapa('lista');
     const rows = [
-      ...result.pairs.map((p) => row(p.cls, p.a, p.g, { ...(p.menor ? { menor: p.menor } : {}), ...dupInfo(p.a, p.g) })),
+      ...result.pairs.map((p) => row(p.cls, p.a, p.g, {
+        ...(p.menor ? { menor: p.menor } : {}),
+        // reduzida sem a imagem conferida: só instante e proporção dizem que é a mesma foto
+        ...(p.cls === 'reduzida' && !p.confirmadoPorImagem ? { semConferencia: true } : {}),
+        ...(p.parecida ? { parecida: true } : {}),
+        ...dupInfo(p.a, p.g),
+      })),
       ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
       ...result.soIcloud.map((x) => row('soIcloud', x, null, dupInfo(x, null))),
     ];
@@ -151,7 +149,7 @@ self.onmessage = async (e) => {
       until,
       summary,
       dup: { google: dupSummary(scopeG, dupG), icloud: dupSummary(scopeA, dupA) },
-      phashNeeded: phashNeeded(dupG.pendingIds, result.pairs, google),
+      phashNeeded: googlePhashNeeded(dupG.pendingIds, result.pairs, new Set(google.filter((g) => g.phash).map((g) => g.id))),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       icloudPhashWanted: wanted.length,
       icloudThumbKeep: keep.length,

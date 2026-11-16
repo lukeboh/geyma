@@ -2,6 +2,22 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.30 — 15/11/2026
+
+- Correção: "cópia reduzida" afirmada sem comparar as imagens. Mesmo
+  instante (até o milissegundo) e mesma proporção não bastam: dois quadros
+  da mesma Live Photo (com o quadro principal trocado no iPhone) têm os dois.
+  Agora a conferência do Google pelas miniaturas inclui os pares reduzidos
+  ainda sem pHash (`googlePhashNeeded` em `match.js`); imagens claramente
+  diferentes desfazem o par; imagens só parecidas (distância entre 11 e 21)
+  vão para "a confirmar", com a etiqueta "imagens só parecidas"; e o que
+  ainda não foi comparado mostra "imagem não conferida".
+
+Verificação: 94 testes passando (casos reais em `ext-match`). Uso real:
+915 miniaturas do Google conferidas; pares reduzidos de 1.720 para 1.095
+(288 desfeitos por imagens diferentes; 480 passaram para "a confirmar"); o
+par relatado (distância 14, Live Photo editada) saiu de "cópia reduzida".
+
 ## 0.2.29 — 15/11/2026
 
 - Painel abre rápido: o último cruzamento fica guardado no notebook

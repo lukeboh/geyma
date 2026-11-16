@@ -115,9 +115,14 @@ export function matchLibraries(google, icloud, opts = {}) {
     const pair = { a, g: pick.g, dt: pick.dt };
     if (imageConfirmed) pair.confirmadoPorImagem = true;
     if (reused) pair.duplicataNoIcloud = true;
+    // imagens comparadas e só parecidas (nem iguais, nem claramente diferentes):
+    // por exemplo dois quadros de uma Live Photo, ou fotos de rajada
+    const parecida = !imageConfirmed && pick.d !== undefined && pick.d !== null;
+    if (parecida) pair.parecida = true;
     if (pick.rel === 'reduzida') {
-      pair.cls = 'reduzida';
       pair.menor = a.w * a.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
+      // só é "cópia reduzida" se não houver dúvida de que é a mesma imagem
+      pair.cls = parecida || disputed ? 'confirmar' : 'reduzida';
     } else {
       pair.cls = disputed ? 'confirmar' : 'ambos';
     }
@@ -208,4 +213,20 @@ export function partialUntil(icloud) {
   // a captura passiva traz alguns itens recentes logo no início; o percentil 99
   // marca o ponto até onde a grade foi percorrida em ordem
   return ts[Math.floor(ts.length * 0.99)];
+}
+
+/**
+ * Itens do Google sem pHash que a imagem decidiria: duplicatas pendentes,
+ * candidatos de pares disputados e pares "cópia reduzida" (mesmo instante e
+ * mesma proporção não bastam: duas fotos de uma Live Photo, ou de uma rajada,
+ * podem ter o mesmo instante e a mesma proporção sem ser a mesma imagem).
+ * Devolve as chaves do Google (sem o prefixo "g:").
+ */
+export function googlePhashNeeded(pendingIds, pairs, hasHash) {
+  const need = new Set(pendingIds);
+  for (const p of pairs) {
+    for (const id of p.candidatos || []) if (!hasHash.has(id)) need.add(id);
+    if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !hasHash.has(p.g.id)) need.add(p.g.id);
+  }
+  return [...need].map((id) => id.slice(2));
 }

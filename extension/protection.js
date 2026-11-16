@@ -21,7 +21,7 @@ const when = (ts) => new Date(ts).toLocaleString('pt-BR', { timeZone: 'UTC', dat
 const ORDER = ['ambos', 'confirmar', 'reduzida', 'soGoogle', 'soIcloud'];
 const EXPLAIN = {
   ambos: 'Mesmo instante e mesmas dimensões nos dois serviços, sem outro candidato. Protegidas em dois lugares.',
-  confirmar: 'Batem pelos metadados, mas há outra foto no mesmo segundo (rajada ou duplicata). Falta a confirmação visual.',
+  confirmar: 'Batem pelos metadados, mas há outra foto no mesmo segundo (rajada ou duplicata) ou as imagens são só parecidas (como dois quadros de uma Live Photo). Falta a confirmação visual.',
   reduzida: 'Mesma foto, mas um dos lados guarda uma cópia menor. Perda de qualidade a corrigir.',
   soGoogle: 'Só existem no Google Fotos. Candidatas a enviar para o iCloud, depois da sua revisão.',
   soIcloud: 'Só existem no iCloud. Candidatas a enviar para o Google, depois da sua revisão.',
@@ -454,6 +454,8 @@ function renderList() {
   for (const r of pageRows) {
     const tr = document.createElement('tr');
     const note = (r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : '')
+      + (r.parecida ? ' <span class="tag" title="As imagens foram comparadas: são parecidas, mas não iguais. Pode ser outro quadro da mesma Live Photo ou uma foto de rajada.">imagens só parecidas</span>' : '')
+      + (r.semConferencia ? ' <span class="tag" title="Mesmo instante e mesma proporção, mas as imagens ainda não foram comparadas. Use Conferir o Google pelas miniaturas na aba Proteção.">imagem não conferida</span>' : '')
       + (r.dup ? ' <span class="tag">cópia no Google</span>' : '') + (r.dupIcloud ? ' <span class="tag">cópia no iCloud</span>' : '');
     tr.innerHTML = `<td class="thumbs"></td><td>${when(r.ts)}</td><td><i class="swatch c-${r.cls}"></i> ${CLASSES[r.cls]}${note}</td><td class="cat"></td><td class="dec"></td><td class="name"></td><td>${dims(r.a)} ${mb(r.a?.size)}</td><td>${dims(r.g)}</td>`;
     const cat = tr.querySelector('.cat');
@@ -575,7 +577,7 @@ function verFotos(r, td) {
   try { history.replaceState(null, '', link); } catch {}
   const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais' };
   const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
-  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
+  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,
     aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },
   });

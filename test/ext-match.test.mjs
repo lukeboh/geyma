@@ -149,3 +149,38 @@ test('duas cópias da mesma foto no iCloud e uma no Google: ambas em ambos', () 
   assert.ok(r.pairs.every((p) => p.cls === 'ambos'));
   assert.equal(r.pairs.filter((p) => p.duplicataNoIcloud).length, 1);
 });
+
+import { googlePhashNeeded } from '../extension/src/core/match.js';
+
+test('cópia reduzida sem a imagem conferida entra na conferência do Google', () => {
+  // mesmo instante e mesma proporção (uma girada), mas sem pHash no Google: caso real de Live Photo com quadro trocado
+  const ts = Date.UTC(2023, 11, 22, 3, 21, 46, 592);
+  const a = { id: 'a:1', ts, w: 5712, h: 4284, phash: 'ca7a3d0d0e2392f3' };
+  const g = { id: 'g:K', ts, w: 1280, h: 1706 };
+  const r = matchLibraries([g], [a]);
+  assert.equal(r.pairs[0].cls, 'reduzida');
+  assert.ok(!r.pairs[0].confirmadoPorImagem);
+  assert.deepEqual(googlePhashNeeded([], r.pairs, new Set()), ['K']);
+  assert.deepEqual(googlePhashNeeded([], r.pairs, new Set(['g:K'])), []);
+});
+
+test('com o pHash do Google, imagens diferentes desfazem a cópia reduzida', () => {
+  const ts = Date.UTC(2023, 11, 22, 3, 21, 46, 592);
+  const a = { id: 'a:1', ts, w: 5712, h: 4284, phash: 'ca7a3d0d0e2392f3' };
+  const g = { id: 'g:K', ts, w: 1280, h: 1706, phash: '35a5c2f2f1dc6d0c' };
+  const r = matchLibraries([g], [a]);
+  assert.equal(r.pairs.length, 0);
+  assert.equal(r.soIcloud.length, 1);
+  assert.equal(r.soGoogle.length, 1);
+});
+
+test('imagens só parecidas (zona cinzenta) viram "a confirmar", não cópia reduzida', () => {
+  // caso real: distância 14 entre dois quadros da mesma Live Photo
+  const ts = Date.UTC(2023, 11, 22, 3, 21, 46, 592);
+  const a = { id: 'a:1', ts, w: 5712, h: 4284, phash: 'ca7a3d0d0e2392f3' };
+  const g = { id: 'g:K', ts, w: 1280, h: 1706, phash: '8978374c06339bf9' };
+  const r = matchLibraries([g], [a]);
+  assert.equal(r.pairs[0].cls, 'confirmar');
+  assert.equal(r.pairs[0].parecida, true);
+  assert.equal(r.pairs[0].menor, 'google');
+});
