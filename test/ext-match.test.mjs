@@ -252,3 +252,16 @@ test('fotos ocultas do iCloud ficam fora do cruzamento e do envio', () => {
   const r = matchLibraries([], A);
   assert.deepEqual(r.soIcloud.map((x) => x.id), ['a:1']);
 });
+
+import { naoVistosNoPercurso } from '../extension/src/core/match.js';
+
+test('percurso completo: o que ele não viu fica de fora; se faltar muito, não marca nada', () => {
+  const inicio = 1000;
+  const vistos = Array.from({ length: 200 }, (_, i) => ({ id: `a:v${i}`, thumbAt: 1500, seenAt: 10 }));
+  const items = [...vistos, { id: 'a:oculta', thumbAt: 900, seenAt: 800 }, { id: 'a:ja-marcada', hidden: true, thumbAt: 1 }, { id: 'a:nova', thumbAt: 1200, seenAt: 1200 }];
+  assert.deepEqual(naoVistosNoPercurso(items, inicio), ['a:oculta']);
+  // percurso que pulou metade: suspeito, nada é marcado
+  const metade = vistos.map((x, i) => (i % 2 ? { ...x, thumbAt: 1 } : x));
+  assert.equal(naoVistosNoPercurso(metade, inicio), null);
+  assert.deepEqual(paraCruzar([{ id: 'a:1' }, { id: 'a:2', foraDoPercurso: 5 }, { id: 'a:3', hidden: true }]).map((x) => x.id), ['a:1']);
+});

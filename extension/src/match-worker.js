@@ -104,8 +104,8 @@ self.onmessage = async (e) => {
       getMeta('icloudCounts'),
       getMeta('phashProgress'),
     ]);
-    // fotos ocultas no iPhone ficam fora do cruzamento (e, portanto, de qualquer
-    // envio): decisão do usuário. Continuam no inventário.
+    // fotos ocultas no iPhone, e as que o último percurso completo não achou,
+    // ficam fora do cruzamento (e de qualquer envio). Continuam no inventário.
     const icloud = paraCruzar(icloudTodo);
     const ocultas = icloudTodo.length - icloud.length;
     // percurso concluído alguma vez, ou inventário do tamanho do total oficial da Apple
@@ -163,7 +163,7 @@ self.onmessage = async (e) => {
       icloudPhashWanted: wanted.length,
       icloudThumbKeep: keep.length,
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
-      counts: { google: google.length, icloud: icloud.length, ocultas },
+      counts: { google: google.length, icloud: icloud.length, ocultas, marcadasOcultas: icloudTodo.filter((x) => x.hidden).length },
       rows,
       versao,
       lidoEm,

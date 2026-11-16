@@ -2,6 +2,18 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.34 — 16/11/2026
+
+- Fora da biblioteca principal: um percurso do iCloud iniciado do zero grava
+  o início (`icloudWalkStart`); ao concluir, os itens que ele não viu
+  (ocultos registrados sem a marca, ou apagados) ganham `foraDoPercurso` e
+  ficam fora do cruzamento e de qualquer envio (`naoVistosNoPercurso`,
+  `paraCruzar` em `match.js`). Proteção contra percurso que pulou trechos:
+  se faltar mais de 2% da biblioteca, nada é marcado e o motivo fica em
+  `icloudForaDoPercurso`. Um item visto de novo perde a marca.
+
+Verificação: 107 testes passando. Uso real: em andamento (percurso completo).
+
 ## 0.2.33 — 16/11/2026
 
 - Fotos ocultas do iCloud ficam fora do cruzamento e, portanto, de qualquer

@@ -289,5 +289,19 @@ export function googleFileNeeded(pairs) {
   return out;
 }
 
-/** Itens do iCloud que entram no cruzamento: as fotos ocultas ficam de fora (e, portanto, de qualquer envio). */
-export const paraCruzar = (icloud) => icloud.filter((x) => !x.hidden);
+/**
+ * Itens do iCloud que entram no cruzamento. Ficam de fora (e, portanto, de
+ * qualquer envio) as fotos ocultas e as que o último percurso completo da
+ * biblioteca não encontrou (ocultas registradas sem a marca, ou apagadas).
+ */
+export const paraCruzar = (icloud) => icloud.filter((x) => !x.hidden && !x.foraDoPercurso);
+
+/**
+ * Depois de um percurso completo iniciado em inicio: itens do iCloud que ele
+ * não viu (thumbAt anterior ao início). Se forem mais que a fração limite do
+ * total, o percurso provavelmente pulou trechos: devolve null e nada é marcado.
+ */
+export function naoVistosNoPercurso(icloud, inicio, limite = 0.02) {
+  const fora = icloud.filter((x) => !x.hidden && (x.thumbAt || 0) < inicio && (x.seenAt || 0) < inicio).map((x) => x.id);
+  return fora.length > Math.max(50, icloud.length * limite) ? null : fora;
+}

@@ -161,7 +161,7 @@ function renderProtection() {
   }
   $('m-headline').innerHTML = `<b>${pct(both, icloudScope)}</b> das fotos do iCloud também estão no Google, e <b>${pct(both, googleScope)}</b> das fotos do Google também estão no iCloud.`;
   $('m-sub').textContent = `${fmt.format(both)} fotos em ambos · ${fmt.format(t.soGoogle)} só no Google · ${fmt.format(t.soIcloud)} só no iCloud`
-    + (counts.ocultas ? ` · ${fmt.format(counts.ocultas)} ocultas no iCloud ficam de fora (não entram em nenhum envio)` : '');
+    + (counts.ocultas ? ` · ${fmt.format(counts.ocultas)} do iCloud ficam de fora, sem entrar em nenhum envio (ocultas, ou não encontradas no último percurso completo: ocultas ou apagadas)` : '');
 
   const box = $('m-classes');
   box.innerHTML = '';

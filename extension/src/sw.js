@@ -1,7 +1,8 @@
 // Service worker: recebe os dados das páginas, normaliza, grava no inventário
 // e encaminha os comandos do painel para as abas dos serviços.
 import { parseGoogleBatchText, parseIcloudQuery, parseIcloudCounts } from './core/normalize.js';
-import { putItems, patchItems, setMeta, getMeta, putThumbs, thumbIds, getItem, icloudTsSorted } from './core/db.js';
+import { putItems, patchItems, setMeta, getMeta, putThumbs, thumbIds, getItem, icloudTsSorted, getItemsBySource } from './core/db.js';
+import { naoVistosNoPercurso } from './core/match.js';
 import { estimateFrac, nextFrac } from './core/icloud-locate.js';
 import { ICLOUD_URL_VALIDA_MS } from './core/viewer-src.js';
 import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
@@ -182,9 +183,27 @@ async function handlePageEvent(site, type, payload, tabId) {
     // percurso esperando a aba aparecer: religa a emulação de foco (se a conexão caiu)
     if (payload.task === 'icloud' && payload.state === 'aguardando' && tabId != null) await holdFocus(tabId).catch(() => {});
     // a conclusão do percurso do iCloud fica registrada mesmo depois de outro percurso parado
-    if (payload.task === 'icloud' && payload.state === 'concluido') await setMeta('icloudCompleted', { at: Date.now() });
+    if (payload.task === 'icloud' && payload.state === 'concluido') {
+      await setMeta('icloudCompleted', { at: Date.now() });
+      await marcarNaoVistos().catch((err) => setMeta('icloudForaDoPercurso', { erro: String(err.message || err) }));
+    }
     broadcast({ site, event: 'progress', progress: payload });
   }
+}
+
+/**
+ * Fim de um percurso completo: marca os itens do iCloud que ele não viu
+ * (ocultos sem a marca, ou apagados) para ficarem fora do cruzamento.
+ */
+async function marcarNaoVistos() {
+  const inicio = (await getMeta('icloudWalkStart'))?.value;
+  if (!inicio) return;
+  const icloud = await getItemsBySource('icloud');
+  const fora = naoVistosNoPercurso(icloud, inicio);
+  if (fora === null) { await setMeta('icloudForaDoPercurso', { inicio, pulado: true, total: icloud.length }); return; }
+  for (let i = 0; i < fora.length; i += 2000) await patchItems(fora.slice(i, i + 2000).map((id) => ({ id, foraDoPercurso: inicio })));
+  await setMeta('icloudForaDoPercurso', { inicio, n: fora.length, total: icloud.length });
+  await setMeta('icloudWalkStart', null);
 }
 
 async function findOrOpenTab(site) {
@@ -236,6 +255,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (msg.kind === 'start') await holdFocus(tab.id).catch((err) => broadcast({ site: 'icloud', event: 'falha', reason: `emulação de foco: ${err.message || err}` }));
       }
       const startFrac = msg.site === 'icloud' && msg.resume ? (await getMeta('icloudProgress'))?.value?.frac || 0 : 0;
+      // início de um percurso do zero: o que ele não vir até o fim está fora da biblioteca principal
+      if (msg.kind === 'start' && msg.site === 'icloud' && !msg.resume) await setMeta('icloudWalkStart', Date.now());
       const cmd = msg.kind === 'stop' ? 'stop' : msg.site === 'google' ? 'google-crawl' : 'icloud-walk';
       await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd, startFrac });
       sendResponse({ ok: true });

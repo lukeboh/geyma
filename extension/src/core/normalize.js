@@ -113,6 +113,8 @@ export function normalizeIcloudPair(asset, master) {
     burst: Number(a('burstFlags')) > 0,
     // oculta no iPhone (álbum Ocultas): entra no inventário quando esse álbum é aberto no site
     hidden: Number(a('isHidden')) === 1,
+    // visto agora: desfaz uma marca antiga de "fora do percurso"
+    foraDoPercurso: false,
     favorite: Number(a('isFavorite')) === 1,
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
     // miniatura JPEG (URL temporária assinada pela Apple); thumbAt diz quando foi vista
