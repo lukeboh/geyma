@@ -2,6 +2,14 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.35 — 16/11/2026
+
+- Documentação: handoff atualizado para a retomada (o que foi feito de 0.2.12
+  a 0.2.34, conhecimento técnico novo do Google e do iCloud, decisões, como
+  retomar passo a passo, pendências e o que já foi decidido); roadmap com as
+  entregas de identidade, revisão e o item que falta para fechar a 0.3, e um
+  backlog; aprendizados de usabilidade.
+
 ## 0.2.34 — 16/11/2026
 
 - Fora da biblioteca principal: um percurso do iCloud iniciado do zero grava
@@ -12,7 +20,9 @@ Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
   se faltar mais de 2% da biblioteca, nada é marcado e o motivo fica em
   `icloudForaDoPercurso`. Um item visto de novo perde a marca.
 
-Verificação: 107 testes passando. Uso real: em andamento (percurso completo).
+Verificação: 107 testes passando. Uso real: percurso completo de 16/11
+concluído em cerca de 1 h; os itens não vistos ficaram de fora, bem abaixo da
+trava de 2%.
 
 ## 0.2.33 — 16/11/2026
 

@@ -41,6 +41,13 @@ amostra, com a taxa de falso positivo medida contra um controle.
 - [x] Percurso do iCloud numa janela própria e com as miniaturas no menor
   tamanho, ajustados pela extensão (0.2.17), e sem depender da tela: anda com
   a janela coberta e a tela bloqueada (0.2.22)
+- [x] Painel rápido: cruzamento guardado e refeito em segundo plano só quando
+  o inventário muda, com barra de etapas; contagem do inventário mantida a
+  cada gravação (0.2.29)
+- [x] Fotos ocultas e itens que o percurso completo não encontra ficam fora
+  do cruzamento e de qualquer envio (0.2.33, 0.2.34; validado em 16/11)
+- [ ] Exercitar "Continuar de onde parou" depois da correção da posição salva
+  (0.2.22): último item para marcar 0.3.0
 
 **Critério:** inventário completo dos dois lados, retomável, sem queda de sessão.
 
@@ -53,9 +60,18 @@ amostra, com a taxa de falso positivo medida contra um controle.
   iCloud é lido (0.2.6)
 - [x] Duplicatas dentro do Google (mesmo segundo e dimensões) conferidas por
   pHash calculado na extensão (0.2.7)
+- [x] "Cópia reduzida" só com a imagem conferida; imagens só parecidas vão
+  para "a confirmar" (0.2.30)
+- [x] Live Photos: quadro principal diferente no mesmo clique (instante ao
+  milissegundo) conta como a mesma foto (0.2.31)
+- [x] HEIC × JPG: ficha do arquivo do Google (formato, tamanho, nome) pelo
+  cabeçalho do download; nome do arquivo como evidência; movimento da Live
+  Photo lido da listagem do Google (0.2.32)
+- [ ] Botões "São a mesma foto / São fotos diferentes" nos pares a confirmar,
+  com a decisão do usuário valendo como evidência
 - Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
   houver, nome como evidência
-- Tratamento de rajadas, Live Photos, HEIC × JPG e fusos horários
+- Tratamento de rajadas e fusos horários
 - Estado "confirmada / provável / incerta"
 
 **Critério:** falso positivo abaixo de um limite definido na 0.2, numa amostra
@@ -65,12 +81,18 @@ revisada manualmente.
 - Redimensionamento pelos metadados
 - Recorte, edição e recompressão pela comparação de miniaturas e, por amostragem,
   dos originais
-- Indicador da melhor cópia de cada foto
+- Indicador da melhor cópia de cada foto, usando a ficha do arquivo do Google
+  (original, convertido, reduzido) e o movimento das Live Photos
+- Live Photos que no Google estão sem o movimento: candidatas a envio a
+  partir do iCloud
 
 ### 0.6 — Classificação e painel de proteção
 - [x] Regras baratas sobre metadados, com categoria, motivo e sugestão (0.2.8)
 - [x] Marcação de decisão por item e em lote, na aba Revisão (0.2.8)
-- [ ] Miniaturas lado a lado na revisão
+- [x] Miniaturas lado a lado na revisão (0.2.11) e visualizador grande com
+  zoom e movimento sincronizados (0.2.27)
+- [x] Revisão pelo celular, pelo Tailscale
+- [x] Links copiáveis de cada foto, para mandar um caso e investigar (0.2.29)
 - [ ] Modelo visual local para o que as regras deixam como indefinido
 - Marcações da Apple, regras baratas e modelo visual local (CLIP)
 - Categorias: pessoal, print, internet, propaganda, documento, indefinido
@@ -84,7 +106,7 @@ com qualidade preservada". Marco de validação do uso pessoal.
 
 ### 0.7 — Envio curado nos dois sentidos
 - Envia **somente** itens marcados Pessoal ou Manter; Pendente e Descartar nunca
-  são copiados
+  são copiados; fotos ocultas do iCloud nunca entram (decisão de 16/11)
 - Google Photos Library API (escopo de envio), em lotes, em fluxo, com retomada
 - Google → iCloud: escolher o caminho (transferência oficial, pasta de envio do
   iCloud para Windows ou página do iCloud.com)
@@ -96,8 +118,8 @@ com qualidade preservada". Marco de validação do uso pessoal.
   impressão digital (iCloud) ou SHA-1 (Google), mesma imagem pelo pHash e
   candidatas de mesmo segundo; cópia de maior qualidade fica; revisão com a
   cópia ao lado da que fica e marcação em lote
-- [ ] Duplicatas candidatas do iCloud conferidas pelas miniaturas (depende de
-  um novo percurso do iCloud)
+- [x] Duplicatas candidatas do iCloud conferidas pelas miniaturas durante o
+  percurso (0.2.23)
 - [ ] Remoção das cópias aprovadas para a lixeira de cada serviço, só com
   confirmação explícita
 - Listas de exclusão revisadas em lote, só para itens protegidos
@@ -108,6 +130,15 @@ com qualidade preservada". Marco de validação do uso pessoal.
 
 ### 1.0 — Uso pessoal completo
 - Biblioteca pessoal protegida e sanitizada, rotina de manutenção funcionando
+
+## Backlog (sem etapa definida)
+
+- Início automático do servidor do celular (opcional, aguarda decisão).
+- Reler o álbum Ocultas para marcar as ocultas diretamente (hoje o percurso
+  completo já as deixa de fora).
+- Ficha do arquivo do Google para vídeos (`=dv`), se os vídeos entrarem no
+  envio.
+- Avaliar tornar o repositório privado antes da trilha de produto.
 
 ## Trilha de produto (paralela, a partir da 0.6)
 

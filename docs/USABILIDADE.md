@@ -74,6 +74,16 @@ produto (ver [ESTRATEGIA.md](ESTRATEGIA.md)).
   bytes. O plano de envio separa fotos e vídeos para a decisão ser consciente.
 - **A categoria precisa mostrar o motivo** (passar o mouse): sem isso, a
   sugestão "Pendente" parece arbitrária.
+- **Abrir o painel não pode demorar:** recalcular tudo a cada abertura levava
+  de 25 a 58 s sem nenhum aviso. Agora o último resultado aparece na hora e o
+  recálculo, quando preciso, roda em segundo plano com a etapa e o tempo à
+  vista (0.2.29).
+- **O usuário precisa poder apontar um caso:** cada foto aberta tem um link
+  copiável (barra de endereço ou "Copiar link"); foi assim que um falso "cópia
+  reduzida" (dois quadros da mesma Live Photo) foi achado e corrigido.
+- **Etiquetas dizem o porquê:** "imagem não conferida", "imagens só
+  parecidas", "Live Photo · quadro diferente", "versão editada", "Google: cópia
+  em JPEG", "Google sem o movimento".
 
 ## Guia passo a passo
 
@@ -88,7 +98,8 @@ Pedido do usuário: o painel não era fácil de entender sozinho.
 
 - Grade de miniaturas grandes para revisar um filtro inteiro de uma vez
   (selecionar as exceções e marcar o resto em lote), com atalhos de teclado.
-- Comparação lado a lado para os pares "a confirmar" e para as duplicatas.
+- Botões "São a mesma foto / São fotos diferentes" no visualizador dos pares
+  "a confirmar".
 - Espaço que cada decisão libera ou ocupa, ao lado do botão de lote.
 - Assistente de início que verifica de verdade: extensão instalada, sessões
   abertas, janela do iCloud, tamanho das miniaturas.
