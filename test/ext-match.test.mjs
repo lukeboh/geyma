@@ -184,3 +184,38 @@ test('imagens só parecidas (zona cinzenta) viram "a confirmar", não cópia red
   assert.equal(r.pairs[0].parecida, true);
   assert.equal(r.pairs[0].menor, 'google');
 });
+
+import { mesmoClique, isLive } from '../extension/src/core/match.js';
+
+test('Live Photo: quadro diferente do mesmo clique continua sendo a mesma foto', () => {
+  const ts = Date.UTC(2023, 11, 22, 3, 21, 46, 592);
+  const a = { id: 'a:1', ts, w: 5712, h: 4284, subtype: 2, edited: true, phash: 'ca7a3d0d0e2392f3' };
+  // imagem só parecida (14) e imagem bem diferente: as duas ficam no par
+  for (const ph of ['8978374c06339bf9', '35a5c2f2f1dc6d0c']) {
+    const r = matchLibraries([{ id: 'g:K', ts, w: 1280, h: 1706, phash: ph }], [a]);
+    assert.equal(r.pairs.length, 1, ph);
+    assert.equal(r.pairs[0].cls, 'reduzida');
+    assert.equal(r.pairs[0].quadroDiferente, true);
+    assert.equal(summarizeMatch(r).quadroDiferente, 1);
+  }
+});
+
+test('mesmoClique exige Live Photo e o mesmo instante', () => {
+  const ts = Date.UTC(2020, 0, 1, 10, 0, 0, 345);
+  const live = { ts, subtype: 2 };
+  assert.equal(isLive(live), true);
+  assert.equal(isLive({ subtype: 0 }), false);
+  assert.equal(isLive({ subtype: 2, live: false }), false);
+  assert.equal(mesmoClique(live, { ts }), true);
+  assert.equal(mesmoClique(live, { ts: ts + 1 }), false);
+  // Google sem milissegundos: o mesmo segundo vale só com um candidato
+  assert.equal(mesmoClique(live, { ts: ts - 345 }), true);
+  assert.equal(mesmoClique(live, { ts: ts - 345 }, 2), false);
+  assert.equal(mesmoClique({ ts }, { ts }), false);
+});
+
+test('fora de Live Photo, imagem diferente no mesmo instante continua separada', () => {
+  const ts = Date.UTC(2023, 11, 22, 3, 21, 46, 592);
+  const r = matchLibraries([{ id: 'g:K', ts, w: 1280, h: 1706, phash: '35a5c2f2f1dc6d0c' }], [{ id: 'a:1', ts, w: 5712, h: 4284, subtype: 0, phash: 'ca7a3d0d0e2392f3' }]);
+  assert.equal(r.pairs.length, 0);
+});

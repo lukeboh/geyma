@@ -11,10 +11,26 @@
 //   um dos lados).
 // - Mais de um candidato no mesmo segundo (rajadas, duplicatas) = par provável,
 //   que precisa de confirmação visual (pHash) antes de qualquer decisão.
+// - Live Photo: os quadros de um mesmo clique têm o mesmo instante. Se o
+//   quadro principal foi trocado (no iPhone, ou numa cópia enviada depois), as
+//   imagens diferem mas é a mesma foto: "mesmo clique, quadro diferente".
 
 import { hamming, SAME_MAX, DIFFERENT_MIN } from './phash.js';
 
 export const TOLERANCE_MS = 1000;
+
+/** Live Photo no iCloud (campo live do registro; nos itens antigos, assetSubtypeV2 = 2). */
+export const isLive = (a) => Boolean(a?.live ?? a?.subtype === 2);
+
+/**
+ * Mesmo clique de uma Live Photo: instante idêntico ao milissegundo, ou, se o
+ * Google guardou sem milissegundos, o mesmo segundo com um só candidato.
+ */
+export function mesmoClique(a, g, nCandidatos = 1) {
+  if (!isLive(a)) return false;
+  if (g.ts === a.ts) return true;
+  return g.ts % 1000 === 0 && Math.floor(g.ts / 1000) === Math.floor(a.ts / 1000) && nCandidatos === 1;
+}
 
 export const CLASSES = {
   ambos: 'Em ambos',
@@ -77,9 +93,10 @@ export function matchLibraries(google, icloud, opts = {}) {
   // diferentes saem, e os mais parecidos vêm primeiro.
   const byImage = (a, c) => {
     if (!a.phash) return c;
-    const scored = c.map((x) => ({ ...x, d: hamming(a.phash, x.g.phash) }));
+    const scored = c.map((x) => ({ ...x, d: hamming(a.phash, x.g.phash), clique: mesmoClique(a, x.g, c.length) }));
     return scored
-      .filter((x) => x.d === null || x.d < DIFFERENT_MIN)
+      // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de uma Live Photo
+      .filter((x) => x.d === null || x.d < DIFFERENT_MIN || x.clique)
       .sort((x, y) => (x.d ?? 99) - (y.d ?? 99) || (x.rel === y.rel ? x.dt - y.dt : x.rel === 'igual' ? -1 : 1));
   };
 
@@ -117,8 +134,11 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (reused) pair.duplicataNoIcloud = true;
     // imagens comparadas e só parecidas (nem iguais, nem claramente diferentes):
     // por exemplo dois quadros de uma Live Photo, ou fotos de rajada
-    const parecida = !imageConfirmed && pick.d !== undefined && pick.d !== null;
+    const comparada = !imageConfirmed && pick.d !== undefined && pick.d !== null;
+    const quadro = comparada && mesmoClique(a, pick.g, c.length);
+    const parecida = comparada && !quadro;
     if (parecida) pair.parecida = true;
+    if (quadro) pair.quadroDiferente = true;
     if (pick.rel === 'reduzida') {
       pair.menor = a.w * a.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
       // só é "cópia reduzida" se não houver dúvida de que é a mesma imagem
@@ -190,6 +210,7 @@ export function googleSameSecondGroups(google) {
 export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   const totals = { ambos: 0, confirmar: 0, reduzida: 0, soGoogle: soGoogle.length, soIcloud: soIcloud.length };
   const reduzidaMenor = { google: 0, icloud: 0 };
+  let quadroDiferente = 0;
   const byYear = {};
   const bump = (ts, cls) => {
     const y = new Date(ts).getUTCFullYear();
@@ -199,11 +220,12 @@ export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   for (const p of pairs) {
     totals[p.cls]++;
     if (p.cls === 'reduzida') reduzidaMenor[p.menor]++;
+    if (p.quadroDiferente) quadroDiferente++;
     bump(p.a.ts, p.cls);
   }
   for (const g of soGoogle) bump(g.ts, 'soGoogle');
   for (const a of soIcloud) bump(a.ts, 'soIcloud');
-  return { totals, reduzidaMenor, byYear };
+  return { totals, reduzidaMenor, quadroDiferente, byYear };
 }
 
 /** Limite do trecho já lido do iCloud enquanto o percurso não termina. */

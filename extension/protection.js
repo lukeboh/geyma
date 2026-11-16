@@ -164,9 +164,11 @@ function renderProtection() {
     const card = document.createElement('article');
     card.className = 'class-card';
     card.style.setProperty('--cor', `var(--c-${k})`);
-    const extra = k === 'reduzida' && t.reduzida
+    const extraLive = (k === 'ambos' || k === 'reduzida') && s.quadroDiferente
+      ? `<p class="hint">inclui Live Photos com o quadro principal diferente em cada serviço (${fmt.format(s.quadroDiferente)} no total): mesmo clique, mesma foto</p>` : '';
+    const extra = extraLive + (k === 'reduzida' && t.reduzida
       ? `<p class="hint">menor no Google: ${fmt.format(s.reduzidaMenor.google)} · menor no iCloud: ${fmt.format(s.reduzidaMenor.icloud)}</p>`
-      : '';
+      : '');
     card.innerHTML = `<h3><i class="swatch c-${k}"></i>${CLASSES[k]}</h3><p class="big">${fmt.format(t[k])}</p><p class="hint">${EXPLAIN[k]}</p>${extra}`;
     const btn = document.createElement('button');
     btn.textContent = 'Ver lista';
@@ -454,6 +456,7 @@ function renderList() {
   for (const r of pageRows) {
     const tr = document.createElement('tr');
     const note = (r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : '')
+      + (r.quadroDiferente ? ' <span class="tag" title="Live Photo: mesmo clique, mesmo instante, mas o quadro principal é outro em cada serviço (por exemplo, trocado no iPhone depois de a cópia ir para o Google).">Live Photo · quadro diferente</span>' : '')
       + (r.parecida ? ' <span class="tag" title="As imagens foram comparadas: são parecidas, mas não iguais. Pode ser outro quadro da mesma Live Photo ou uma foto de rajada.">imagens só parecidas</span>' : '')
       + (r.semConferencia ? ' <span class="tag" title="Mesmo instante e mesma proporção, mas as imagens ainda não foram comparadas. Use Conferir o Google pelas miniaturas na aba Proteção.">imagem não conferida</span>' : '')
       + (r.dup ? ' <span class="tag">cópia no Google</span>' : '') + (r.dupIcloud ? ' <span class="tag">cópia no iCloud</span>' : '');
@@ -577,7 +580,7 @@ function verFotos(r, td) {
   try { history.replaceState(null, '', link); } catch {}
   const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais' };
   const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
-  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
+  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,
     aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },
   });

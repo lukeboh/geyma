@@ -2,6 +2,25 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.31 — 15/11/2026
+
+- Live Photo com quadro principal diferente: os quadros de um mesmo clique
+  têm o mesmo instante; se o quadro principal foi trocado (no iPhone, ou numa
+  cópia enviada antes da troca), as imagens diferem mas é a mesma foto. Com o
+  instante idêntico ao milissegundo (ou, se o Google guardou sem
+  milissegundos, o mesmo segundo com um só candidato) e o item do iCloud
+  sendo Live Photo, o par é mantido, sem ir para "a confirmar" nem ser
+  desfeito, com a etiqueta "Live Photo · quadro diferente" (`mesmoClique`,
+  `isLive` em `match.js`; total em `summary.quadroDiferente`).
+- Inventário do iCloud passa a registrar `live` (vídeo complementar no
+  original); itens antigos usam `assetSubtypeV2 = 2`, conferido contra os
+  tipos de arquivo (2 = Live, 3 = captura de tela, 1 = panorama).
+
+Verificação: 97 testes passando. Uso real: 136 pares reconhecidos como Live
+Photo com quadro diferente (58 deles tinham sido desfeitos e voltaram a
+contar como protegidos); o par relatado aparece como cópia reduzida da mesma
+Live Photo.
+
 ## 0.2.30 — 15/11/2026
 
 - Correção: "cópia reduzida" afirmada sem comparar as imagens. Mesmo

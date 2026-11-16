@@ -133,6 +133,7 @@ self.onmessage = async (e) => {
         // reduzida sem a imagem conferida: só instante e proporção dizem que é a mesma foto
         ...(p.cls === 'reduzida' && !p.confirmadoPorImagem ? { semConferencia: true } : {}),
         ...(p.parecida ? { parecida: true } : {}),
+        ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...dupInfo(p.a, p.g),
       })),
       ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),

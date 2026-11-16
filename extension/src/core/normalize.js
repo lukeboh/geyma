@@ -90,6 +90,8 @@ export function normalizeIcloudPair(asset, master) {
     fingerprint: m('resOriginalFingerprint') || null,
     edited: Number(a('adjustmentRenderType')) > 0,
     subtype: a('assetSubtypeV2') ?? a('assetSubtype') ?? null,
+    // Live Photo: o original tem o vídeo complementar (os quadros do clique)
+    live: Boolean(m('resOriginalVidComplRes') || m('resOriginalVidComplFileType')) || Number(a('assetSubtypeV2')) === 2,
     burst: Number(a('burstFlags')) > 0,
     favorite: Number(a('isFavorite')) === 1,
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
