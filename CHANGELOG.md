@@ -25,12 +25,11 @@ Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
   inventário quando o álbum Ocultas é aberto no site.
 
 Verificação: 105 testes passando (`ext-google-file`, novos casos em
-`ext-match` e `ext-normalize`). Uso real: Google relido (723 páginas) e
-13.124 arquivos conferidos sem erro; das 11.864 Live Photos do iCloud que
-estão no Google, 11.300 têm o movimento lá e 564 só a foto parada; das cópias
-de fotos conferidas, 2.755 estão no mesmo formato e 10.212 em outro (9.792 no
-tamanho cheio). O par relatado é uma cópia JPEG de 1280×1706 com o mesmo nome
-(IMG_8437) e com movimento.
+`ext-match` e `ext-normalize`). Uso real: Google relido inteiro e os
+arquivos dos pares relevantes conferidos sem erro; a maioria das Live Photos
+tem o movimento no Google, e a maior parte das cópias em outro formato está
+no tamanho cheio. O par relatado é uma cópia JPEG reduzida, com o mesmo nome
+de arquivo e com movimento.
 
 ## 0.2.31 — 15/11/2026
 
@@ -46,10 +45,10 @@ tamanho cheio). O par relatado é uma cópia JPEG de 1280×1706 com o mesmo nome
   original); itens antigos usam `assetSubtypeV2 = 2`, conferido contra os
   tipos de arquivo (2 = Live, 3 = captura de tela, 1 = panorama).
 
-Verificação: 97 testes passando. Uso real: 136 pares reconhecidos como Live
-Photo com quadro diferente (58 deles tinham sido desfeitos e voltaram a
-contar como protegidos); o par relatado aparece como cópia reduzida da mesma
-Live Photo.
+Verificação: 97 testes passando. Uso real: pares de Live Photo com quadro
+diferente reconhecidos (parte deles tinha sido desfeita e voltou a contar
+como protegida); o par relatado aparece como cópia reduzida da mesma Live
+Photo.
 
 ## 0.2.30 — 15/11/2026
 
@@ -62,10 +61,10 @@ Live Photo.
   vão para "a confirmar", com a etiqueta "imagens só parecidas"; e o que
   ainda não foi comparado mostra "imagem não conferida".
 
-Verificação: 94 testes passando (casos reais em `ext-match`). Uso real:
-915 miniaturas do Google conferidas; pares reduzidos de 1.720 para 1.095
-(288 desfeitos por imagens diferentes; 480 passaram para "a confirmar"); o
-par relatado (distância 14, Live Photo editada) saiu de "cópia reduzida".
+Verificação: 94 testes passando (casos reais em `ext-match`). Uso real: as
+miniaturas do Google dos pares reduzidos foram conferidas; parte dos pares
+foi desfeita por imagens diferentes e parte passou para "a confirmar"; o par
+relatado (distância 14, Live Photo editada) saiu de "cópia reduzida".
 
 ## 0.2.29 — 15/11/2026
 
