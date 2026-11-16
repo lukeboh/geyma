@@ -4,7 +4,7 @@ import { getItemsBySource, getMeta, setMeta, putCache, setInventorySummary, regi
 import { summarize } from './core/normalize.js';
 import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
-import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive } from './core/match.js';
+import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive, paraCruzar } from './core/match.js';
 import { copiaNoGoogle } from './core/google-file.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 
@@ -96,7 +96,7 @@ self.onmessage = async (e) => {
   try {
     const versao = (await getMeta('inventario'))?.value?.versao || 0;
     etapa('ler');
-    const [google, icloud, progress, completed, counts, phashProgress] = await Promise.all([
+    const [google, icloudTodo, progress, completed, counts, phashProgress] = await Promise.all([
       getItemsBySource('google'),
       getItemsBySource('icloud'),
       getMeta('icloudProgress'),
@@ -104,6 +104,10 @@ self.onmessage = async (e) => {
       getMeta('icloudCounts'),
       getMeta('phashProgress'),
     ]);
+    // fotos ocultas no iPhone ficam fora do cruzamento (e, portanto, de qualquer
+    // envio): decisão do usuário. Continuam no inventário.
+    const icloud = paraCruzar(icloudTodo);
+    const ocultas = icloudTodo.length - icloud.length;
     // percurso concluído alguma vez, ou inventário do tamanho do total oficial da Apple
     const appleTotal = counts?.value?.CPLAssetByAssetDateWithoutHiddenOrDeleted;
     const complete = Boolean(completed) || progress?.value?.state === 'concluido' || Boolean(appleTotal && icloud.length >= appleTotal);
@@ -159,14 +163,14 @@ self.onmessage = async (e) => {
       icloudPhashWanted: wanted.length,
       icloudThumbKeep: keep.length,
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,
-      counts: { google: google.length, icloud: icloud.length },
+      counts: { google: google.length, icloud: icloud.length, ocultas },
       rows,
       versao,
       lidoEm,
       calculadoEm: Date.now(),
     };
     // contagem do inventário refeita do zero e datas do iCloud em ordem (para achar uma foto na grade)
-    await setInventorySummary({ google: summarize(google), icloud: summarize(icloud) }, versao);
+    await setInventorySummary({ google: summarize(google), icloud: summarize(icloudTodo) }, versao);
     await setMeta('icloudTs', icloud.map((x) => x.ts).sort((x, y) => x - y));
     self.postMessage(out);
     // guarda depois de entregar: o painel não espera a gravação

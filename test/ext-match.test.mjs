@@ -241,3 +241,14 @@ test('Live Photos: conta movimento no Google só quando a leitura trouxe o dado'
   ];
   assert.deepEqual(summarizeMatch(matchLibraries(G, A)).live, { total: 3, comMovimento: 1, semMovimento: 1, naoLido: 1 });
 });
+
+import { paraCruzar } from '../extension/src/core/match.js';
+
+test('fotos ocultas do iCloud ficam fora do cruzamento e do envio', () => {
+  const ts = Date.UTC(2024, 0, 1);
+  const icloud = [{ id: 'a:1', ts, w: 10, h: 10 }, { id: 'a:2', ts: ts + 9000, w: 10, h: 10, hidden: true }];
+  const A = paraCruzar(icloud);
+  assert.deepEqual(A.map((x) => x.id), ['a:1']);
+  const r = matchLibraries([], A);
+  assert.deepEqual(r.soIcloud.map((x) => x.id), ['a:1']);
+});

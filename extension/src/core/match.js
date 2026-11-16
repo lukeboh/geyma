@@ -288,3 +288,6 @@ export function googleFileNeeded(pairs) {
   }
   return out;
 }
+
+/** Itens do iCloud que entram no cruzamento: as fotos ocultas ficam de fora (e, portanto, de qualquer envio). */
+export const paraCruzar = (icloud) => icloud.filter((x) => !x.hidden);

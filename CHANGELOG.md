@@ -2,6 +2,17 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.33 — 16/11/2026
+
+- Fotos ocultas do iCloud ficam fora do cruzamento e, portanto, de qualquer
+  plano de envio e da revisão (decisão do usuário). Continuam no inventário;
+  a aba Proteção diz quantas ficaram de fora (`paraCruzar` em `match.js`).
+  A marca vem do campo `isHidden`, gravado quando o álbum Ocultas é aberto no
+  site; fotos ocultas registradas antes da 0.2.32 só ganham a marca quando o
+  álbum for aberto de novo.
+
+Verificação: 106 testes passando.
+
 ## 0.2.32 — 16/11/2026
 
 - Como o Google guarda cada foto: a leitura do Google passa a registrar o
