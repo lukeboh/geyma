@@ -16,8 +16,12 @@
 //   imagens diferem mas é a mesma foto: "mesmo clique, quadro diferente".
 
 import { hamming, SAME_MAX, DIFFERENT_MIN } from './phash.js';
+import { mesmoNome, copiaNoGoogle } from './google-file.js';
 
 export const TOLERANCE_MS = 1000;
+
+// ficha do arquivo do Google só vale para fotos (em vídeos é a da capa)
+const fichaFoto = (g) => (g.video ? null : g.file);
 
 /** Live Photo no iCloud (campo live do registro; nos itens antigos, assetSubtypeV2 = 2). */
 export const isLive = (a) => Boolean(a?.live ?? a?.subtype === 2);
@@ -93,9 +97,10 @@ export function matchLibraries(google, icloud, opts = {}) {
   // diferentes saem, e os mais parecidos vêm primeiro.
   const byImage = (a, c) => {
     if (!a.phash) return c;
-    const scored = c.map((x) => ({ ...x, d: hamming(a.phash, x.g.phash), clique: mesmoClique(a, x.g, c.length) }));
+    const scored = c.map((x) => ({ ...x, d: hamming(a.phash, x.g.phash), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaFoto(x.g)) }));
     return scored
-      // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de uma Live Photo
+      // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de
+      // uma Live Photo ou o mesmo arquivo de origem (nome igual, no mesmo instante)
       .filter((x) => x.d === null || x.d < DIFFERENT_MIN || x.clique)
       .sort((x, y) => (x.d ?? 99) - (y.d ?? 99) || (x.rel === y.rel ? x.dt - y.dt : x.rel === 'igual' ? -1 : 1));
   };
@@ -135,10 +140,15 @@ export function matchLibraries(google, icloud, opts = {}) {
     // imagens comparadas e só parecidas (nem iguais, nem claramente diferentes):
     // por exemplo dois quadros de uma Live Photo, ou fotos de rajada
     const comparada = !imageConfirmed && pick.d !== undefined && pick.d !== null;
-    const quadro = comparada && mesmoClique(a, pick.g, c.length);
-    const parecida = comparada && !quadro;
+    const nome = mesmoNome(a, fichaFoto(pick.g));
+    const quadro = comparada && (mesmoClique(a, pick.g, c.length) || (nome && isLive(a)));
+    // mesmo arquivo de origem com a imagem mudada: versão editada (corte, filtro)
+    const editada = comparada && !quadro && nome;
+    const parecida = comparada && !quadro && !editada;
     if (parecida) pair.parecida = true;
     if (quadro) pair.quadroDiferente = true;
+    if (editada) pair.versaoEditada = true;
+    if (nome) pair.mesmoNome = true;
     if (pick.rel === 'reduzida') {
       pair.menor = a.w * a.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
       // só é "cópia reduzida" se não houver dúvida de que é a mesma imagem
@@ -211,6 +221,9 @@ export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   const totals = { ambos: 0, confirmar: 0, reduzida: 0, soGoogle: soGoogle.length, soIcloud: soIcloud.length };
   const reduzidaMenor = { google: 0, icloud: 0 };
   let quadroDiferente = 0;
+  // Live Photos do iCloud que estão nos dois: o Google tem o movimento? (só se a leitura do Google já trouxe esse dado)
+  const live = { total: 0, comMovimento: 0, semMovimento: 0, naoLido: 0 };
+  const copia = { original: 0, convertida: 0, convertidaCheia: 0 };
   const byYear = {};
   const bump = (ts, cls) => {
     const y = new Date(ts).getUTCFullYear();
@@ -221,11 +234,21 @@ export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
     totals[p.cls]++;
     if (p.cls === 'reduzida') reduzidaMenor[p.menor]++;
     if (p.quadroDiferente) quadroDiferente++;
+    if (isLive(p.a)) {
+      live.total++;
+      if (!p.g.extrasLidos) live.naoLido++;
+      else if (p.g.motionMs) live.comMovimento++;
+      else live.semMovimento++;
+    }
+    const k = copiaNoGoogle(p.a, p.g);
+    if (k) copia[k]++;
+    // convertida no mesmo tamanho: perde o formato (HEIC → JPEG), não a resolução
+    if (k === 'convertida' && p.a.w * p.a.h === p.g.w * p.g.h) copia.convertidaCheia++;
     bump(p.a.ts, p.cls);
   }
   for (const g of soGoogle) bump(g.ts, 'soGoogle');
   for (const a of soIcloud) bump(a.ts, 'soIcloud');
-  return { totals, reduzidaMenor, quadroDiferente, byYear };
+  return { totals, reduzidaMenor, quadroDiferente, live, copia, byYear };
 }
 
 /** Limite do trecho já lido do iCloud enquanto o percurso não termina. */
@@ -251,4 +274,17 @@ export function googlePhashNeeded(pendingIds, pairs, hasHash) {
     if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !hasHash.has(p.g.id)) need.add(p.g.id);
   }
   return [...need].map((id) => id.slice(2));
+}
+
+/**
+ * Itens do Google cuja ficha do arquivo (formato, nome) ajuda: pares com
+ * Live Photo do iCloud, cópias reduzidas e pares a confirmar.
+ */
+export function googleFileNeeded(pairs) {
+  const out = [];
+  for (const p of pairs) {
+    if (p.g.file || !p.g.thumb || p.a.video || p.g.video) continue;
+    if (isLive(p.a) || p.cls !== 'ambos' || p.parecida) out.push({ id: p.g.id, url: p.g.thumb });
+  }
+  return out;
 }

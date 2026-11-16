@@ -9,9 +9,11 @@ import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
 import { abrirVisor } from './viewer.js';
 import { googleGrande, icloudGrande } from './src/core/viewer-src.js';
+import { fichaDoCabecalho } from './src/core/google-file.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pct = (n, d) => (d ? `${Math.round((100 * n) / d)}%` : '—');
 const day = (ts) => new Date(ts).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 const local = (ts) => new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -53,6 +55,8 @@ export function initProtection() {
   $('m-phash').addEventListener('click', startPhash);
   $('m-ic-run').addEventListener('click', runIcloudCheck);
   $('m-ic-stop').addEventListener('click', () => { if (icJob) icJob.stop = true; });
+  $('m-gf-run').addEventListener('click', runGoogleFiles);
+  $('m-gf-stop').addEventListener('click', () => { if (gfJob) gfJob.stop = true; });
   $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
   const cls = $('r-cls');
   cls.append(new Option('Todas', ''));
@@ -185,6 +189,76 @@ function renderProtection() {
   renderCategories();
   renderPlan();
   renderIcloudCheck();
+  renderGoogleFiles();
+}
+
+// ---------- arquivos do Google (formato, nome; só cabeçalhos) ----------
+let gfJob = null;
+const MB = (b) => `${(b / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
+
+/** Ficha do arquivo do Google: HEAD no download do original (nada é baixado). */
+async function fichaGoogle(base) {
+  const res = await fetch(`${base}=d`, { method: 'HEAD', credentials: 'include' });
+  if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
+  return fichaDoCabecalho(res.headers);
+}
+const textoFicha = (f) => (f ? [f.nome, f.formato, f.bytes ? MB(f.bytes) : null].filter(Boolean).join(' · ') : '');
+
+function renderGoogleFiles() {
+  const need = data.googleFileNeeded || [];
+  const { live, copia } = data.summary;
+  const box = $('m-gf-box');
+  box.hidden = !live?.total && !need.length && !(copia?.original + copia?.convertida);
+  if (box.hidden) return;
+  const partes = [];
+  if (live?.total) {
+    const lidos = live.comMovimento + live.semMovimento;
+    partes.push(`<b>${fmt.format(live.total)}</b> Live Photos do iCloud também estão no Google.`
+      + (lidos ? ` Delas, ${fmt.format(live.comMovimento)} têm o movimento no Google e <b>${fmt.format(live.semMovimento)}</b> estão lá só como foto parada.` : '')
+      + (live.naoLido ? ` De ${fmt.format(live.naoLido)} ainda não se sabe: o dado vem na próxima leitura do Google (aba Inventário).` : ''));
+  }
+  if (copia.original + copia.convertida) {
+    partes.push(`Arquivos conferidos: ${fmt.format(copia.original)} no mesmo formato do iCloud (original) e <b>${fmt.format(copia.convertida)}</b> em outro formato (em geral JPEG no lugar do HEIC), dos quais ${fmt.format(copia.convertidaCheia || 0)} no tamanho cheio e ${fmt.format(copia.convertida - (copia.convertidaCheia || 0))} também reduzidos.`);
+  }
+  partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos do Google.` : 'Todos os arquivos que importam já foram conferidos.');
+  $('m-gf').innerHTML = partes.join(' ');
+  if (!gfJob) { $('m-gf-run').hidden = !need.length; $('m-gf-run').textContent = `Conferir os arquivos do Google (${fmt.format(need.length)})`; }
+}
+
+async function runGoogleFiles() {
+  const need = data?.googleFileNeeded || [];
+  if (!need.length || gfJob) return;
+  gfJob = { stop: false, done: 0, failed: 0, status: null };
+  $('m-gf-run').hidden = true;
+  $('m-gf-stop').hidden = false;
+  const queue = [...need];
+  let batch = [];
+  const flush = async () => { if (batch.length) { const b = batch; batch = []; await patchItems(b); } };
+  const show = (msg) => { $('m-gf-state').textContent = msg || `conferindo… ${fmt.format(gfJob.done)} de ${fmt.format(need.length)}`; };
+  const worker = async () => {
+    while (queue.length && !gfJob.stop) {
+      const it = queue.shift();
+      try {
+        const file = await fichaGoogle(it.url);
+        batch.push({ id: it.id, file });
+        gfJob.done++;
+      } catch (e) {
+        gfJob.failed++;
+        // 404: a foto saiu do Google; outros erros (403, 429...) param tudo
+        if (e.status !== 404) { gfJob.stop = 'erro'; gfJob.status = e.status || e.message; }
+      }
+      if (batch.length >= 200) await flush();
+      if (gfJob.done % 20 === 0) show();
+    }
+  };
+  show();
+  await Promise.all(Array.from({ length: 4 }, worker));
+  await flush();
+  const why = gfJob.stop === 'erro' ? `parou por erro do Google (${gfJob.status})` : gfJob.stop ? 'parada por você' : 'concluída';
+  show(`${why}: ${fmt.format(gfJob.done)} de ${fmt.format(need.length)} conferidos.`);
+  gfJob = null;
+  $('m-gf-stop').hidden = true;
+  compute();
 }
 
 // ---------- desempate pelo iCloud ----------
@@ -457,6 +531,9 @@ function renderList() {
     const tr = document.createElement('tr');
     const note = (r.cls === 'reduzida' ? ` <span class="tag">menor no ${r.menor === 'google' ? 'Google' : 'iCloud'}</span>` : '')
       + (r.quadroDiferente ? ' <span class="tag" title="Live Photo: mesmo clique, mesmo instante, mas o quadro principal é outro em cada serviço (por exemplo, trocado no iPhone depois de a cópia ir para o Google).">Live Photo · quadro diferente</span>' : '')
+      + (r.versaoEditada ? ' <span class="tag" title="Mesmo nome de arquivo e mesmo instante, com a imagem mudada: uma versão editada (corte, filtro) da mesma foto.">versão editada</span>' : '')
+      + (r.a?.live && r.g?.extrasLidos ? (r.g.motionMs ? ' <span class="tag" title="Live Photo: o Google também tem o movimento.">Live completa no Google</span>' : ' <span class="tag" title="Live Photo no iCloud, mas no Google só a foto parada (sem o movimento).">Google sem o movimento</span>') : '')
+      + (r.copiaGoogle === 'convertida' ? ` <span class="tag" title="${escHtml(textoFicha(r.g.file))}">Google: cópia em ${escHtml(r.g.file.formato)}</span>` : '')
       + (r.parecida ? ' <span class="tag" title="As imagens foram comparadas: são parecidas, mas não iguais. Pode ser outro quadro da mesma Live Photo ou uma foto de rajada.">imagens só parecidas</span>' : '')
       + (r.semConferencia ? ' <span class="tag" title="Mesmo instante e mesma proporção, mas as imagens ainda não foram comparadas. Use Conferir o Google pelas miniaturas na aba Proteção.">imagem não conferida</span>' : '')
       + (r.dup ? ' <span class="tag">cópia no Google</span>' : '') + (r.dupIcloud ? ' <span class="tag">cópia no iCloud</span>' : '');
@@ -552,6 +629,15 @@ const thumbInicial = (it, side) => {
   return icloudCache.get(it.id).then((src) => src || url);
 };
 
+/** Dimensões e, quando houver, a ficha do arquivo do Google (busca e guarda se faltar). */
+function infoGoogle(g) {
+  const dims = dimsTxt(g);
+  const mov = g.extrasLidos ? (g.motionMs ? 'com movimento' : '') : '';
+  const junta = (f) => [dims, textoFicha(f), mov].filter(Boolean).join(' · ');
+  if (g.file || !g.thumb || !g.id) return junta(g.file);
+  return fichaGoogle(g.thumb).then((file) => { g.file = file; patchItems([{ id: g.id, file }]).catch(() => {}); return junta(file); }, () => junta(null));
+}
+
 /** Link que abre esta linha no painel (para copiar e mandar). */
 export const linkDaFoto = (r) => `${location.origin}${location.pathname}#rev?foto=${encodeURIComponent(r.ids[0])}`;
 
@@ -571,7 +657,7 @@ function verFotos(r, td) {
     fotos.push({ src: src(r.dupOf, 'google'), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });
   }
   if (r.g?.thumb) {
-    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: dimsTxt(r.g), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
+    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: infoGoogle(r.g), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
   }
   if (!fotos.length) return false;
   // a barra de endereço passa a identificar a foto: copiar o endereço também serve

@@ -2,6 +2,36 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.32 — 16/11/2026
+
+- Como o Google guarda cada foto: a leitura do Google passa a registrar o
+  movimento da Live Photo (`motionMs`) e a duração dos vídeos, tirados do
+  dicionário no fim de cada item da listagem. Uma conferência nova lê só o
+  cabeçalho do download do original (pedido HEAD, nada é baixado): formato,
+  tamanho e nome do arquivo (`src/core/google-file.js`). Conferido no uso
+  real que o arquivo entregue tem o mesmo SHA-1 que o Google informa para o
+  original guardado. Vídeos ficam de fora (o download sem sufixo de vídeo
+  devolve a capa). HEIF do Google conta como o mesmo formato do HEIC.
+- Cruzamento: mesmo nome de arquivo no mesmo instante mantém o par mesmo com
+  as imagens diferentes. Se for Live Photo, vira "quadro diferente"; senão,
+  "versão editada". Resumo novo de Live Photos (com movimento no Google, só a
+  foto parada, ainda não lido) e de cópias no Google (original, em outro
+  formato, no tamanho cheio).
+- Revisão e celular: etiquetas e linhas "Live completa no Google", "Google
+  sem o movimento", "Google: cópia em JPEG", "versão editada"; o
+  visualizador mostra nome, formato e tamanho do arquivo do Google (busca a
+  ficha na hora, se faltar).
+- iCloud: registra fotos ocultas (`hidden`, campo `isHidden`), que entram no
+  inventário quando o álbum Ocultas é aberto no site.
+
+Verificação: 105 testes passando (`ext-google-file`, novos casos em
+`ext-match` e `ext-normalize`). Uso real: Google relido (723 páginas) e
+13.124 arquivos conferidos sem erro; das 11.864 Live Photos do iCloud que
+estão no Google, 11.300 têm o movimento lá e 564 só a foto parada; das cópias
+de fotos conferidas, 2.755 estão no mesmo formato e 10.212 em outro (9.792 no
+tamanho cheio). O par relatado é uma cópia JPEG de 1280×1706 com o mesmo nome
+(IMG_8437) e com movimento.
+
 ## 0.2.31 — 15/11/2026
 
 - Live Photo com quadro principal diferente: os quadros de um mesmo clique

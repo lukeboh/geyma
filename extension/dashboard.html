@@ -149,6 +149,17 @@
       </div>
       <p class="hint">Pares "a confirmar" e cópias reduzidas: a miniatura do iCloud diz qual foto do Google é a mesma. As URLs das miniaturas do iCloud são temporárias e vêm do percurso da biblioteca; se tiverem expirado, a conferência para e pede um novo percurso. Baixa só miniaturas (não consulta a Apple por conta própria), até 8 por vez.</p>
     </section>
+
+    <section class="panel" id="m-gf-box" hidden>
+      <h2>Como o Google guarda as suas fotos</h2>
+      <p id="m-gf"></p>
+      <div class="actions">
+        <button id="m-gf-run" class="primary">Conferir os arquivos do Google</button>
+        <button id="m-gf-stop" hidden>Parar</button>
+        <span class="muted" id="m-gf-state" role="status"></span>
+      </div>
+      <p class="hint">Lê só o cabeçalho do download de cada foto (formato, tamanho e nome do arquivo); nenhuma foto é baixada. Com isso o Geyma diz se o Google tem o original (o HEIC do iPhone, por exemplo) ou uma cópia convertida (outro formato, às vezes reduzida), e o nome do arquivo ajuda a reconhecer a mesma foto. Até 4 por vez; para no primeiro erro do Google.</p>
+    </section>
   </main>
 
   <main id="view-rev" role="tabpanel" aria-labelledby="tab-rev" hidden>

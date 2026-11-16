@@ -219,3 +219,25 @@ test('fora de Live Photo, imagem diferente no mesmo instante continua separada',
   const r = matchLibraries([{ id: 'g:K', ts, w: 1280, h: 1706, phash: '35a5c2f2f1dc6d0c' }], [{ id: 'a:1', ts, w: 5712, h: 4284, subtype: 0, phash: 'ca7a3d0d0e2392f3' }]);
   assert.equal(r.pairs.length, 0);
 });
+
+test('mesmo nome de arquivo no mesmo instante: versão editada, não fotos diferentes', () => {
+  const ts = Date.UTC(2022, 5, 1, 12, 0, 0, 120);
+  const a = { id: 'a:1', ts, w: 4032, h: 3024, subtype: 0, filename: 'IMG_1234.HEIC', fileType: 'public.heic', phash: 'ca7a3d0d0e2392f3' };
+  const g = { id: 'g:K', ts, w: 4032, h: 3024, phash: '35a5c2f2f1dc6d0c', file: { formato: 'JPEG', nome: 'IMG_1234.jpg' } };
+  const r = matchLibraries([g], [a]);
+  assert.equal(r.pairs.length, 1);
+  assert.equal(r.pairs[0].versaoEditada, true);
+  assert.equal(summarizeMatch(r).copia.convertida, 1);
+  assert.equal(summarizeMatch(r).copia.convertidaCheia, 1);
+});
+
+test('Live Photos: conta movimento no Google só quando a leitura trouxe o dado', () => {
+  const ts = Date.UTC(2021, 0, 1, 0, 0, 0, 1);
+  const A = [0, 1, 2].map((i) => ({ id: `a:${i}`, ts: ts + i * 5000, w: 4032, h: 3024, subtype: 2 }));
+  const G = [
+    { id: 'g:0', ts, w: 4032, h: 3024, extrasLidos: true, motionMs: 2798 },
+    { id: 'g:1', ts: ts + 5000, w: 4032, h: 3024, extrasLidos: true },
+    { id: 'g:2', ts: ts + 10000, w: 4032, h: 3024 },
+  ];
+  assert.deepEqual(summarizeMatch(matchLibraries(G, A)).live, { total: 3, comMovimento: 1, semMovimento: 1, naoLido: 1 });
+});

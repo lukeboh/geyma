@@ -45,8 +45,12 @@ const compact = (r) => ({
   dup: Boolean(r.dup),
   dupIcloud: Boolean(r.dupIcloud),
   menor: r.menor || null,
-  a: r.a && { name: r.a.name, w: r.a.w, h: r.a.h, size: r.a.size, video: r.a.video },
-  g: r.g && { w: r.g.w, h: r.g.h, key: r.g.key },
+  a: r.a && { name: r.a.name, w: r.a.w, h: r.a.h, size: r.a.size, video: r.a.video, live: Boolean(r.a.live) },
+  g: r.g && { w: r.g.w, h: r.g.h, key: r.g.key, file: r.g.file || null, motionMs: r.g.motionMs || null, extrasLidos: Boolean(r.g.extrasLidos) },
+  copiaGoogle: r.copiaGoogle || null,
+  quadroDiferente: Boolean(r.quadroDiferente),
+  versaoEditada: Boolean(r.versaoEditada),
+  parecida: Boolean(r.parecida),
   thumbs: thumbsOf(r),
 });
 

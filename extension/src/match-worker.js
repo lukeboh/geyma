@@ -4,7 +4,8 @@ import { getItemsBySource, getMeta, setMeta, putCache, setInventorySummary, regi
 import { summarize } from './core/normalize.js';
 import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
-import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded } from './core/match.js';
+import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive } from './core/match.js';
+import { copiaNoGoogle } from './core/google-file.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 
 const row = (cls, a, g, extra = {}) => {
@@ -16,8 +17,9 @@ const row = (cls, a, g, extra = {}) => {
     cat,
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
-    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null },
-    g: g && { w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2) },
+    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null },
+    g: g && { id: g.id, w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos) },
+    ...(a && g ? { copiaGoogle: copiaNoGoogle(a, g) } : {}),
     ...extra,
   };
 };
@@ -134,6 +136,7 @@ self.onmessage = async (e) => {
         ...(p.cls === 'reduzida' && !p.confirmadoPorImagem ? { semConferencia: true } : {}),
         ...(p.parecida ? { parecida: true } : {}),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
+        ...(p.versaoEditada ? { versaoEditada: true } : {}),
         ...dupInfo(p.a, p.g),
       })),
       ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
@@ -152,6 +155,7 @@ self.onmessage = async (e) => {
       dup: { google: dupSummary(scopeG, dupG), icloud: dupSummary(scopeA, dupA) },
       phashNeeded: googlePhashNeeded(dupG.pendingIds, result.pairs, new Set(google.filter((g) => g.phash).map((g) => g.id))),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
+      googleFileNeeded: googleFileNeeded(result.pairs),
       icloudPhashWanted: wanted.length,
       icloudThumbKeep: keep.length,
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,

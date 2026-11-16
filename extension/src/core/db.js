@@ -55,7 +55,7 @@ function touchInventory(meta, change) {
   };
 }
 
-const CAMPOS_CRUZAMENTO = ['source', 'ts', 'w', 'h', 'video', 'size', 'phash', 'filename', 'fileType'];
+const CAMPOS_CRUZAMENTO = ['source', 'ts', 'w', 'h', 'video', 'size', 'phash', 'filename', 'fileType', 'motionMs', 'extrasLidos', 'live'];
 
 /**
  * Grava itens mesclando com o registro existente: campos calculados depois

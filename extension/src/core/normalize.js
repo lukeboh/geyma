@@ -49,7 +49,25 @@ export function normalizeGoogleItem(it) {
     sha1: typeof it[3] === 'string' && it[3].length === 27 ? it[3] : null,
     // URL-base da imagem (exige a sessão do Google; acrescentar =w160-h160 etc.)
     thumb: typeof it[1][0] === 'string' && it[1][0].startsWith('https://') ? it[1][0] : null,
+    ...googleExtras(it),
   };
+}
+
+/**
+ * Campos do dicionário no fim do item bruto, medidos no uso real:
+ * "146008172" = foto com movimento (Live Photo / foto em movimento), [?, duração ms];
+ * "76647426" = vídeo, [duração ms, ?, largura, altura, ...].
+ * Só aparecem quando existem; itens lidos antes desta versão não os têm.
+ */
+function googleExtras(it) {
+  const dict = it.slice(3).reverse().find((x) => x && typeof x === 'object' && !Array.isArray(x));
+  if (!dict) return {};
+  const out = { extrasLidos: true };
+  const mov = dict['146008172'];
+  if (Array.isArray(mov)) out.motionMs = Number(mov[1]) || 1;
+  const vid = dict['76647426'];
+  if (Array.isArray(vid)) { out.video = true; out.videoMs = Number(vid[0]) || null; }
+  return out;
 }
 
 const VIDEO_TYPES = /movie|mpeg-4|video|avi|3gpp/i;
@@ -93,6 +111,8 @@ export function normalizeIcloudPair(asset, master) {
     // Live Photo: o original tem o vídeo complementar (os quadros do clique)
     live: Boolean(m('resOriginalVidComplRes') || m('resOriginalVidComplFileType')) || Number(a('assetSubtypeV2')) === 2,
     burst: Number(a('burstFlags')) > 0,
+    // oculta no iPhone (álbum Ocultas): entra no inventário quando esse álbum é aberto no site
+    hidden: Number(a('isHidden')) === 1,
     favorite: Number(a('isFavorite')) === 1,
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
     // miniatura JPEG (URL temporária assinada pela Apple); thumbAt diz quando foi vista

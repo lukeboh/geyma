@@ -35,7 +35,7 @@ test('parseGoogleBatchText extrai itens normalizados e o cursor', () => {
   const { items, cursor } = parseGoogleBatchText(text);
   assert.equal(cursor, 'CURSOR123');
   assert.equal(items.length, 2);
-  assert.deepEqual(items[0], { id: 'g:AF1QipA', source: 'google', ts: 1700000000000, tzOffset: -10800000, w: 4032, h: 3024, sha1: SHA, thumb: 'https://photos.fife.usercontent.google.com/pw/x' });
+  assert.deepEqual(items[0], { id: 'g:AF1QipA', source: 'google', ts: 1700000000000, tzOffset: -10800000, w: 4032, h: 3024, sha1: SHA, thumb: 'https://photos.fife.usercontent.google.com/pw/x', extrasLidos: true });
 });
 
 test('parseGoogleBatchText sem cursor e sem linha de dados', () => {
@@ -99,6 +99,19 @@ test('parseIcloudQuery junta asset e master e ignora asset sem master', () => {
   assert.equal(photo.video, false);
   assert.equal(video.video, true);
   assert.equal(video.size, 50000000);
+  assert.equal(photo.hidden, false);
+  assert.equal(photo.live, false);
+});
+
+test('iCloud: foto oculta e Live Photo (vídeo complementar no original)', () => {
+  const r = icloudResponse();
+  const asset = r.records.find((x) => x.recordType === 'CPLAsset' && x.recordName === 'A1');
+  asset.fields.isHidden = { value: 1 };
+  const master = r.records.find((x) => x.recordName === asset.fields.masterRef.value.recordName);
+  master.fields.resOriginalVidComplRes = { value: { size: 1 } };
+  const [photo] = parseIcloudQuery(r);
+  assert.equal(photo.hidden, true);
+  assert.equal(photo.live, true);
 });
 
 test('decodeEnc aceita texto e recusa binário', () => {
@@ -150,4 +163,20 @@ test('versão média do iCloud vem do master quando existe', () => {
   const asset = { recordName: 'A1', recordType: 'CPLAsset', fields: { assetDate: { value: 1700000000000 }, masterRef: { value: { recordName: 'M1' } } } };
   const [item] = parseIcloudQuery({ records: [master, asset] });
   assert.equal(item.med, 'https://cvws.icloud-content.com/B/m/${f}?o=1');
+});
+
+import { normalizeGoogleItem } from '../extension/src/core/normalize.js';
+
+test('Google: movimento da Live Photo e vídeo, pelo dicionário no fim do item (formato real)', () => {
+  const base = (dict) => ['AF1QipX', ['https://lh3.googleusercontent.com/x', 4284, 5712, null, null, null, null, null, [null, null, 14], [1]], 1782415944953, 'pN2Lqg2p-pqTxl6KlkRSSeTNlTc', -10800000, 1, null, [[1]], 2, dict];
+  const live = normalizeGoogleItem(base({ 15: 1, 146008172: [null, 2798] }));
+  assert.equal(live.motionMs, 2798);
+  assert.equal(live.extrasLidos, true);
+  assert.equal(live.video, undefined);
+  const vid = normalizeGoogleItem(base({ 15: 1, 76647426: [106409, null, 1920, 1080] }));
+  assert.equal(vid.video, true);
+  assert.equal(vid.videoMs, 106409);
+  const parada = normalizeGoogleItem(base({ 15: 1 }));
+  assert.equal(parada.motionMs, undefined);
+  assert.equal(parada.extrasLidos, true);
 });

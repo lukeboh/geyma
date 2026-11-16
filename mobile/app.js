@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.29';
+import { abrirVisor } from './viewer.js?v=0.2.32';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -279,7 +279,12 @@ function abrirDetalhe(i) {
     ['Motivo', l.why || '—'],
     ['Marcação', rotDec(l)],
     l.a && ['iCloud', `${l.a.name || '(sem nome)'} · ${l.a.w}×${l.a.h}${l.a.size ? ` · ${(l.a.size / 1048576).toFixed(1)} MB` : ''}${l.a.video ? ' · vídeo' : ''}`],
-    l.g && ['Google', `${l.g.w}×${l.g.h}`],
+    l.g && ['Google', [`${l.g.w}×${l.g.h}`, l.g.file?.nome, l.g.file?.formato, l.g.file?.bytes ? `${(l.g.file.bytes / 1048576).toFixed(1)} MB` : null].filter(Boolean).join(' · ')],
+    l.a?.live && ['Live Photo', !l.g ? 'só no iCloud' : !l.g.extrasLidos ? 'movimento no Google ainda não conferido' : l.g.motionMs ? 'o Google também tem o movimento' : 'no Google só a foto parada, sem o movimento'],
+    l.copiaGoogle === 'convertida' && ['Cópia do Google', `convertida para ${l.g.file.formato} (não é o original)`],
+    l.quadroDiferente && ['Quadro', 'mesmo clique da Live Photo, com o quadro principal diferente'],
+    l.versaoEditada && ['Versão', 'mesmo arquivo de origem, imagem editada'],
+    l.parecida && ['Imagens', 'parecidas, mas não iguais: confira'],
     (l.dup || l.dupIcloud) && ['Cópia', `repetição de outra foto no ${[l.dup && 'Google', l.dupIcloud && 'iCloud'].filter(Boolean).join(' e no ')}`],
   ].filter(Boolean);
   $('det-info').innerHTML = info.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');

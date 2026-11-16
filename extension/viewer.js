@@ -202,7 +202,7 @@ function ligarGestos(v, i) {
 
 /**
  * Abre o visualizador.
- * @param {{ src: string, grande?: () => Promise<string|null>, rotulo: string, info?: string, link?: string, semImagem?: string, carregando?: string }[]} fotos
+ * @param {{ src: string, grande?: () => Promise<string|null>, rotulo: string, info?: string|Promise<string>, link?: string, semImagem?: string, carregando?: string }[]} fotos
  *   src: imagem já disponível (miniatura); grande: busca a versão maior;
  *   semImagem: o que dizer se nenhuma imagem carregar.
  *   src pode ser uma Promise (miniatura que ainda está chegando).
@@ -240,7 +240,8 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
     leg.innerHTML = '<b></b> <span class="visor-info"></span> <span class="visor-carregando">carregando a versão grande…</span>';
     leg.querySelector('b').textContent = f.rotulo;
     if (f.carregando) leg.querySelector('.visor-carregando').textContent = f.carregando;
-    leg.querySelector('.visor-info').textContent = f.info || '';
+    // info pode chegar depois (ficha do arquivo do Google)
+    Promise.resolve(f.info).then((t) => { leg.querySelector('.visor-info').textContent = t || ''; }, () => {});
     if (f.link) {
       const a = document.createElement('a');
       a.href = f.link;
