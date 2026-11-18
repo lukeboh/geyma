@@ -102,13 +102,21 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (!l) bySec.set(s, (l = []));
     l.push(g);
   }
+  // veredito do usuário no visualizador (mesmaQue / diferenteDe, no item do iCloud)
+  const gById = A.some((a) => a.mesmaQue) ? new Map(G.map((g) => [g.id, g])) : null;
   const candidatesOf = (a) => {
+    const escolhida = a.mesmaQue && gById?.get(a.mesmaQue);
+    if (escolhida) {
+      const { rel, dimsA } = relacaoDims(a, escolhida);
+      return [{ g: escolhida, rel: rel || 'igual', dt: Math.abs(escolhida.ts - a.ts), dimsA, peloUsuario: true }];
+    }
+    const recusadas = a.diferenteDe?.length ? new Set(a.diferenteDe) : null;
     const s = Math.floor(a.ts / 1000);
     const out = [];
     for (const k of [s - 1, s, s + 1]) {
       for (const g of bySec.get(k) || []) {
         const dt = Math.abs(g.ts - a.ts);
-        if (dt > TOLERANCE_MS) continue;
+        if (dt > TOLERANCE_MS || recusadas?.has(g.id)) continue;
         const { rel, dimsA } = relacaoDims(a, g);
         if (rel) out.push({ g, rel, dt, dimsA });
       }
@@ -121,7 +129,7 @@ export function matchLibraries(google, icloud, opts = {}) {
   // Com o pHash dos dois lados, a imagem decide: candidatos claramente
   // diferentes saem, e os mais parecidos vêm primeiro.
   const byImage = (a, c) => {
-    if (!a.phash && !a.phashOrig) return c;
+    if ((!a.phash && !a.phashOrig) || c[0]?.peloUsuario) return c;
     const scored = c.map((x) => ({ ...x, d: distImagem(a, x.g), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaFoto(x.g)) }));
     return scored
       // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de
@@ -139,7 +147,9 @@ export function matchLibraries(google, icloud, opts = {}) {
   }
 
   // atribuição um-para-um: primeiro os casos sem disputa, depois os demais
-  const order = [...A].sort((x, y) => cands.get(x.id).length - cands.get(y.id).length || x.ts - y.ts);
+  // (os pares que o usuário confirmou vêm antes de todos)
+  const confirmou = (x) => (cands.get(x.id)[0]?.peloUsuario ? 0 : 1);
+  const order = [...A].sort((x, y) => confirmou(x) - confirmou(y) || cands.get(x.id).length - cands.get(y.id).length || x.ts - y.ts);
   const usedG = new Set();
   const pairs = [];
   const soIcloud = [];
@@ -155,12 +165,14 @@ export function matchLibraries(google, icloud, opts = {}) {
     }
     if (!pick) { soIcloud.push(a); continue; }
     usedG.add(pick.g.id);
-    const imageConfirmed = pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX;
+    const peloUsuario = Boolean(pick.peloUsuario);
+    const imageConfirmed = peloUsuario || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
     // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
     const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
     const disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
     const pair = { a, g: pick.g, dt: pick.dt };
-    if (imageConfirmed) pair.confirmadoPorImagem = true;
+    if (peloUsuario) pair.confirmadoPeloUsuario = true;
+    else if (imageConfirmed) pair.confirmadoPorImagem = true;
     if (reused) pair.duplicataNoIcloud = true;
     // imagens comparadas e só parecidas (nem iguais, nem claramente diferentes):
     // por exemplo dois quadros de uma Live Photo, ou fotos de rajada
@@ -296,7 +308,7 @@ export function googlePhashNeeded(pendingIds, pairs, hasHash) {
   const need = new Set(pendingIds);
   for (const p of pairs) {
     for (const id of p.candidatos || []) if (!hasHash.has(id)) need.add(id);
-    if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !hasHash.has(p.g.id)) need.add(p.g.id);
+    if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !p.confirmadoPeloUsuario && !hasHash.has(p.g.id)) need.add(p.g.id);
   }
   return [...need].map((id) => id.slice(2));
 }

@@ -2,7 +2,8 @@
 // chama estas funções pela porta de depuração do Chrome de automação; a
 // extensão continua sendo a única fonte de verdade (inventário, cruzamento,
 // marcações). Nada aqui altera os serviços: marcar só grava a decisão.
-import { getData, whenComputed, decideRows, recomputeAndWait, isBusy, calcProgress } from './protection.js';
+import { getData, whenComputed, decideRows, recomputeAndWait, isBusy, calcProgress, registrarVeredito } from './protection.js';
+import { vereditoDoPar } from './src/core/veredito.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { sendPlan } from './src/core/plan.js';
 import { CLASSES } from './src/core/match.js';
@@ -58,6 +59,9 @@ const compact = (r) => ({
   quadroDiferente: Boolean(r.quadroDiferente),
   versaoEditada: Boolean(r.versaoEditada),
   parecida: Boolean(r.parecida),
+  peloUsuario: Boolean(r.peloUsuario),
+  // veredito do usuário sobre o par (botões "São a mesma foto / São fotos diferentes")
+  par: r.a?.id ? { a: r.a.id, g: r.g?.id || null, ja: vereditoDoPar(r.a, r.g?.id), recusados: r.a.diferenteDe?.length || 0 } : null,
   thumbs: thumbsOf(r),
 });
 
@@ -110,6 +114,13 @@ window.geymaApi = {
     const n = Math.max(1, Math.min(120, Number(size) || 30));
     const p = Math.max(0, Number(page) || 0);
     return { total: all.length, page: p, size: n, rows: all.slice(p * n, (p + 1) * n).map(compact) };
+  },
+
+  /** Veredito sobre um par: 'mesma', 'diferente' ou 'desfazer' (gId null desfaz tudo do item). */
+  async veredito(aId, gId, tipo) {
+    if (!['mesma', 'diferente', 'desfazer'].includes(tipo)) throw new Error('veredito inválido');
+    await registrarVeredito(aId, gId || null, tipo);
+    return { ok: true };
   },
 
   /** Grava a marcação das linhas que contêm estes itens. decision null = volta para a sugestão. */

@@ -98,6 +98,23 @@ html.visor-aberto, html.visor-aberto body { overflow: hidden; }
 .visor-painel figcaption b { color: var(--v-texto); font-weight: 600; }
 .visor-painel figcaption a { color: var(--v-acento); }
 .visor-carregando { color: var(--v-texto-2); font-style: italic; }
+/* perguntas sobre as fotos abertas (por exemplo, "são a mesma foto?") */
+.visor-acoes-foto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  padding: 10px 14px 4px;
+  border-top: 1px solid var(--v-borda);
+  font-size: 14px;
+}
+.visor-acoes-foto[hidden] { display: none; }
+.visor-pergunta { color: var(--v-texto-2); }
+.visor-botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.visor-acao { font-size: 14px; padding: 0 14px; }
+.visor-acao:disabled { opacity: 0.5; cursor: default; }
+.visor-resposta { color: var(--v-texto); font-weight: 600; }
 .visor-dica { margin: 0; padding: 6px 14px 10px; font-size: 12px; color: var(--v-texto-2); text-align: center; }
 
 /* tela estreita: uma foto em cima da outra; a dica some (gestos de toque são os usuais) */

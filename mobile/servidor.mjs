@@ -213,6 +213,11 @@ const server = createServer(async (req, res) => {
         if (!Array.isArray(b.ids) || !b.ids.length || b.ids.length > 200000) return json(res, 400, { erro: 'itens inválidos' });
         return json(res, 200, await api('decide', b.ids.map(String), b.decision ?? null));
       }
+      if (url.pathname === '/api/veredito') {
+        const b = await readBody(req);
+        if (!/^a:[A-Za-z0-9-]{1,80}$/.test(String(b.a || '')) || (b.g != null && !/^g:[A-Za-z0-9_-]{1,200}$/.test(String(b.g)))) return json(res, 400, { erro: 'itens inválidos' });
+        return json(res, 200, await api('veredito', String(b.a), b.g == null ? null : String(b.g), String(b.tipo || '')));
+      }
       if (url.pathname === '/api/recompute') return json(res, 200, { ok: await api('recompute') });
     }
     return send(res, 404, 'não encontrado');

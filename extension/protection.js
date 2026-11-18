@@ -2,7 +2,8 @@
 // visão por ano e lista filtrável para revisar item a item.
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
-import { patchItems, getThumb, getCache, getMeta, registrarDecisoes } from './src/core/db.js';
+import { patchItems, getThumb, getCache, getMeta, registrarDecisoes, getItem } from './src/core/db.js';
+import { patchVeredito, vereditoDoPar } from './src/core/veredito.js';
 import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cache.js';
 import { sendPlan, effectiveDecision } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
@@ -541,6 +542,8 @@ function renderList() {
       + (r.versaoEditada ? ' <span class="tag" title="Mesmo nome de arquivo e mesmo instante, com a imagem mudada: uma versão editada (corte, filtro) da mesma foto.">versão editada</span>' : '')
       + (r.a?.live && r.g?.extrasLidos ? (r.g.motionMs ? ' <span class="tag" title="Live Photo: o Google também tem o movimento.">Live completa no Google</span>' : ' <span class="tag" title="Live Photo no iCloud, mas no Google só a foto parada (sem o movimento).">Google sem o movimento</span>') : '')
       + (r.copiaGoogle === 'convertida' ? ` <span class="tag" title="${escHtml(textoFicha(r.g.file))}">Google: cópia em ${escHtml(r.g.file.formato)}</span>` : '')
+      + (r.peloUsuario ? ' <span class="tag" title="Você disse no visualizador que são a mesma foto.">mesma foto, por você</span>' : '')
+      + (!r.g && r.a?.diferenteDe?.length ? ' <span class="tag" title="Você disse no visualizador que esta foto é diferente da que o Google tinha no mesmo instante.">diferente, por você</span>' : '')
       + (r.parecida ? ' <span class="tag" title="As imagens foram comparadas: são parecidas, mas não iguais. Pode ser outro quadro da mesma Live Photo ou uma foto de rajada.">imagens só parecidas</span>' : '')
       + (r.semConferencia ? ' <span class="tag" title="Mesmo instante e mesma proporção, mas as imagens ainda não foram comparadas. Use Conferir o Google pelas miniaturas na aba Proteção.">imagem não conferida</span>' : '')
       + (r.dup ? ' <span class="tag">cópia no Google</span>' : '') + (r.dupIcloud ? ' <span class="tag">cópia no iCloud</span>' : '');
@@ -698,11 +701,56 @@ function verFotos(r, td) {
   try { history.replaceState(null, '', link); } catch {}
   const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais' };
   const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
-  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
+  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.peloUsuario ? ' · mesma foto, por você' : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,
+    ...vereditoNoVisor(r),
     aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },
   });
   return true;
+}
+
+/**
+ * Grava o veredito do usuário sobre um par ('mesma' | 'diferente' | 'desfazer')
+ * no item do iCloud e refaz o cruzamento em segundo plano.
+ */
+export async function registrarVeredito(aId, gId, tipo) {
+  const a = await getItem(aId);
+  if (!a || a.source !== 'icloud') throw new Error('foto do iCloud não encontrada');
+  if (gId && !(await getItem(gId))) throw new Error('foto do Google não encontrada');
+  const p = patchVeredito(a, gId, tipo);
+  await patchItems([p]);
+  // a linha aberta passa a refletir o veredito até o cruzamento novo chegar
+  for (const r of data?.rows || []) if (r.a?.id === aId) Object.assign(r.a, { mesmaQue: p.mesmaQue, diferenteDe: p.diferenteDe });
+  compute({ motivo: 'sua decisão sobre um par' });
+  return p;
+}
+
+const RESPOSTA = {
+  mesma: 'Anotado: são a mesma foto. O cruzamento é refeito em segundo plano.',
+  diferente: 'Anotado: são fotos diferentes. O cruzamento é refeito em segundo plano; cada uma passa a contar como só de um lado, se não houver outra.',
+  desfazer: 'Desfeito: a decisão volta a ser automática. O cruzamento é refeito em segundo plano.',
+};
+
+/** Pergunta e botões do veredito para uma linha aberta no visualizador. */
+function vereditoNoVisor(r) {
+  if (!r.a?.id) return {};
+  const age = (tipo, gId = r.g?.id) => async () => { await registrarVeredito(r.a.id, gId, tipo); return RESPOSTA[tipo]; };
+  if (r.g?.id) {
+    const ja = vereditoDoPar(r.a, r.g.id);
+    if (ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', aoClicar: age('desfazer') }] };
+    return {
+      pergunta: 'Estas fotos são a mesma?',
+      acoes: [
+        { rotulo: 'São a mesma foto', titulo: 'Conta como guardada nos dois serviços, mesmo com imagens só parecidas (por exemplo, outro quadro da mesma Live Photo)', aoClicar: age('mesma') },
+        { rotulo: 'São fotos diferentes', titulo: 'Desfaz o par: cada foto passa a contar só no seu serviço, se não houver outra igual', aoClicar: age('diferente') },
+      ],
+    };
+  }
+  // só no iCloud porque o usuário recusou um par: dá para desfazer
+  if (r.a.diferenteDe?.length) {
+    return { pergunta: `Você disse que esta foto é diferente de ${r.a.diferenteDe.length === 1 ? 'uma foto' : `${r.a.diferenteDe.length} fotos`} do Google.`, acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', aoClicar: age('desfazer', null) }] };
+  }
+  return {};
 }
 
 /** Abre a foto de um link (#rev?foto=<id>): a linha que contém o item, na lista e no visualizador. */

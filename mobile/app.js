@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.36';
+import { abrirVisor } from './viewer.js?v=0.2.37';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -242,6 +242,25 @@ async function copiarLinkDa(l) {
   try { await navigator.clipboard.writeText(link); toast('Link copiado.'); } catch { window.prompt('Copie o link:', link); }
 }
 
+const RESPOSTA = {
+  mesma: 'Anotado: são a mesma foto. O notebook refaz o cruzamento.',
+  diferente: 'Anotado: são fotos diferentes. O notebook refaz o cruzamento.',
+  desfazer: 'Desfeito: volta a decisão automática. O notebook refaz o cruzamento.',
+};
+
+/** Pergunta "São a mesma foto?" no visualizador, como no painel do notebook. */
+function vereditoDa(l) {
+  const p = l.par;
+  if (!p) return {};
+  const age = (tipo, g = p.g) => async () => { await post('/api/veredito', { a: p.a, g, tipo }); return RESPOSTA[tipo]; };
+  if (p.g) {
+    if (p.ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', aoClicar: age('desfazer') }] };
+    return { pergunta: 'Estas fotos são a mesma?', acoes: [{ rotulo: 'São a mesma foto', aoClicar: age('mesma') }, { rotulo: 'São fotos diferentes', aoClicar: age('diferente') }] };
+  }
+  if (p.recusados) return { pergunta: 'Você disse que esta foto é diferente da do Google.', acoes: [{ rotulo: 'Desfazer', aoClicar: age('desfazer', null) }] };
+  return {};
+}
+
 /** Fotos da linha em tamanho grande, lado a lado (uma em cima da outra no celular). */
 async function verGrande(l) {
   if (!l.thumbs.length) return;
@@ -260,7 +279,7 @@ async function verGrande(l) {
         return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
       } : null,
     carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,
-  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link });
+  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link, ...vereditoDa(l) });
 }
 
 function abrirDetalhe(i) {

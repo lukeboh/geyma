@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.37 — 18/11/2026
+
+- "São a mesma foto / São fotos diferentes": o visualizador (painel e
+  celular) pergunta, em todo par aberto, se as fotos são a mesma. A resposta
+  fica no item do iCloud (`mesmaQue`, `diferenteDe`, em `veredito.js`) e vale
+  como evidência no cruzamento: "a mesma" força o par (vence a disputa e a
+  imagem só parecida; uma cópia reduzida continua reduzida, sem pedir
+  conferência); "diferentes" tira aquele candidato, e cada foto fica do seu
+  lado se não houver outra. "Desfazer" volta à decisão automática, inclusive
+  numa foto que ficou só no iCloud por causa da recusa. Etiquetas "mesma foto,
+  por você" e "diferente, por você" na lista. O cruzamento é refeito em
+  segundo plano logo depois de cada resposta. Nada muda nos serviços.
+
+Verificação: 122 testes passando (`ext-veredito`, novo).
+
 ## 0.2.36 — 18/11/2026
 
 - A foto do iCloud como está agora: numa foto editada no iPhone (corte,

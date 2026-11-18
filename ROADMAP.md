@@ -67,8 +67,10 @@ amostra, com a taxa de falso positivo medida contra um controle.
 - [x] HEIC × JPG: ficha do arquivo do Google (formato, tamanho, nome) pelo
   cabeçalho do download; nome do arquivo como evidência; movimento da Live
   Photo lido da listagem do Google (0.2.32)
-- [ ] Botões "São a mesma foto / São fotos diferentes" nos pares a confirmar,
-  com a decisão do usuário valendo como evidência
+- [x] Versão atual das fotos editadas no iCloud (corte, filtro, quadro
+  trocado): comparação e visualizador com a atual e o original (0.2.36)
+- [x] Botões "São a mesma foto / São fotos diferentes" nos pares, com a
+  decisão do usuário valendo como evidência (0.2.37)
 - Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
   houver, nome como evidência
 - Tratamento de rajadas e fusos horários

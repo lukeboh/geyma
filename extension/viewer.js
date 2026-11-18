@@ -39,6 +39,7 @@ function montar() {
       </div>
     </div>
     <div class="visor-paineis"></div>
+    <div class="visor-acoes-foto" hidden><span class="visor-pergunta"></span><span class="visor-botoes"></span><span class="visor-resposta" role="status"></span></div>
     <p class="visor-dica">Roda ou pinça amplia · arraste para mover · duplo clique alterna · Esc fecha</p>`;
   document.body.append(raiz);
   ui = {
@@ -47,6 +48,7 @@ function montar() {
     paineis: raiz.querySelector('.visor-paineis'),
     sync: raiz.querySelector('.visor-sync input'),
     link: raiz.querySelector('.visor-link'),
+    acoes: raiz.querySelector('.visor-acoes-foto'),
   };
   ui.link.addEventListener('click', () => copiarLink(estado?.link));
   raiz.querySelector('.visor-fechar').addEventListener('click', fecharVisor);
@@ -207,7 +209,10 @@ function ligarGestos(v, i) {
  *   semImagem: o que dizer se nenhuma imagem carregar.
  *   src pode ser uma Promise (miniatura que ainda está chegando).
  * @param {string} [titulo]
- * @param {{ link?: string, aoFechar?: () => void }} [opcoes] link: o que "Copiar link" copia.
+ * @param {{ link?: string, aoFechar?: () => void, pergunta?: string,
+ *   acoes?: { rotulo: string, titulo?: string, aoClicar: () => Promise<string> }[] }} [opcoes]
+ *   link: o que "Copiar link" copia. acoes: botões sob as fotos (por exemplo,
+ *   "São a mesma foto"); aoClicar devolve a resposta a mostrar.
  */
 export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   montar();
@@ -217,6 +222,7 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   ui.paineis.dataset.n = String(fotos.length);
   estado = { vistas: [], ativo: 0, link: opcoes.link || null, aoFechar: opcoes.aoFechar || null };
   ui.link.hidden = !opcoes.link;
+  montarAcoes(opcoes);
   fotos.forEach((f, i) => {
     const painel = document.createElement('figure');
     painel.className = 'visor-painel';
@@ -273,6 +279,33 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   document.documentElement.classList.add('visor-aberto');
   aplicar();
   ui.raiz.querySelector('.visor-fechar').focus({ preventScroll: true });
+}
+
+function montarAcoes({ pergunta = '', acoes = [] }) {
+  const caixa = ui.acoes;
+  caixa.hidden = !acoes.length;
+  caixa.querySelector('.visor-pergunta').textContent = pergunta;
+  const resposta = caixa.querySelector('.visor-resposta');
+  resposta.textContent = '';
+  const botoes = caixa.querySelector('.visor-botoes');
+  botoes.replaceChildren(...acoes.map((a) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'visor-btn visor-acao';
+    b.textContent = a.rotulo;
+    if (a.titulo) b.title = a.titulo;
+    b.addEventListener('click', async () => {
+      for (const x of botoes.querySelectorAll('button')) x.disabled = true;
+      resposta.textContent = 'gravando…';
+      try {
+        resposta.textContent = (await a.aoClicar()) || 'Anotado.';
+      } catch (err) {
+        resposta.textContent = `Não foi possível: ${err.message || err}`;
+        for (const x of botoes.querySelectorAll('button')) x.disabled = false;
+      }
+    });
+    return b;
+  }));
 }
 
 export function fecharVisor() {

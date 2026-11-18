@@ -17,7 +17,7 @@ const row = (cls, a, g, extra = {}) => {
     cat,
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
-    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null, ...versoesIcloud(a) },
+    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null, ...versoesIcloud(a), ...(a.mesmaQue ? { mesmaQue: a.mesmaQue } : {}), ...(a.diferenteDe?.length ? { diferenteDe: a.diferenteDe } : {}) },
     g: g && { id: g.id, w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos) },
     ...(a && g ? { copiaGoogle: copiaNoGoogle(a, g) } : {}),
     ...extra,
@@ -156,6 +156,7 @@ self.onmessage = async (e) => {
         // reduzida sem a imagem conferida: só instante e proporção dizem que é a mesma foto
         ...(p.cls === 'reduzida' && !p.confirmadoPorImagem ? { semConferencia: true } : {}),
         ...(p.parecida ? { parecida: true } : {}),
+        ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...(p.versaoEditada ? { versaoEditada: true } : {}),
         ...dupInfo(p.a, p.g),
