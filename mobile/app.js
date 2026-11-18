@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.45';
+import { abrirVisor } from './viewer.js?v=0.2.47';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -92,6 +92,18 @@ async function carregarResumo() {
 
   const cl = $('classes');
   cl.replaceChildren(...ORDEM.map((k) => cartao({ rot: s.labels.classes[k], num: fmt.format(s.totals[k]), cor: COR[k], onClick: () => irParaRevisar({ cls: k }) })));
+
+  // próximos passos: no celular, responder os pares e revisar; o resto é no notebook
+  const NO_CELULAR = { responderPares: () => irParaRevisar({ cls: 'idIncerta' }), revisarPendentes: () => $('categorias').scrollIntoView({ behavior: 'smooth' }) };
+  const ps = s.passos || [];
+  $('passos-tit').hidden = !ps.length;
+  $('passos').replaceChildren(...ps.map((p) => cartao({
+    rot: NO_CELULAR[p.id] ? 'Aqui no celular' : 'No notebook',
+    num: p.id === 'percorrerIcloud' && p.n === 1 ? '—' : fmt.format(p.n),
+    det: esc(p.texto),
+    onClick: NO_CELULAR[p.id],
+    largo: true,
+  })));
 
   const pr = s.protecao;
   if (pr) {

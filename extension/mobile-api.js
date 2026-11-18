@@ -7,6 +7,7 @@ import { vereditoDoPar } from './src/core/veredito.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { sendPlan } from './src/core/plan.js';
 import { resumoProtecao } from './src/core/protecao.js';
+import { proximosPassos } from './src/core/passos.js';
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { getMeta, getThumb } from './src/core/db.js';
@@ -93,6 +94,7 @@ window.geymaApi = {
     const both = t.ambos + t.confirmar + t.reduzida;
     const cats = {};
     for (const r of data.rows) cats[r.cat] = (cats[r.cat] || 0) + 1;
+    const [concl, prog] = await Promise.all([getMeta('icloudCompleted'), getMeta('phashProgress')]);
     return {
       complete: data.complete,
       until: data.until,
@@ -104,6 +106,7 @@ window.geymaApi = {
       dup: data.dup,
       plan: sendPlan(data.rows),
       protecao: resumoProtecao(data.rows),
+      passos: proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' } }),
       categories: cats,
       decisions: decisionCounts(data.rows),
       years: Object.keys(data.summary.byYear).sort().reverse(),

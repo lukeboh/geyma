@@ -2,6 +2,15 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.47 — 18/11/2026
+
+- Celular: "O que fazer agora" no topo do resumo, com os mesmos passos do
+  painel; os que se fazem no celular (responder os pares incertos, revisar
+  os Pendentes) abrem o lugar certo, e os outros dizem "No notebook".
+
+Verificação: 147 testes passando. Uso real: a API do celular, chamada no
+painel, devolve os passos, o resumo das fotos pessoais e os pares incertos.
+
 ## 0.2.46 — 18/11/2026
 
 - "O que fazer agora" no topo da aba Proteção (`proximosPassos` em
