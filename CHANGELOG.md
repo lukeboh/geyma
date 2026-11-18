@@ -2,6 +2,17 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.2 — 18/11/2026
+
+- Documentação: validação em uso real do pareamento por fuso horário e da
+  conferência pelas duas versões das fotos editadas, depois de um segundo
+  percurso completo do iCloud (com a impressão digital calculada na hora) e
+  da conferência do Google pelas miniaturas: quase todos os pares por fuso
+  foram confirmados pela imagem (os poucos restantes foram desfeitos como
+  fotos diferentes), e os pares incertos caíram para cerca de um terço.
+  A conferência dos arquivos do Google parou no primeiro erro do servidor
+  (500), como previsto, e fica no cartão "O que fazer agora".
+
 ## 0.3.1 — 18/11/2026
 
 - Links do iCloud vencem em minutos, não em horas: medido depois do percurso
