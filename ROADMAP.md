@@ -100,6 +100,7 @@ revisada manualmente.
   zoom e movimento sincronizados (0.2.27)
 - [x] Revisão pelo celular, pelo Tailscale
 - [x] Links copiáveis de cada foto, para mandar um caso e investigar (0.2.29)
+- [x] Fotos só do Google: movimento, vídeo e nome do arquivo nas regras (0.2.44)
 - [ ] Modelo visual local para o que as regras deixam como indefinido
 - Marcações da Apple, regras baratas e modelo visual local (CLIP)
 - Categorias: pessoal, print, internet, propaganda, documento, indefinido

@@ -83,9 +83,27 @@ export function classifyIcloud(a) {
   return { cat: 'indefinido', reasons: [] };
 }
 
-/** Classifica um item só do Google (só dimensões e data): regras conservadoras. */
+/**
+ * Classifica um item só do Google: regras conservadoras sobre as dimensões,
+ * o tipo (vídeo, foto com movimento) que a listagem traz e, quando a ficha do
+ * arquivo foi lida, o nome do arquivo.
+ */
 export function classifyGoogle(g) {
-  if (isScreen(g.w, g.h)) return { cat: 'print', reasons: ['do tamanho de uma tela de celular ou tablet'] };
+  const nome = (!g.video && g.file?.nome) || '';
+  for (const [re, cat, why] of NAME) if (cat !== 'pessoal' && re.test(nome)) return { cat, reasons: [why] };
+  if (!g.video && !g.motionMs && isScreen(g.w, g.h)) return { cat: 'print', reasons: ['do tamanho de uma tela de celular ou tablet'] };
+  const reasons = [];
+  // foto com movimento: Live Photo (ou foto em movimento do Android), só a câmera faz
+  if (g.motionMs && !g.video) reasons.push('foto com movimento (Live Photo)');
+  for (const [re, cat, why] of NAME) if (cat === 'pessoal' && re.test(nome)) reasons.push(why);
+  if (reasons.length) return { cat: 'pessoal', reasons };
+  if (g.video) {
+    // do tamanho exato de uma tela: pode ser gravação de tela
+    if (isScreen(g.w, g.h)) return { cat: 'indefinido', reasons: ['vídeo do tamanho de uma tela (pode ser gravação de tela)'] };
+    if (Math.max(g.w || 0, g.h || 0) >= 1280) return { cat: 'pessoal', reasons: ['vídeo em resolução de câmera'] };
+    // vídeo pequeno: câmeras antigas também gravavam assim; fica indefinido
+    return { cat: 'indefinido', reasons: [] };
+  }
   if (g.w && g.h && Math.max(g.w, g.h) < 800) return { cat: 'internet', reasons: ['imagem pequena (menos de 800 px)'] };
   if (cameraShape(g.w, g.h)) return { cat: 'pessoal', reasons: ['proporção e resolução de câmera'] };
   return { cat: 'indefinido', reasons: [] };

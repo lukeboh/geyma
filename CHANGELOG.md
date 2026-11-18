@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.44 — 18/11/2026
+
+- Classificação das fotos que só estão no Google (`classifyGoogle`): além das
+  dimensões, usa o que a listagem já traz e o nome do arquivo quando a ficha
+  foi lida. Foto com movimento (Live Photo) e vídeo em resolução de câmera
+  passam a ser "Pessoal"; vídeo pequeno deixa de ser "Salva da internet" (a
+  regra de menos de 800 px agora vale só para fotos, como no iCloud) e fica
+  indefinido; vídeo do tamanho exato de uma tela fica indefinido (pode ser
+  gravação de tela); nome de mensageiro ou de captura de tela vale como no
+  iCloud. Indefinido continua sugerido como Pendente.
+
+Verificação: 143 testes passando. Uso real (simulação, sem gravar): mais de
+mil fotos e vídeos do Google passam de indefinido para Pessoal, e alguns
+milhares de vídeos pequenos saem de "Salva da internet".
+
 ## 0.2.43 — 18/11/2026
 
 - Revisar par a par sem fechar o visualizador: botões ‹ › com a posição

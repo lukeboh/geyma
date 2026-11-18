@@ -50,3 +50,19 @@ test('só o claramente pessoal é sugerido como Pessoal; o resto fica Pendente',
   assert.equal(suggestDecision('pessoal'), 'pessoal');
   for (const c of ['print', 'recebida', 'internet', 'indefinido']) assert.equal(suggestDecision(c), 'pendente');
 });
+
+test('Google: foto com movimento, vídeo e nome do arquivo (quando a ficha foi lida)', () => {
+  // foto com movimento é de câmera, mesmo fora da proporção
+  assert.deepEqual(classifyGoogle({ w: 1920, h: 1080, motionMs: 1500 }), { cat: 'pessoal', reasons: ['foto com movimento (Live Photo)'] });
+  // vídeo grande é de câmera; vídeo pequeno não vira "internet"
+  assert.equal(classifyGoogle({ w: 1920, h: 1080, video: true }).cat, 'pessoal');
+  assert.equal(classifyGoogle({ w: 640, h: 480, video: true }).cat, 'indefinido');
+  // o tamanho de tela não vale para vídeo (gravação de tela vem do iCloud com a marca)
+  assert.equal(classifyGoogle({ w: 1170, h: 2532, video: true }).cat, 'indefinido');
+  // nome do arquivo pela ficha
+  assert.equal(classifyGoogle({ w: 1920, h: 1080, file: { nome: 'IMG-20200101-WA0001.jpg' } }).cat, 'recebida');
+  assert.equal(classifyGoogle({ w: 1920, h: 1080, file: { nome: 'Screenshot_2020.png' } }).cat, 'print');
+  assert.deepEqual(classifyGoogle({ w: 1920, h: 1080, file: { nome: 'IMG_1234.HEIC' } }).reasons, ['nome de câmera']);
+  // ficha de vídeo é a da capa: não conta
+  assert.equal(classifyGoogle({ w: 640, h: 480, video: true, file: { nome: 'IMG_1234.jpg' } }).cat, 'indefinido');
+});
