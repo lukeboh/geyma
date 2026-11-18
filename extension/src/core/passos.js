@@ -13,7 +13,7 @@ export function proximosPassos(d, { icloudConcluidoEm = null, agora = Date.now()
   const passos = [];
   const add = (id, n, texto) => { if (n > 0) passos.push({ id, n, texto }); };
   if (!ocupado.google) add('conferirGoogle', d.phashNeeded?.length || 0, 'fotos do Google precisam ser comparadas pelas miniaturas (o Geyma faz sozinho; leva alguns minutos)');
-  add('conferirIcloud', d.icloudPhashNeeded?.length || 0, 'fotos do iCloud podem desempatar pares pelas miniaturas guardadas');
+  add('conferirIcloud', d.icloudPhashNeeded?.length || 0, 'fotos do iCloud podem desempatar pares pela miniatura (melhor logo depois de um percurso, enquanto os links valem)');
   add('arquivosGoogle', d.googleFileNeeded?.length || 0, 'arquivos do Google para conferir o formato (só o cabeçalho, nada é baixado)');
   const rows = d.rows || [];
   add('responderPares', rows.filter((r) => r.ident === 'incerta').length, 'pares para você responder "São a mesma foto?" (atalhos M e D; passa sozinho para o próximo)');

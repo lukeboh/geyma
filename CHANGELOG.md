@@ -2,6 +2,16 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.51 — 18/11/2026
+
+- Documentação: README da extensão com a aba Proteção nova (certeza, fotos
+  pessoais protegidas, "O que fazer agora", melhor cópia), o visualizador
+  (versão atual do iCloud, "São a mesma foto?", atalhos, navegação,
+  sugestões) e os módulos novos. Texto da conferência pelo iCloud corrigido:
+  ela usa o link da miniatura do último percurso, que vale algumas horas.
+
+Verificação: 150 testes passando.
+
 ## 0.2.50 — 18/11/2026
 
 - Celular: sugestões para parear à mão também no visualizador (foto só no

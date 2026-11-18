@@ -36,8 +36,15 @@ passo** explica a tela; o botão **?** do topo repete o guia.
      notebook de dormir (permissão `power`). Um erro do servidor da Apple interrompe a leitura
      na hora. **Continuar de onde parou** retoma pela posição salva.
 2. **Proteção**
-   - Frase-resumo, situação de cada foto (Em ambos, A confirmar, Cópia
-     reduzida, Só no Google, Só no iCloud) e gráfico por ano.
+   - Frase-resumo, certeza de que cada par é a mesma foto (confirmada,
+     provável, incerta) e a resposta central: das fotos pessoais, quantas
+     estão nos dois lugares sem perda.
+   - **O que fazer agora**: os próximos passos, com a contagem e um botão.
+   - Situação de cada foto (Em ambos, A confirmar, Cópia reduzida, Só no
+     Google, Só no iCloud) e gráfico por ano.
+   - **Como o Google guarda as suas fotos**: Live Photos com e sem o
+     movimento, arquivos originais ou convertidos e a **melhor cópia** de
+     cada par.
    - **Pessoal ou lixo?**: contagem por categoria.
    - **Plano de envio (prévia)**: o que seria copiado em cada sentido com as
      marcações de agora, com quantidade e espaço.
@@ -48,7 +55,14 @@ passo** explica a tela; o botão **?** do topo repete o guia.
    - Filtros por situação, categoria, marcação, ano e tipo; miniaturas dos dois
      lados (clique na do Google para abrir a foto no Google Fotos).
    - Marcação por linha ou em lote (Pessoal, Pendente, Manter, Descartar), com
-     confirmação. Marcar só registra a sua decisão aqui.
+     confirmação e o espaço que os itens ocupam. Marcar só registra a sua
+     decisão aqui.
+   - **Visualizador** (clique numa miniatura): as fotos lado a lado, com zoom
+     e movimento juntos. Numa foto editada no iPhone, mostra a versão atual
+     do iCloud ao lado do original. Pergunta **"São a mesma foto?"** (atalhos
+     M, D e Z para desfazer); ‹ › ou Page Up/Down andam pela lista, e depois
+     de responder ele passa sozinho para a próxima. Numa foto só do iCloud,
+     sugere fotos do Google que podem ser a mesma (outro horário).
    - Exportação em CSV.
 
 ## Como funciona
@@ -59,7 +73,9 @@ passo** explica a tela; o botão **?** do topo repete o guia.
 | `src/page/relay.js` | Ponte entre a página e a extensão |
 | `src/sw.js` | Service worker: normaliza, grava, calcula o pHash e encaminha comandos |
 | `src/core/normalize.js` | Interpretação dos dados dos serviços |
-| `src/core/match.js` | Motor de identidade: cruzamento, cópias reduzidas, duplicatas |
+| `src/core/match.js` | Motor de identidade: cruzamento, cópias reduzidas, duplicatas, fuso horário, veredito do usuário e certeza |
+| `src/core/qualidade.js`, `protecao.js`, `passos.js` | Melhor cópia, fotos pessoais protegidas e próximos passos |
+| `src/core/veredito.js`, `sugestoes.js` | "São a mesma foto?" e sugestões para parear à mão |
 | `src/core/phash.js` | Hash perceptual igual ao da biblioteca Python imagehash |
 | `src/core/classify.js` | Categorias por regras e sugestão de marcação |
 | `src/core/db.js` | Inventário em IndexedDB (gravação mescla com o registro existente) |
@@ -86,6 +102,7 @@ Open Font License, embutida em `assets/archivo.woff2`.
 - As interfaces lidas não são oficiais e podem mudar sem aviso.
 - O percurso do iCloud depende da emulação de foco (protocolo de depuração do
   Chrome); se o aviso de depuração for cancelado, ele espera a aba visível.
-- O catálogo do Google não informa o nome nem o tamanho do arquivo.
+- O catálogo do Google não informa o nome nem o tamanho do arquivo; a ficha
+  do arquivo (cabeçalho do download) traz os dois, mas não vale para vídeos.
 - A classificação é por regras; o que elas não resolvem fica Indefinido
   (Pendente) até a revisão ou um modelo visual local.

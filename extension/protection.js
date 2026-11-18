@@ -302,7 +302,7 @@ function renderIcloudCheck() {
   const disputed = data.summary.totals.confirmar + data.summary.totals.reduzida;
   $('m-ic-box').hidden = !disputed;
   $('m-ic').innerHTML = need.length
-    ? `<b>${fmt.format(need.length)}</b> itens do iCloud têm miniatura guardada e podem desempatar pares.`
+    ? `<b>${fmt.format(need.length)}</b> itens do iCloud podem desempatar pares pela miniatura (o link vem do último percurso e vale algumas horas; se tiver expirado, a conferência avisa).`
     : data.icloudPhashWanted
       ? `<b>${fmt.format(data.icloudPhashWanted)}</b> itens do iCloud precisam da imagem para desempatar. O próximo percurso da biblioteca do iCloud (aba Inventário) confere cada um assim que o vê, sem outro passo, e guarda no notebook a miniatura das fotos que só estão no iCloud ou têm cópias repetidas nele (${fmt.format(data.icloudThumbKeep || 0)} itens), para a revisão funcionar depois que os links da Apple expirarem.`
       : `Nenhum item do iCloud precisa da imagem para desempatar.`;
