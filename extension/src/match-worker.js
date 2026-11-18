@@ -9,6 +9,7 @@ import { copiaNoGoogle } from './core/google-file.js';
 import { ICLOUD_URL_VALIDA_MS } from './core/viewer-src.js';
 import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
+import { conferirChegadas, marcarChegadas } from './core/envio.js';
 
 const row = (cls, a, g, extra = {}) => {
   const { cat, reasons } = classifyRow(a, g);
@@ -129,6 +130,12 @@ self.onmessage = async (e) => {
       getMeta('icloudCounts'),
       getMeta('phashProgress'),
     ]);
+    // envios do Geyma que já aparecem no inventário do destino (0.7)
+    const envio = (await getMeta('envio'))?.value;
+    if (envio) {
+      const chegadas = conferirChegadas(envio, { google, icloud: icloudTodo });
+      if (chegadas.length) await setMeta('envio', marcarChegadas(envio, chegadas));
+    }
     // fotos ocultas no iPhone, e as que o último percurso completo não achou,
     // ficam fora do cruzamento (e de qualquer envio). Continuam no inventário.
     const icloud = paraCruzar(icloudTodo);

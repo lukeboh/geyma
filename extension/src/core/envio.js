@@ -151,6 +151,14 @@ export function conferirChegadas(estado, { google = [], icloud = [] } = {}) {
   return out;
 }
 
+/** Marca as chegadas conferidas ({id, chegou}) no estado; devolve o mesmo objeto se nada mudou. */
+export function marcarChegadas(estado, chegadas, agora = Date.now()) {
+  if (!chegadas.length) return estado;
+  let novo = estado;
+  for (const { id, chegou } of chegadas) novo = registrarEnvio(novo, id, { estado: 'chegou', chegouComo: chegou }, agora);
+  return novo;
+}
+
 /** Contagem por estado, para o painel. */
 export function resumoEnvio(estado) {
   const r = { ensaio: 0, enviado: 0, chegou: 0, falhou: 0 };

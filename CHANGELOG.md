@@ -2,6 +2,20 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.6 — 18/11/2026
+
+- Envio: a cada cruzamento, o Geyma procura no inventário do destino o que
+  enviou e marca "chegou ao destino" (Google: pelo SHA-1 do arquivo
+  enviado; iCloud: foto do mesmo instante vista depois do envio).
+- `docs/ENVIO.md` reescrito com o caminho decidido pelo usuário (pelo
+  próprio site, sem instalar nada), o que já foi conferido e o que só o
+  piloto responde (data das fotos sem EXIF, Live Photo no Google, sessão do
+  iCloud).
+- Novo `docs/TESTES-HUMANOS.md`: roteiro para testar um caso por vez
+  (envio, classificação, identidade, celular, Google).
+
+Verificação: 164 testes passando.
+
 ## 0.3.5 — 18/11/2026
 
 - Envio pelo site (0.7), segunda parte: no visualizador, as fotos que podem

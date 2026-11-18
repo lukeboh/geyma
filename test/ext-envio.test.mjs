@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { podeEnviar, filaDeEnvio, arquivosDoItem, tipoDoArquivo, sha1Base64Url, base64DeBytes, bytesDeBase64, pedacos, registrarEnvio, conferirChegadas, resumoEnvio, nomePelaData } from '../extension/src/core/envio.js';
+import { podeEnviar, filaDeEnvio, arquivosDoItem, tipoDoArquivo, sha1Base64Url, base64DeBytes, bytesDeBase64, pedacos, registrarEnvio, conferirChegadas, marcarChegadas, resumoEnvio, nomePelaData } from '../extension/src/core/envio.js';
 import { parseIcloudQuery } from '../extension/src/core/normalize.js';
 
 const A = (o = {}) => ({ id: 'a:1', source: 'icloud', ts: 1700000000000, filename: 'IMG_0001.HEIC', fileType: 'public.heic', orig: 'https://x.icloud-content.com/o', ...o });
@@ -112,6 +112,10 @@ test('estado do envio e conferência da chegada', () => {
   assert.deepEqual(conferirChegadas(e, { google, icloud }), [{ id: 'a:1', chegou: 'g:novo' }, { id: 'g:9', chegou: 'a:nova' }]);
   // registrar de novo mantém o que já havia
   assert.equal(registrarEnvio(e, 'a:1', { estado: 'chegou' })['a:1'].sha1, 'X'.repeat(27));
+  // chegadas marcadas no estado
+  const m = marcarChegadas(e, [{ id: 'a:1', chegou: 'g:novo' }], 9000);
+  assert.deepEqual([m['a:1'].estado, m['a:1'].chegouComo, m['a:1'].sha1], ['chegou', 'g:novo', 'X'.repeat(27)]);
+  assert.equal(marcarChegadas(e, []), e);
   // o erro de uma tentativa anterior some quando a nova dá certo
   assert.equal(registrarEnvio(e, 'a:2', { estado: 'ensaio' })['a:2'].erro, undefined);
 });

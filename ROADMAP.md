@@ -113,14 +113,18 @@ revisada manualmente.
 com qualidade preservada". Marco de validação do uso pessoal.
 
 ### 0.7 — Envio curado nos dois sentidos
-Caminhos e proposta em [docs/ENVIO.md](docs/ENVIO.md) (aguarda decisão).
-- Envia **somente** itens marcados Pessoal ou Manter; Pendente e Descartar nunca
-  são copiados; fotos ocultas do iCloud nunca entram (decisão de 16/11)
-- Google Photos Library API (escopo de envio), em lotes, em fluxo, com retomada
-- Google → iCloud: escolher o caminho (transferência oficial, pasta de envio do
-  iCloud para Windows ou página do iCloud.com)
-- Conferência de cota antes de enviar, nos dois serviços
-- Envio contínuo do que é novo (substitui o backup automático do celular)
+Caminho decidido em 18/11: pelo próprio site de cada serviço, sem instalar
+nada ([docs/ENVIO.md](docs/ENVIO.md)).
+- [x] Envia **somente** itens marcados Pessoal ou Manter; Pendente e Descartar
+  nunca são copiados; fotos ocultas do iCloud nunca entram (0.3.4)
+- [x] Envio de uma foto pelo visualizador, entregue ao mecanismo de envio do
+  próprio site, nos dois sentidos, com ensaio sem enviar (0.3.5)
+- [x] Conferência da chegada pelo inventário do destino (SHA-1 exato no
+  Google) (0.3.6)
+- [ ] Piloto do usuário ([docs/TESTES-HUMANOS.md](docs/TESTES-HUMANOS.md), E3–E9)
+- [ ] Envio em lote, com pausa, retomada e parada no primeiro erro
+- [ ] Conferência de cota antes de enviar, nos dois serviços
+- [ ] Envio contínuo do que é novo (substitui o backup automático do celular)
 
 ### 0.8 — Sanitização guiada
 - [x] Deduplicação nos dois serviços (0.2.15): arquivos idênticos pela
