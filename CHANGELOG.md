@@ -2,6 +2,14 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.26 — 18/11/2026
+
+- Documentação: próximos passos e pendências de decisão do HANDOFF
+  atualizados com o que ficou pronto da 0.7 à 0.9 (falta só o que depende
+  dos testes humanos).
+
+Verificação: só documentação.
+
 ## 0.3.25 — 18/11/2026
 
 - Quadros amostrados dos vídeos (etapa 0.9): para os pares de vídeo ainda

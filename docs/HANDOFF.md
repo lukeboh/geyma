@@ -367,20 +367,26 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 1. **Seguir o cartão "O que fazer agora"** (aba Proteção): conferências pelas
    miniaturas, arquivos do Google e os pares incertos para o usuário
    responder (atalhos M/D, passa sozinho para o próximo).
-2. **Envio curado (0.7):** o usuário faz o piloto (casos E1 a E10 de
+2. **Envio curado (0.7):** código completo (lote com pausa e retomada, cota,
+   envio contínuo). Falta o piloto do usuário (casos E1 a E12 de
    [TESTES-HUMANOS.md](TESTES-HUMANOS.md)). Pontos em aberto: data das fotos
    sem EXIF no destino, Live Photo (HEIC + MOV) no Google, sessão do iCloud
-   depois de enviar. Depois: conferência de cota e envio contínuo.
+   depois de enviar.
 3. Terminar a classificação pela imagem (botão na aba Proteção; pode rodar
    de noite) e revisar as categorias com o caso C5; ajustar frases e
    limiares (`core/clip.js`, subir `CLIP_VERSAO`) com o que o usuário corrigir.
 4. **Qualidade (0.5):** itens concluídos; conferir os arquivos do Google que
    faltam (a recompressão depende da ficha) e o caso Q2.
-5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
-   serviço, só com confirmação explícita.
-6. **Vídeos (0.9):** casos V1 a V3; a duração do iCloud chega com o próximo
-   percurso completo. Falta: quadros amostrados. "Assistir" (0.3.20) só
+5. **Sanitização (0.8):** código completo (lixeira do Google pelo botão do
+   site; lista do iCloud). Falta o piloto (L1 a L3). Mover para a lixeira não
+   foi ensaiado clicando: o ensaio só confere o botão; o primeiro clique de
+   verdade é o caso L2.
+6. **Vídeos (0.9):** código completo, inclusive quadros amostrados (0.3.25).
+   Casos V0 a V4; a duração do iCloud chega com o próximo percurso completo
+   (e reduz muito a fila da comparação de quadros). "Assistir" (0.3.20) só
    carrega com o painel visível (em aba de fundo o Chrome não carrega vídeo).
+7. **Fechar as etapas:** com os casos humanos de cada etapa aprovados, subir
+   o MINOR (uma etapa por vez, a partir da 0.4) e criar a tag `vX.Y.0`.
 
 ### Como retomar (passo a passo)
 1. Chrome de automação aberto (`he chrome-automation`), com as abas do Google
@@ -410,15 +416,19 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 ## 9. Pendências de decisão do usuário
 
-- Vídeos: concentram quase todo o volume do que falta no Google; decidir se
-  entram no envio, e com qual prioridade.
-- Quando começar a remover duplicatas (0.8), sempre com confirmação explícita.
+- Quando começar a remover duplicatas (0.8), sempre com confirmação explícita
+  (o bloco Lixeira só aceita o que foi marcado Descartar).
+- Ligar o envio contínuo (0.7), depois do piloto.
 - Início automático do servidor do celular (opcional).
 - Plano de armazenamento do Google e do iCloud, se o volume curado não couber.
 - Repositório público: a estratégia comercial está visível. Avaliar tornar o
   repositório privado antes da trilha de produto.
 
 ### Já decidido
+- Vídeos entram no envio, de qualquer tamanho, pelo envio direto (18/11).
+- Fotos e vídeos separados no painel pela chave Fotos | Vídeos | Tudo,
+  começando em Fotos (18/11).
+- iCloud: o Geyma não apaga; dá a lista para apagar no app Fotos (18/11).
 - Envio pelo próprio site de cada serviço, sem instalar nada no notebook
   (18/11).
 - Fotos ocultas do iCloud ficam fora de qualquer envio (16/11).
