@@ -5,7 +5,7 @@ import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { patchItems, getThumb, getCache, getMeta, registrarDecisoes, getItem } from './src/core/db.js';
 import { patchVeredito, vereditoDoPar } from './src/core/veredito.js';
 import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cache.js';
-import { sendPlan, effectiveDecision } from './src/core/plan.js';
+import { sendPlan, effectiveDecision, espacoDasLinhas, bytesPerPixel } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
 import { abrirVisor } from './viewer.js';
@@ -849,7 +849,9 @@ async function decide(rows, decision) {
 function askBatch(decision, rows = filtered(), what = 'itens') {
   if (!rows.length) return;
   pendingBatch = { decision, rows };
-  $('r-confirm-text').textContent = `Marcar ${fmt.format(rows.length)} ${what} como ${DECISIONS[decision]}? Isso só registra a sua decisão aqui; nada muda nos serviços.`;
+  const esp = espacoDasLinhas(rows, bytesPerPixel(data.rows));
+  const ocupa = [esp.icloud && `${GB(esp.icloud)} no iCloud`, esp.google && `${esp.googleEstimado ? 'cerca de ' : ''}${GB(esp.google)} no Google`].filter(Boolean).join(' e ');
+  $('r-confirm-text').textContent = `Marcar ${fmt.format(rows.length)} ${what} como ${DECISIONS[decision]}?${ocupa ? ` Eles ocupam ${ocupa}.` : ''} Isso só registra a sua decisão aqui; nada muda nos serviços.`;
   $('r-confirm').hidden = false;
 }
 

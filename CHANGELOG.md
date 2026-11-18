@@ -2,6 +2,15 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.40 — 18/11/2026
+
+- Marcação em lote mostra o espaço que os itens ocupam em cada serviço antes
+  de confirmar (`espacoDasLinhas` em `plan.js`): o do iCloud é o tamanho real
+  dos originais; o do Google vem da ficha do arquivo, quando lida, ou é
+  estimado pela resolução ("cerca de").
+
+Verificação: 135 testes passando.
+
 ## 0.2.39 — 18/11/2026
 
 - Certeza de que um par é a mesma foto (etapa 0.4, `estadoIdentidade` em

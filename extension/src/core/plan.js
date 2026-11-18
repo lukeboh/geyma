@@ -18,6 +18,26 @@ export function bytesPerPixel(rows, fallback = 0.35) {
 }
 
 /**
+ * Espaço que um conjunto de linhas ocupa em cada serviço: o do iCloud é o
+ * tamanho real dos originais; o do Google, estimado pela resolução (o Google
+ * não informa o tamanho, salvo quando a ficha do arquivo foi lida).
+ * @returns {{icloud: number, google: number, googleEstimado: boolean}}
+ */
+export function espacoDasLinhas(rows, bpp = 0.35) {
+  let icloud = 0;
+  let google = 0;
+  let estimado = false;
+  for (const r of rows) {
+    if (r.a?.size) icloud += r.a.size;
+    if (r.g) {
+      if (r.g.file?.bytes && !r.g.video) google += r.g.file.bytes;
+      else if (r.g.w && r.g.h) { google += r.g.w * r.g.h * bpp; estimado = true; }
+    }
+  }
+  return { icloud, google, googleEstimado: estimado };
+}
+
+/**
  * @param rows linhas do cruzamento ({cls, cat, decision, dup, menor, a:{size,w,h,video}, g:{w,h}})
  * @returns {{toGoogle, toIcloud, quality, bpp}}
  */

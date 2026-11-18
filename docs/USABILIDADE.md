@@ -98,8 +98,5 @@ Pedido do usuário: o painel não era fácil de entender sozinho.
 
 - Grade de miniaturas grandes para revisar um filtro inteiro de uma vez
   (selecionar as exceções e marcar o resto em lote), com atalhos de teclado.
-- Botões "São a mesma foto / São fotos diferentes" no visualizador dos pares
-  "a confirmar".
-- Espaço que cada decisão libera ou ocupa, ao lado do botão de lote.
 - Assistente de início que verifica de verdade: extensão instalada, sessões
   abertas, janela do iCloud, tamanho das miniaturas.

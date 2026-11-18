@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sendPlan, bytesPerPixel, effectiveDecision } from '../extension/src/core/plan.js';
+import { sendPlan, bytesPerPixel, effectiveDecision, espacoDasLinhas } from '../extension/src/core/plan.js';
 
 const icl = (o) => ({ cls: 'soIcloud', cat: 'pessoal', decision: null, a: { size: 1000, w: 10, h: 10, video: false }, ...o });
 const goo = (o) => ({ cls: 'soGoogle', cat: 'pessoal', decision: null, g: { w: 10, h: 10 }, ...o });
@@ -38,6 +38,17 @@ test('reenvio de original quando o Google guarda a cópia menor', () => {
   const p = sendPlan([{ cls: 'reduzida', menor: 'google', cat: 'pessoal', a: { size: 1, w: 1, h: 1 }, g: { w: 1, h: 1 } }, { cls: 'reduzida', menor: 'icloud', cat: 'pessoal', a: { size: 1, w: 1, h: 1 }, g: { w: 1, h: 1 } }]);
   assert.equal(p.quality.n, 1);
   assert.equal(p.quality.googleMenor, 1);
+});
+
+test('espaço de um lote: iCloud real, Google pela ficha ou estimado', () => {
+  const rows = [
+    { a: { size: 1000 }, g: { w: 10, h: 10 } },
+    { a: { size: 500 }, g: { w: 10, h: 10, file: { bytes: 70 } } },
+    { g: { w: 10, h: 10, video: true, file: { bytes: 9 } } },
+    { a: { size: 0 } },
+  ];
+  assert.deepEqual(espacoDasLinhas(rows, 2), { icloud: 1500, google: 200 + 70 + 200, googleEstimado: true });
+  assert.deepEqual(espacoDasLinhas([{ g: { file: { bytes: 5 } } }]), { icloud: 0, google: 5, googleEstimado: false });
 });
 
 test('sem fotos do iCloud usa o valor padrão de bytes por pixel', () => {
