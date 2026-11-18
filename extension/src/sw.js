@@ -11,6 +11,7 @@ import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
 import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, pedacosDeBytes, registrarEnvio, envioDireto } from './core/envio.js';
 import { lerCotaGoogle, lerCotaIcloud } from './core/cota.js';
+import { registrarLixeira } from './core/lixeira.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -186,6 +187,41 @@ async function acharCampoDeEnvio(tabId) {
   alvoWaiters.delete(pedido);
   if (!r) throw new Error('não achei o campo de envio na página (abra o site e espere carregar)');
   return r;
+}
+
+/**
+ * Lixeira do Google: abre a página de cada foto numa aba em segundo plano e
+ * usa o próprio botão "Mover para a lixeira" (src/page/envio.js). Um por
+ * vez; para no primeiro erro. Registra tudo na meta 'lixeira' (relatório).
+ */
+async function lixeiraGoogle(ids, ensaio) {
+  const resultados = [];
+  const [gtab] = await chrome.tabs.query({ url: SITES.google.match });
+  for (const id of ids) {
+    const it = await getItem(id);
+    let res;
+    if (!it || it.source !== 'google') res = { ok: false, erro: 'item não encontrado no inventário do Google' };
+    else {
+      const tab = await chrome.tabs.create({ url: `https://photos.google.com/photo/${id.slice(2)}`, active: false, ...(gtab ? { windowId: gtab.windowId } : {}) });
+      try {
+        await new Promise((ok) => {
+          const fim = () => { chrome.tabs.onUpdated.removeListener(h); clearTimeout(t); ok(); };
+          const h = (tid, info) => { if (tid === tab.id && info.status === 'complete') fim(); };
+          const t = setTimeout(fim, 20000);
+          chrome.tabs.onUpdated.addListener(h);
+        });
+        res = await chrome.tabs.sendMessage(tab.id, { kind: 'lixeira-clicar', ensaio }).catch((err) => ({ ok: false, erro: String(err.message || err) }));
+      } finally {
+        chrome.tabs.remove(tab.id).catch(() => {});
+      }
+    }
+    const atual = (await getMeta('lixeira'))?.value || {};
+    await setMeta('lixeira', registrarLixeira(atual, id, 'google', res));
+    resultados.push({ id, ...res });
+    broadcast({ event: 'lixeira', feitos: resultados.length, total: ids.length });
+    if (!res?.ok) break;
+  }
+  return { ok: resultados.every((r) => r.ok), resultados };
 }
 
 async function enviarUm(id, destino, ensaio) {
@@ -389,6 +425,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const [g, a] = await Promise.all([getMeta('cotaGoogle'), getMeta('cotaIcloud')]);
       return { ok: true, google: g?.value ? { ...g.value, at: g.at } : null, icloud: a?.value ? { ...a.value, at: a.at } : null };
     })().then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
+    return true;
+  }
+  // lixeira do Google (0.8): só ids que o painel listou (marcados Descartar) e o usuário confirmou
+  if (msg?.kind === 'lixeira') {
+    const ids = (Array.isArray(msg.ids) ? msg.ids : []).map(String).filter((id) => id.startsWith('g:'));
+    const job = envioChain.then(() => lixeiraGoogle(ids, Boolean(msg.ensaio)));
+    envioChain = job.catch(() => {});
+    job.then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
     return true;
   }
   if (msg?.kind === 'envio') {

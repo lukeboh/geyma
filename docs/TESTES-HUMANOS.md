@@ -246,6 +246,34 @@ Observado:
 
 ---
 
+## 2d. Lixeira (0.8)
+
+### L1 — Ensaio no Google ☐
+Revisão → "Cópias repetidas no Google" → marque **Descartar** duas cópias
+(abra antes para ver que a que fica é a melhor). Proteção → bloco
+**Lixeira** → **Ensaiar com 1 no Google**.
+**Esperado:** uma aba abre em segundo plano e fecha sozinha; "Ensaio certo:
+a página da foto abriu com o botão…". Nada some do Google.
+Observado:
+
+### L2 — Mover uma cópia para a lixeira do Google ☐
+Com só uma cópia marcada Descartar: **Mover 1 para a lixeira do Google** →
+**Confirmar**.
+**Esperado:** "1 movidos para a lixeira do Google"; no Google Fotos, a cópia
+está na Lixeira (e pode ser restaurada), e a que fica continua na
+biblioteca. O bloco diz "Já na lixeira pelo Geyma: 1 no Google".
+Observado:
+
+### L3 — Lista do iCloud ☐
+Marque **Descartar** uma cópia repetida do iCloud. Bloco **Lixeira** →
+**Lista para apagar no iCloud (CSV)**.
+**Esperado:** o CSV abre no Excel com acentos certos e traz a data, o nome
+e o tamanho; ache o item no app Fotos pela data e apague. No próximo
+percurso completo do iCloud, ele sai da lista.
+Observado:
+
+---
+
 ## 3. Identidade (0.4)
 
 ### I1 — Taxa de erro do pareamento automático ☐

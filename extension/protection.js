@@ -7,6 +7,7 @@ import { patchVeredito, vereditoDoPar } from './src/core/veredito.js';
 import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cache.js';
 import { sendPlan, effectiveDecision, espacoDasLinhas, bytesPerPixel, bytesDoEnvio } from './src/core/plan.js';
 import { cabeNaCota, COTA_VALIDA_MS } from './src/core/cota.js';
+import { listaLixeira, resumoLixeira, csvLixeiraIcloud } from './src/core/lixeira.js';
 import { CICLO_MS, continuoPadrao, cicloDevido, googleAte, filaContinua } from './src/core/continuo.js';
 import { TAMANHOS_LOTE, novoLote, proximoDoLote, registrarNoLote, pausarLote, pararLote, retomarLote, loteAberto } from './src/core/lote.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
@@ -96,6 +97,10 @@ export function initProtection() {
   $('r-envio-resume').addEventListener('click', continuarLote);
   for (const id of ['m-cont-on', 'm-cont-g', 'm-cont-a', 'm-cont-desde']) $(id).addEventListener('change', mudarContinuo);
   $('m-cont-agora').addEventListener('click', () => verificarCiclo({ agora: true }));
+  $('m-lix-ensaio').addEventListener('click', () => lixeiraGoogle(true));
+  $('m-lix-go').addEventListener('click', () => lixeiraGoogle(false));
+  $('m-lix-stop').addEventListener('click', () => { if (lixRodando) lixRodando.parar = true; });
+  $('m-lix-csv').addEventListener('click', baixarCsvIcloud);
   for (const n of TAMANHOS_LOTE) $('r-envio-n').append(new Option(`até ${n}`, n));
   $('r-envio-n').append(new Option('todos', ''));
   $('r-envio-n').addEventListener('change', () => renderEnvioLote());
@@ -276,6 +281,7 @@ function renderProtection() {
   renderGoogleFiles();
   renderVideos();
   renderContinuo();
+  renderLixeira();
   verificarCiclo();
 }
 
@@ -778,6 +784,7 @@ function renderProtecao() {
 export function renderPlan() {
   if (!data) return;
   renderProtecao();
+  renderLixeira();
   renderPassos().catch(() => {});
   const plan = sendPlan(vis().rows);
   $('m-plan-box').hidden = !vis().rows.length;
@@ -1440,6 +1447,7 @@ function mudarContinuo() {
   if (continuo.ativo && !continuo.ultimoCiclo) continuo.ultimoCiclo = 0;
   salvarContinuo();
   renderContinuo();
+  renderLixeira();
   verificarCiclo();
 }
 
@@ -1513,6 +1521,84 @@ function verificarCiclo({ agora = false } = {}) {
   cicloContinuo();
 }
 setInterval(verificarCiclo, 10 * 60 * 1000);
+
+// ---------- lixeira: sanitização guiada (0.8) ----------
+// Só o que você marcou Descartar; o Google pelo próprio botão do site, um por
+// vez e com dois cliques de confirmação; o iCloud pela lista para o app Fotos.
+let lixRegistro = {};
+let lixRodando = null;
+let lixConfirmar = false;
+const lerLixeira = () => getMeta('lixeira').then((m) => { lixRegistro = m?.value || {}; }, () => {});
+lerLixeira();
+
+function renderLixeira() {
+  if (!data) return;
+  const l = listaLixeira(vis().rows, lixRegistro);
+  const res = resumoLixeira(lixRegistro);
+  const box = $('m-lix-box');
+  box.hidden = !(l.google.length + l.icloud.length + res.google + res.icloud + res.falhas);
+  if (box.hidden) return;
+  const copias = (lista) => lista.filter((x) => x.motivo.startsWith('cópia')).length;
+  const partes = [
+    `Marcados Descartar por você: <b>${fmt.format(l.google.length)}</b> podem ir para a lixeira do Google (${fmt.format(copias(l.google))} cópias repetidas, com a melhor ficando) e <b>${fmt.format(l.icloud.length)}</b> para a do iCloud (${fmt.format(copias(l.icloud))} cópias).`,
+  ];
+  if (res.google || res.icloud || res.falhas) partes.push(`Já na lixeira pelo Geyma: ${fmt.format(res.google)} no Google${res.falhas ? `; ${fmt.format(res.falhas)} tentativas falharam` : ''}.`);
+  $('m-lix').innerHTML = partes.join(' ');
+  if (lixRodando) return;
+  lixConfirmar = false;
+  $('m-lix-ensaio').hidden = !l.google.length;
+  $('m-lix-go').hidden = !l.google.length;
+  $('m-lix-go').textContent = `Mover ${fmt.format(Math.min(l.google.length, LIX_MAX))} para a lixeira do Google`;
+  $('m-lix-csv').hidden = !l.icloud.length;
+  $('m-lix-stop').hidden = true;
+}
+
+const LIX_MAX = 50;
+async function lixeiraGoogle(ensaio) {
+  if (lixRodando) return;
+  const l = listaLixeira(vis().rows, lixRegistro).google;
+  const ids = (ensaio ? l.slice(0, 1) : l.slice(0, LIX_MAX)).map((x) => x.id);
+  if (!ids.length) return;
+  if (!ensaio && !lixConfirmar) {
+    lixConfirmar = true;
+    $('m-lix-state').textContent = `Confirme: ${fmt.format(ids.length)} itens marcados Descartar vão para a lixeira do Google (ficam lá 60 dias e podem ser restaurados).`;
+    $('m-lix-go').textContent = `Confirmar: mover ${fmt.format(ids.length)} para a lixeira`;
+    return;
+  }
+  lixConfirmar = false;
+  lixRodando = { parar: false };
+  $('m-lix-go').hidden = $('m-lix-ensaio').hidden = true;
+  $('m-lix-stop').hidden = ensaio;
+  let feitos = 0;
+  let erro = null;
+  // um por vez, para o Parar valer entre um e outro
+  for (const id of ids) {
+    if (lixRodando.parar) break;
+    $('m-lix-state').textContent = ensaio ? 'Ensaio: abrindo a página da foto no Google…' : `Movendo ${fmt.format(feitos + 1)} de ${fmt.format(ids.length)} para a lixeira do Google…`;
+    const r = await chrome.runtime.sendMessage({ kind: 'lixeira', ids: [id], ensaio }).catch((e) => ({ erro: String(e.message || e) }));
+    const x = r?.resultados?.[0];
+    if (!x?.ok) { erro = x?.erro || r?.erro || 'sem resposta da extensão'; break; }
+    feitos++;
+  }
+  const parou = lixRodando.parar;
+  lixRodando = null;
+  await lerLixeira();
+  renderLixeira();
+  $('m-lix-state').textContent = erro
+    ? `Parou no erro${feitos ? ` depois de ${fmt.format(feitos)}` : ''}: ${erro}`
+    : ensaio ? 'Ensaio certo: a página da foto abriu com o botão "Mover para a lixeira" (nada foi movido).'
+      : `${fmt.format(feitos)} movidos para a lixeira do Google${parou ? ' (parado por você)' : ''}. Ficam lá 60 dias.`;
+}
+
+function baixarCsvIcloud() {
+  const l = listaLixeira(vis().rows, lixRegistro).icloud;
+  const blob = new Blob(['﻿' + csvLixeiraIcloud(l)], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `geyma-apagar-no-icloud-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
 
 /** Junta as perguntas e os botões do veredito e do envio. */
 function acoesDoVisor(r) {

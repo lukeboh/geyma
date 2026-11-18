@@ -188,6 +188,12 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     cada 10 min). Google: `start` com `ate` (`googleCrawl(ate)` no hook
     para na primeira página toda anterior). iCloud: mensagem
     `icloud-recarregar` (recarrega a aba; recusa durante um percurso).
+30. **Lixeira (0.3.24):** `core/lixeira.js` (elegíveis, registro, CSV do
+    iCloud). Mensagem `lixeira` ao service worker (`lixeiraGoogle`): aba
+    em segundo plano em `photos.google.com/photo/<chave>`, mensagem
+    `lixeira-clicar` à `src/page/envio.js` (botão com rótulo "Mover para a
+    lixeira", confirmação do site; ensaio não clica), aba fechada, registro
+    na meta `lixeira`. Na mesma fila do envio (`envioChain`).
 
 ## 4. Decisões e motivos
 

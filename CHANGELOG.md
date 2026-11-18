@@ -2,6 +2,26 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.24 — 18/11/2026
+
+- Lixeira (etapa 0.8): bloco na Proteção com o que você marcou Descartar
+  (a sugestão nunca basta; de uma cópia repetida, só quando a melhor fica),
+  por serviço e seguindo a chave Fotos | Vídeos (`core/lixeira.js`).
+  Google: o Geyma abre a página de cada foto numa aba em segundo plano e usa
+  o próprio botão "Mover para a lixeira" e a confirmação do site, um por
+  vez, até 50 por vez, depois de dois cliques seus; para no primeiro erro.
+  A lixeira do Google guarda por 60 dias (quarentena). Ensaio: abre a
+  página da foto e confere o botão, sem clicar. iCloud: o Geyma não apaga
+  (só lê o iCloud); a lista em CSV traz a data, o nome e o tamanho de cada
+  item para apagar no app Fotos.
+- Relatório: o registro de cada item movido, ensaiado ou que falhou fica
+  guardado (meta `lixeira`) e o bloco diz quantos já estão na lixeira.
+
+Verificação: 241 testes passando. Na biblioteca real, o ensaio pelo
+service worker abriu a página de uma cópia repetida do Google, achou o
+botão "Mover para a lixeira" e fechou a aba sem clicar. Nada foi movido:
+mover de verdade fica para o caso L2.
+
 ## 0.3.23 — 18/11/2026
 
 - Envio contínuo do que é novo (etapa 0.7), no lugar do backup automático

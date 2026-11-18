@@ -110,7 +110,38 @@
     }
   }
 
+  /**
+   * Lixeira (0.8), na página de uma foto do Google: o próprio botão "Mover
+   * para a lixeira" e a confirmação do site. Ensaio: só confere que a página
+   * da foto abriu e tem o botão (não clica em nada).
+   */
+  async function moverParaLixeira(ensaio) {
+    const vis = (b) => b.getClientRects().length > 0;
+    const rot = (b) => (b.getAttribute('aria-label') || b.innerText || '').trim();
+    const LIXO = /^(mover para a lixeira|move to trash)$/i;
+    const espera = async (achar, ms = 8000) => {
+      for (let t = 0; t < ms; t += 250) { const x = achar(); if (x) return x; await new Promise((ok) => setTimeout(ok, 250)); }
+      return null;
+    };
+    if (!/\/photo\//.test(location.pathname)) return { ok: false, erro: 'a página da foto não abriu' };
+    const botao = await espera(() => [...document.querySelectorAll('button,[role=button]')].find((b) => vis(b) && LIXO.test(rot(b)) && !b.closest('[role=dialog],[role=alertdialog]')));
+    if (!botao) return { ok: false, erro: 'o botão "Mover para a lixeira" não apareceu na página da foto' };
+    if (ensaio) return { ok: true, ensaio: true };
+    const url = location.href;
+    botao.click();
+    const dlg = await espera(() => [...document.querySelectorAll('[role=dialog],[role=alertdialog]')].find((d) => vis(d) && [...d.querySelectorAll('button,[role=button]')].some((b) => vis(b) && LIXO.test(rot(b)))));
+    if (dlg) [...dlg.querySelectorAll('button,[role=button]')].find((b) => vis(b) && LIXO.test(rot(b))).click();
+    // feito: a página sai da foto (vai para a próxima ou para a grade)
+    const saiu = await espera(() => (location.href !== url ? true : null), 10000);
+    return saiu ? { ok: true } : { ok: false, erro: dlg ? 'o Google não confirmou (a página continuou na foto)' : 'a confirmação do Google não apareceu' };
+  }
+
   chrome.runtime.onMessage.addListener((msg, _sender, responder) => {
+    if (msg?.kind === 'lixeira-clicar') {
+      if (window !== window.top || location.hostname !== 'photos.google.com') return false;
+      moverParaLixeira(Boolean(msg.ensaio)).then(responder, (err) => responder({ ok: false, erro: String(err.message || err) }));
+      return true;
+    }
     if (msg?.kind === 'envio-direto') {
       envioDireto(msg).then(responder, (err) => responder({ ok: false, erro: String(err.message || err) }));
       return true;

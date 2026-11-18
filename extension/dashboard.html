@@ -173,6 +173,19 @@
       <p class="hint">Provas, da mais forte para a mais fraca: arquivo idêntico (impressão digital do original), mesma imagem pelo pHash da miniatura, e só então mesmo segundo com as mesmas dimensões, que sozinho não basta (fotos em sequência também caem aí). Marcar uma cópia como Descartar só registra a decisão; remover dos serviços será uma etapa à parte, sempre com a sua confirmação.</p>
     </section>
 
+    <section class="panel" id="m-lix-box" hidden>
+      <h2>Lixeira: o que você marcou Descartar</h2>
+      <p id="m-lix"></p>
+      <div class="actions">
+        <button id="m-lix-ensaio">Ensaiar com 1 no Google</button>
+        <button id="m-lix-go" class="primary"></button>
+        <button id="m-lix-stop" hidden>Parar</button>
+        <button id="m-lix-csv">Lista para apagar no iCloud (CSV)</button>
+        <span class="muted" id="m-lix-state" role="status"></span>
+      </div>
+      <p class="hint">Só vai o que você marcou Descartar (a sugestão nunca basta); de uma cópia repetida, só quando a melhor fica. Nada é apagado de vez: no Google, o Geyma usa o próprio botão "Mover para a lixeira" de cada foto, um por vez, depois da sua confirmação, e a lixeira guarda por 60 dias. No iCloud, o Geyma não apaga (só lê o iCloud); a lista traz a data e o nome de cada item para você apagar no app Fotos, e o próximo percurso confere o que saiu. O ensaio só confere que a página da foto abre com o botão, sem clicar.</p>
+    </section>
+
     <section class="panel" id="m-ic-box" hidden>
       <h2>Desempate com as miniaturas do iCloud</h2>
       <p id="m-ic"></p>

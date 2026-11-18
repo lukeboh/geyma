@@ -137,10 +137,13 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
   cópia ao lado da que fica e marcação em lote
 - [x] Duplicatas candidatas do iCloud conferidas pelas miniaturas durante o
   percurso (0.2.23)
-- [ ] Remoção das cópias aprovadas para a lixeira de cada serviço, só com
-  confirmação explícita
-- Listas de exclusão revisadas em lote, só para itens protegidos
-- Quarentena pela lixeira do serviço e relatório do que foi feito
+- [x] Remoção das cópias aprovadas para a lixeira, só com confirmação
+  explícita: no Google pelo próprio botão do site; no iCloud, lista para
+  apagar no app Fotos (o Geyma só lê o iCloud) (0.3.24)
+- [x] Listas de exclusão revisadas em lote: só o que você marcou Descartar,
+  e de uma cópia só quando a melhor fica (0.3.24)
+- [x] Quarentena pela lixeira do serviço e relatório do que foi feito (0.3.24)
+- [ ] Piloto da lixeira ([docs/TESTES-HUMANOS.md](docs/TESTES-HUMANOS.md), L1–L3)
 
 ### 0.9 — Vídeos
 - [x] Inventário: duração, codec, quadros por segundo e versão para assistir
