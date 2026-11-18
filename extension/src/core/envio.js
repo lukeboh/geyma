@@ -62,6 +62,7 @@ export function arquivosDoItem(it) {
   if (it.source === 'google') {
     if (!it.thumb) return [];
     const nome = it.file?.nome || nomePelaData(it.ts, it.file?.formato === 'HEIC' ? 'HEIC' : 'JPG');
+    // sha1: o da listagem, só anotado (o download reescreve metadados e não confere)
     return [{ url: `${it.thumb}=d`, nome, papel: 'foto', credenciais: 'include', sha1: it.sha1 || null }];
   }
   const base = it.filename ? semExtensao(it.filename) : semExtensao(nomePelaData(it.ts, 'X'));
@@ -71,6 +72,17 @@ export function arquivosDoItem(it) {
   const out = [{ url: it.orig, nome: `${base}.${ext}`, papel: 'foto', credenciais: 'omit' }];
   if (it.live && it.origVid) out.push({ url: it.origVid, nome: `${base}.MOV`, papel: 'movimento', credenciais: 'omit' });
   return out;
+}
+
+const MIME = { HEIC: 'image/heic', HEIF: 'image/heif', JPG: 'image/jpeg', JPEG: 'image/jpeg', PNG: 'image/png', GIF: 'image/gif', TIF: 'image/tiff', TIFF: 'image/tiff', WEBP: 'image/webp', DNG: 'image/x-adobe-dng', MOV: 'video/quicktime', MP4: 'video/mp4' };
+/**
+ * Tipo do arquivo para entregar ao site: o da resposta, ou pela extensão do
+ * nome quando a resposta é genérica (a Apple manda application/octet-stream).
+ */
+export function tipoDoArquivo(nome, tipoDaResposta) {
+  const t = String(tipoDaResposta || '').split(';')[0].trim().toLowerCase();
+  if (t && t !== 'application/octet-stream' && t !== 'binary/octet-stream') return t;
+  return MIME[extensaoDe(nome)] || 'application/octet-stream';
 }
 
 /** SHA-1 em base64url sem preenchimento (27 caracteres), o formato que a listagem do Google traz. */
@@ -112,7 +124,10 @@ export function pedacos(b64, tamanho = 8 * 1024 * 1024) {
  * conferido, nada enviado), 'enviado', 'falhou' ou 'chegou'.
  */
 export function registrarEnvio(estado, id, info, agora = Date.now()) {
-  return { ...(estado || {}), [id]: { ...(estado?.[id] || {}), ...info, at: agora } };
+  const novo = { ...(estado?.[id] || {}), ...info, at: agora };
+  // o erro de uma tentativa anterior não vale para a nova
+  if (!('erro' in info)) delete novo.erro;
+  return { ...(estado || {}), [id]: novo };
 }
 
 /**

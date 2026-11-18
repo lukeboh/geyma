@@ -2,6 +2,32 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.5 — 18/11/2026
+
+- Envio pelo site (0.7), segunda parte: no visualizador, as fotos que podem
+  ir ganham **"Enviar ao Google Fotos"** ou **"Enviar ao iCloud"** (atalho
+  E) e **"Só baixar e conferir"** (ensaio, nada é enviado). A extensão baixa
+  o arquivo (renovando o link da Apple pela grade do site, se preciso),
+  passa os bytes em pedaços para a página do outro serviço e os entrega:
+  no iCloud, ao campo de envio fixo do app de Fotos
+  (`input.UploadHiddenInput`, no iframe); no Google Fotos, que só cria o
+  campo ao abrir o menu, como arquivos arrastados para a página. Quem envia
+  é o próprio site. Uma foto por vez, parando no primeiro erro; o estado de
+  cada envio fica guardado.
+- Tipo do arquivo pela extensão quando a Apple responde com o genérico
+  `application/octet-stream` (HEIC, MOV...).
+- Correção de uma afirmação antiga: o download `=d` do Google **não** tem o
+  mesmo SHA-1 da listagem (o Google reescreve metadados; difere em poucos
+  bytes). Já o original do iCloud tem: o SHA-1 dele bateu com o do Google em
+  2 de 2 fotos guardadas nos dois serviços, o que permite confirmar a
+  chegada de um envio ao Google com exatidão.
+
+Verificação: 164 testes passando. Uso real, só ensaios (nada enviado):
+original do Google baixado; Live Photo do iCloud com link renovado em 9 s e
+o par HEIC + MOV baixado; SHA-1 conferido em 2 fotos (uma terceira não foi
+achada na grade ao renovar o link). Botões conferidos no visualizador. O
+envio de verdade fica para o piloto do usuário (docs/TESTES-HUMANOS.md).
+
 ## 0.3.4 — 18/11/2026
 
 - Envio pelo site de cada serviço (0.7), primeira parte: módulo

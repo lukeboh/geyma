@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { podeEnviar, filaDeEnvio, arquivosDoItem, sha1Base64Url, base64DeBytes, bytesDeBase64, pedacos, registrarEnvio, conferirChegadas, resumoEnvio, nomePelaData } from '../extension/src/core/envio.js';
+import { podeEnviar, filaDeEnvio, arquivosDoItem, tipoDoArquivo, sha1Base64Url, base64DeBytes, bytesDeBase64, pedacos, registrarEnvio, conferirChegadas, resumoEnvio, nomePelaData } from '../extension/src/core/envio.js';
 import { parseIcloudQuery } from '../extension/src/core/normalize.js';
 
 const A = (o = {}) => ({ id: 'a:1', source: 'icloud', ts: 1700000000000, filename: 'IMG_0001.HEIC', fileType: 'public.heic', orig: 'https://x.icloud-content.com/o', ...o });
@@ -72,6 +72,14 @@ test('normalize guarda os links do original e do vídeo da Live Photo', () => {
   assert.equal(it.live, true);
 });
 
+test('tipo do arquivo: o da resposta, ou pela extensão quando a Apple manda o genérico', () => {
+  assert.equal(tipoDoArquivo('IMG_1.HEIC', 'application/octet-stream'), 'image/heic');
+  assert.equal(tipoDoArquivo('IMG_1.MOV', 'application/octet-stream'), 'video/quicktime');
+  assert.equal(tipoDoArquivo('a.jpg', null), 'image/jpeg');
+  assert.equal(tipoDoArquivo('a.jpg', 'image/png; charset=x'), 'image/png');
+  assert.equal(tipoDoArquivo('a.xyz', ''), 'application/octet-stream');
+});
+
 test('SHA-1 no formato da listagem do Google (base64url, 27 caracteres)', async () => {
   const bytes = new TextEncoder().encode('geyma');
   const esperado = createHash('sha1').update(bytes).digest('base64url');
@@ -104,4 +112,6 @@ test('estado do envio e conferência da chegada', () => {
   assert.deepEqual(conferirChegadas(e, { google, icloud }), [{ id: 'a:1', chegou: 'g:novo' }, { id: 'g:9', chegou: 'a:nova' }]);
   // registrar de novo mantém o que já havia
   assert.equal(registrarEnvio(e, 'a:1', { estado: 'chegou' })['a:1'].sha1, 'X'.repeat(27));
+  // o erro de uma tentativa anterior some quando a nova dá certo
+  assert.equal(registrarEnvio(e, 'a:2', { estado: 'ensaio' })['a:2'].erro, undefined);
 });

@@ -15,6 +15,7 @@ import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
 import { resumoProtecao } from './src/core/protecao.js';
 import { proximosPassos } from './src/core/passos.js';
 import { sugestoesDoGoogle } from './src/core/sugestoes.js';
+import { podeEnviar, DESTINOS } from './src/core/envio.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -793,7 +794,7 @@ function verFotos(r, td, lista = null) {
   const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
   abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.peloUsuario ? ' · mesma foto, por você' : ''}${r.fuso ? ` · instante deslocado por fuso horário (${textoFuso(r.fuso)})` : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,
-    ...vereditoNoVisor(r),
+    ...acoesDoVisor(r),
     ...navegacao(r, lista),
     aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },
   });
@@ -821,6 +822,47 @@ const RESPOSTA = {
   diferente: 'Anotado: são fotos diferentes. O cruzamento é refeito em segundo plano; cada uma passa a contar como só de um lado, se não houver outra.',
   desfazer: 'Desfeito: a decisão volta a ser automática. O cruzamento é refeito em segundo plano.',
 };
+
+// ---------- envio pelo site do outro serviço (0.7) ----------
+let envioEstado = {};
+const lerEnvio = () => getMeta('envio').then((m) => { envioEstado = m?.value || {}; }, () => {});
+lerEnvio();
+
+const ESTADO_ENVIO = { ensaio: 'baixada e conferida (nada enviado)', enviado: 'entregue ao site', chegou: 'chegou ao destino', falhou: 'o envio falhou' };
+
+/** Botões "Enviar ao …" e "Só baixar e conferir" de uma linha, quando ela pode ir. */
+function envioNoVisor(r) {
+  const acoes = [];
+  let pergunta = '';
+  for (const destino of ['google', 'icloud']) {
+    if (!podeEnviar(r, destino).ok) continue;
+    const id = (destino === 'google' ? r.a : r.g).id;
+    const nome = DESTINOS[destino];
+    const ja = envioEstado[id];
+    if (ja?.destino === destino) pergunta = `Envio ao ${nome}: ${ESTADO_ENVIO[ja.estado] || ja.estado}${ja.erro ? ` (${ja.erro})` : ''}.`;
+    const pedir = (ensaio) => async () => {
+      const res = await chrome.runtime.sendMessage({ kind: 'envio', ids: [id], destino, ensaio });
+      await lerEnvio();
+      const x = res?.resultados?.[0];
+      if (!x || x.estado === 'falhou') throw new Error(x?.erro || res?.erro || 'sem resposta da extensão');
+      const arqs = `${x.arquivos.join(' + ')}, ${MB(x.bytes)}`;
+      if (x.estado === 'ensaio') return `Conferido, nada enviado: ${arqs}.`;
+      return `Entregue ao site do ${nome} (${x.estrategia === 'campo' ? 'pelo campo de envio' : 'como arrastar arquivos'}): ${arqs}. Veja na aba do ${nome} se o envio terminou.`;
+    };
+    if (ja?.estado !== 'enviado' && ja?.estado !== 'chegou') {
+      acoes.push({ rotulo: `Enviar ao ${nome}`, tecla: 'e', seguir: false, titulo: `Baixa o arquivo original e o entrega ao botão de envio do site do ${nome}`, aoClicar: pedir(false) });
+    }
+    acoes.push({ rotulo: 'Só baixar e conferir', seguir: false, titulo: 'Ensaio: baixa o arquivo e confere, sem enviar nada', aoClicar: pedir(true) });
+  }
+  return { pergunta, acoes };
+}
+
+/** Junta as perguntas e os botões do veredito e do envio. */
+function acoesDoVisor(r) {
+  const v = vereditoNoVisor(r);
+  const e = envioNoVisor(r);
+  return { ...v, pergunta: [v.pergunta, e.pergunta].filter(Boolean).join(' '), acoes: [...(v.acoes || []), ...e.acoes] };
+}
 
 /** Pergunta e botões do veredito para uma linha aberta no visualizador. */
 function vereditoNoVisor(r) {

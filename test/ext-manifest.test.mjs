@@ -13,7 +13,7 @@ test('versão do manifesto acompanha VERSION', () => {
 // all_frames, o hook não vê as consultas nem encontra a grade.
 test('scripts do iCloud são injetados em todos os frames', () => {
   const icloud = manifest.content_scripts.filter((c) => c.matches.some((m) => m.includes('icloud.com')));
-  assert.equal(icloud.length, 2);
+  assert.equal(icloud.length, 3);
   for (const c of icloud) assert.equal(c.all_frames, true);
   assert.ok(icloud.some((c) => c.world === 'MAIN' && c.js.includes('src/page/hook.js')));
   assert.ok(icloud.some((c) => !c.world && c.js.includes('src/page/relay.js')));
@@ -22,4 +22,13 @@ test('scripts do iCloud são injetados em todos os frames', () => {
 test('hook percorre e rola a grade só no frame do app de Fotos', () => {
   const hook = readFileSync(new URL('../extension/src/page/hook.js', import.meta.url), 'utf8');
   assert.ok(hook.includes("if ((cmd === 'icloud-walk' || cmd === 'icloud-goto') && !isPhotosFrame()) return;"));
+});
+
+// Envio (0.7): o campo de envio do iCloud fica no iframe do app de Fotos.
+test('script de envio entra nos dois sites, em todos os frames do iCloud', () => {
+  const envio = manifest.content_scripts.filter((c) => c.js.includes('src/page/envio.js'));
+  assert.equal(envio.length, 2);
+  for (const c of envio) assert.ok(!c.world, 'mundo isolado (precisa de chrome.runtime)');
+  assert.ok(envio.find((c) => c.matches.some((m) => m.includes('icloud.com'))).all_frames);
+  assert.ok(envio.some((c) => c.matches.some((m) => m.includes('photos.google.com'))));
 });

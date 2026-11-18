@@ -3,8 +3,9 @@
 // A listagem do Google não traz isso; com a ficha dá para dizer se a cópia do
 // Google é o original (HEIC do iPhone, por exemplo) ou uma cópia convertida
 // (JPEG de uma exportação ou de um compartilhamento), e o nome ajuda a
-// reconhecer a mesma foto. Conferido no uso real: o arquivo entregue pelo
-// download tem o mesmo SHA-1 que o Google informa para o original guardado.
+// reconhecer a mesma foto. O arquivo entregue pelo download difere do
+// guardado em poucos bytes (o Google reescreve metadados; medido em 18/11):
+// o SHA-1 dele não confere com o da listagem, que é o do arquivo enviado.
 // Não vale para vídeos (o download sem sufixo de vídeo devolve a capa).
 
 const TIPOS = {

@@ -152,8 +152,12 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
   `146008172` = foto com movimento (Live Photo), `[?, duração_ms]`.
 - **Ficha do arquivo:** `HEAD` em `url=d` com a sessão devolve `content-type`,
   `content-length` e `content-disposition` (nome) do original, sem baixar.
-  Conferido: o arquivo entregue por `=d` tem o mesmo SHA-1 do campo de 27
-  caracteres, ou seja, é o original guardado (JPEG no Google é JPEG de fato).
+  O formato da ficha é o do arquivo guardado (JPEG no Google é JPEG de fato).
+  **Correção de 18/11:** o arquivo baixado por `=d` difere do guardado em
+  poucos bytes (o Google reescreve metadados no download; o `GET` vem 4 a 8
+  bytes diferente do `content-length` do `HEAD`), e o SHA-1 dele **não**
+  confere com o campo de 27 caracteres (3 de 3 amostras JPEG). O campo é o
+  SHA-1 do arquivo como foi enviado.
   **Não vale para vídeo**: `=d` devolve a capa em JPEG (o vídeo é `=dv`).
   O Google às vezes rotula o HEIC do iPhone como `image/heif`.
 - Miniatura: `url` + `=w256-h256`, **só pela sessão do navegador** (fora dele

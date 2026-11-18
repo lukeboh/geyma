@@ -219,11 +219,12 @@ function ligarGestos(v, i) {
  *   src pode ser uma Promise (miniatura que ainda está chegando).
  * @param {string} [titulo]
  * @param {{ link?: string, aoFechar?: () => void, pergunta?: string,
- *   acoes?: { rotulo: string, titulo?: string, tecla?: string, aoClicar: () => Promise<string> }[],
+ *   acoes?: { rotulo: string, titulo?: string, tecla?: string, seguir?: boolean, aoClicar: () => Promise<string> }[],
  *   sugestoes?: { src: string|Promise<string>, rotulo: string, aoEscolher: () => Promise<string> }[],
  *   anterior?: () => void, proxima?: () => void, posicao?: string }} [opcoes]
  *   link: o que "Copiar link" copia. acoes: botões sob as fotos (por exemplo,
- *   "São a mesma foto"); aoClicar devolve a resposta a mostrar; tecla: atalho.
+ *   "São a mesma foto"); aoClicar devolve a resposta a mostrar; tecla: atalho;
+ *   seguir: false para uma ação que não passa à próxima foto (enviar).
  *   anterior/proxima: andar pela lista sem fechar (‹ ›, Page Up/Down); depois
  *   de uma resposta, o visualizador passa sozinho para a próxima.
  */
@@ -331,6 +332,8 @@ function montarAcoes({ pergunta = '', acoes = [], sugestoes = [] }) {
       resposta.textContent = 'gravando…';
       try {
         resposta.textContent = (await a.aoClicar()) || 'Anotado.';
+        // ação que não responde à pergunta (como enviar): fica na mesma foto, os outros botões voltam
+        if (a.seguir === false) { for (const x of botoes.querySelectorAll('button')) if (x !== b) x.disabled = false; return; }
         // respondida: segue para a próxima da lista, se houver
         const seguir = estado?.proxima;
         if (seguir) { resposta.textContent += ' Indo para a próxima…'; const daqui = estado; setTimeout(() => { if (estado === daqui) seguir(); }, 900); }

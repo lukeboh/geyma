@@ -9,6 +9,7 @@ import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
 import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
+import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, base64DeBytes, pedacos, registrarEnvio } from './core/envio.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -168,6 +169,92 @@ async function refreshIcloud(id, { forcar = false } = {}) {
   }
 }
 
+// ---------- envio pelo site do outro serviço (0.7) ----------
+// Baixa o arquivo de um serviço, confere, e o entrega ao campo de envio da
+// página do outro (src/page/envio.js). Uma foto por vez; para no primeiro erro.
+// ensaio: só baixa e confere, nada é enviado.
+let envioChain = Promise.resolve();
+const alvoWaiters = new Map();
+const erroHttp = (status) => Object.assign(new Error(`HTTP ${status}`), { status });
+
+async function acharCampoDeEnvio(tabId) {
+  const pedido = crypto.randomUUID();
+  const achou = new Promise((r) => { alvoWaiters.set(pedido, r); setTimeout(() => r(null), 4000); });
+  await chrome.tabs.sendMessage(tabId, { kind: 'envio-alvo', pedido }).catch(() => {});
+  const r = await achou;
+  alvoWaiters.delete(pedido);
+  if (!r) throw new Error('não achei o campo de envio na página (abra o site e espere carregar)');
+  return r;
+}
+
+async function enviarUm(id, destino, ensaio) {
+  let it = await getItem(id);
+  if (!it) throw new Error('foto não encontrada no inventário');
+  if (it.source === destino) throw new Error(`a foto já é do ${destino === 'google' ? 'Google' : 'iCloud'}`);
+  if (it.source === 'icloud') {
+    // links da Apple vencem em minutos: renova pela grade do site, se preciso
+    // itens lidos antes da 0.3.4 não têm o link do original: pede outro mesmo com a miniatura válida
+    const r = await refreshIcloud(id, { forcar: !it.orig && !(it.edited && it.full) });
+    if (!r.ok) throw new Error(r.erro);
+    it = await getItem(id);
+  }
+  const arquivos = arquivosDoItem(it);
+  if (!arquivos.length) throw new Error(it.source === 'icloud' ? 'o iCloud não deu o link do original desta foto (passe o percurso por ela)' : 'sem o endereço da foto no Google');
+  const baixados = [];
+  for (const f of arquivos) {
+    const res = await fetch(f.url, { credentials: f.credenciais });
+    if (!res.ok) throw erroHttp(res.status);
+    const tipo = tipoDoArquivo(f.nome, res.headers.get('content-type'));
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const sha1 = await sha1Base64Url(bytes);
+    if (!bytes.length) throw new Error(`o arquivo ${f.nome} veio vazio`);
+    // o download do Google reescreve os metadados (poucos bytes de diferença,
+    // medido em 18/11): o SHA-1 da listagem não confere, só fica anotado
+    baixados.push({ ...f, tipo, bytes, sha1, confere: f.sha1 ? f.sha1 === sha1 : null });
+  }
+  const foto = baixados.find((b) => b.papel === 'foto') || baixados[0];
+  const info = { destino, sha1: foto.sha1, ts: it.ts, bytes: baixados.reduce((s, b) => s + b.bytes.length, 0), arquivos: baixados.map((b) => `${b.nome} (${b.tipo})`) };
+  if (ensaio) return { estado: 'ensaio', ...info };
+  const tab = await findOrOpenTab(destino);
+  const { frameId } = await acharCampoDeEnvio(tab.id);
+  const lote = crypto.randomUUID();
+  for (const [i, b] of baixados.entries()) {
+    const partes = pedacos(base64DeBytes(b.bytes));
+    for (const [j, b64] of partes.entries()) {
+      await chrome.tabs.sendMessage(tab.id, { kind: 'envio-parte', lote, arquivo: i, nome: b.nome, tipo: b.tipo, lastModified: it.ts, parte: j, total: partes.length, b64 }, { frameId });
+    }
+  }
+  const r = await chrome.tabs.sendMessage(tab.id, { kind: 'envio-entregar', lote, n: baixados.length }, { frameId });
+  if (!r?.ok) throw new Error(r?.erro || 'a página não aceitou os arquivos');
+  return { estado: 'enviado', estrategia: r.estrategia, ...info };
+}
+
+async function gravarEnvio(id, info) {
+  const atual = (await getMeta('envio'))?.value || {};
+  // um ensaio não apaga o registro de um envio feito
+  if (info.estado === 'ensaio' && ['enviado', 'chegou'].includes(atual[id]?.estado)) return;
+  await setMeta('envio', registrarEnvio(atual, id, info));
+}
+
+async function enviarLista(ids, destino, { ensaio = false } = {}) {
+  const resultados = [];
+  for (const id of ids) {
+    try {
+      const r = await enviarUm(id, destino, ensaio);
+      await gravarEnvio(id, r);
+      resultados.push({ id, ...r });
+    } catch (err) {
+      const r = { destino, estado: 'falhou', erro: String(err.message || err) };
+      await gravarEnvio(id, r);
+      resultados.push({ id, ...r });
+      break;
+    }
+    broadcast({ event: 'envio', feitos: resultados.length, total: ids.length });
+  }
+  broadcast({ event: 'envio', feitos: resultados.length, total: ids.length, fim: true });
+  return { ok: !resultados.some((r) => r.estado === 'falhou'), resultados };
+}
+
 const broadcast = (msg) => chrome.runtime.sendMessage({ kind: 'status', ...msg }).catch(() => {});
 
 async function handlePageEvent(site, type, payload, tabId) {
@@ -238,6 +325,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'page-event') {
     handlePageEvent(msg.site, msg.type, msg.payload, sender.tab?.id).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
     return false;
+  }
+  if (msg?.kind === 'envio-alvo-resp') {
+    alvoWaiters.get(msg.pedido)?.({ frameId: sender.frameId, tipo: msg.tipo });
+    return false;
+  }
+  if (msg?.kind === 'envio') {
+    const ids = (Array.isArray(msg.ids) ? msg.ids : []).map(String);
+    const job = envioChain.then(() => enviarLista(ids, msg.destino === 'icloud' ? 'icloud' : 'google', { ensaio: Boolean(msg.ensaio) }));
+    envioChain = job.catch(() => {});
+    job.then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
+    return true;
   }
   if (msg?.kind === 'icloud-refresh') {
     const job = refreshChain.then(() => refreshIcloud(String(msg.id), { forcar: Boolean(msg.forcar) }));
