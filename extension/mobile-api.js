@@ -121,7 +121,7 @@ window.geymaApi = {
       dup: data.dup,
       plan: sendPlan(data.rows),
       protecao: resumoProtecao(data.rows),
-      passos: proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' } }),
+      passos: proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' }, envio: (await getMeta('envio'))?.value || {} }),
       categories: cats,
       decisions: decisionCounts(data.rows),
       years: Object.keys(data.summary.byYear).sort().reverse(),

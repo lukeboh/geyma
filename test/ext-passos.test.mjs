@@ -27,3 +27,19 @@ test('conferência do Google em andamento não aparece; percurso velho ou penden
   assert.deepEqual(q.map((x) => [x.id, x.n]), [['percorrerIcloud', 5]]);
   assert.deepEqual(proximosPassos({ rows: [] }, { icloudConcluidoEm: DIA, agora: 2 * DIA }), []);
 });
+
+test('envio: conta as fotos que podem ir e muda o texto depois do primeiro envio', () => {
+  const rows = [
+    { cls: 'soIcloud', cat: 'pessoal', a: { id: 'a:1' } },
+    { cls: 'soIcloud', cat: 'pessoal', a: { id: 'a:2' } },
+    { cls: 'soIcloud', cat: 'print', a: { id: 'a:3' } }, // Pendente: não vai
+    { cls: 'soGoogle', cat: 'pessoal', g: { id: 'g:1' } },
+    { cls: 'soGoogle', cat: 'pessoal', g: { id: 'g:2', video: true } }, // vídeo: depois
+  ];
+  const sem = proximosPassos({ rows }, { icloudConcluidoEm: 1, agora: 2 }).find((x) => x.id === 'enviar');
+  assert.equal(sem.n, 3);
+  assert.match(sem.texto, /piloto de uma foto/);
+  const com = proximosPassos({ rows }, { icloudConcluidoEm: 1, agora: 2, envio: { 'a:1': { estado: 'enviado' } } }).find((x) => x.id === 'enviar');
+  assert.equal(com.n, 2);
+  assert.match(com.texto, /lotes de 10/);
+});

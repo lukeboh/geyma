@@ -94,7 +94,7 @@ async function carregarResumo() {
   cl.replaceChildren(...ORDEM.map((k) => cartao({ rot: s.labels.classes[k], num: fmt.format(s.totals[k]), cor: COR[k], onClick: () => irParaRevisar({ cls: k }) })));
 
   // próximos passos: no celular, responder os pares e revisar; o resto é no notebook
-  const NO_CELULAR = { responderPares: () => irParaRevisar({ cls: 'idIncerta' }), revisarPendentes: () => $('categorias').scrollIntoView({ behavior: 'smooth' }) };
+  const NO_CELULAR = { responderPares: () => irParaRevisar({ cls: 'idIncerta' }), enviar: () => irParaRevisar({ cls: 'soIcloud' }), revisarPendentes: () => $('categorias').scrollIntoView({ behavior: 'smooth' }) };
   const ps = s.passos || [];
   $('passos-tit').hidden = !ps.length;
   // uma lista compacta: os passos do celular primeiro, tocáveis; os do notebook depois

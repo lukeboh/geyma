@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.11 — 18/11/2026
+
+- "O que fazer agora" (painel e celular) ganha o passo do envio: quantas
+  fotos só num serviço podem ir para o outro, sem contar as já enviadas.
+  Antes do primeiro envio, o texto pede o piloto de uma foto; depois, sugere
+  os lotes de 10 pela revisão.
+
+Verificação: 177 testes passando. Cartão conferido no painel.
+
+Observação de uso real: a conferência do Google pelas miniaturas percorre a
+listagem do Google e, nesta madrugada, trouxe 2.247 fotos que o inventário
+ainda não tinha (a maioria de 2025 e 2026; só 146 repetem foto e dimensões
+de uma antiga). Com elas, os pares a confirmar subiram até as imagens novas
+serem comparadas. Nenhum envio de verdade foi feito (só ensaios).
+
 ## 0.3.10 — 18/11/2026
 
 - Envio em lote (0.7): na revisão, com a situação "Só no iCloud" ou "Só no

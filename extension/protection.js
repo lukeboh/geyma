@@ -373,11 +373,12 @@ const PASSO = {
   arquivosGoogle: { botao: 'Conferir', fazer: () => $('m-gf-run').click() },
   responderPares: { botao: 'Começar', fazer: () => { irPara({ cls: 'idIncerta' }); const l = filtered(); for (const r of l) if (verFotos(r, null, l)) break; } },
   percorrerIcloud: { botao: 'Ir ao Inventário', fazer: () => document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'inv' })) },
+  enviar: { botao: 'Ver fotos', fazer: () => irPara({ cls: 'soIcloud' }) },
   revisarPendentes: { botao: 'Ver categorias', fazer: () => $('m-cat-box').scrollIntoView({ behavior: 'smooth', block: 'start' }) },
 };
 async function renderPassos() {
   const [concl, prog] = await Promise.all([getMeta('icloudCompleted'), getMeta('phashProgress')]);
-  const passos = proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' } });
+  const passos = proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' }, envio: envioEstado });
   $('m-passos-box').hidden = !passos.length;
   $('m-passos').replaceChildren(...passos.map((p) => {
     const li = document.createElement('li');
