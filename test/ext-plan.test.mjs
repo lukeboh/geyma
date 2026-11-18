@@ -35,8 +35,9 @@ test('Google → iCloud ignora cópias repetidas e estima o tamanho por pixel', 
 });
 
 test('reenvio de original quando o Google guarda a cópia menor', () => {
-  const p = sendPlan([{ cls: 'reduzida', menor: 'google', cat: 'pessoal', a: { size: 1, w: 1, h: 1 } }, { cls: 'reduzida', menor: 'icloud', cat: 'pessoal', a: { size: 1, w: 1, h: 1 } }]);
+  const p = sendPlan([{ cls: 'reduzida', menor: 'google', cat: 'pessoal', a: { size: 1, w: 1, h: 1 }, g: { w: 1, h: 1 } }, { cls: 'reduzida', menor: 'icloud', cat: 'pessoal', a: { size: 1, w: 1, h: 1 }, g: { w: 1, h: 1 } }]);
   assert.equal(p.quality.n, 1);
+  assert.equal(p.quality.googleMenor, 1);
 });
 
 test('sem fotos do iCloud usa o valor padrão de bytes por pixel', () => {

@@ -11,6 +11,7 @@ import { phashFromBlob } from './src/core/phash-image.js';
 import { abrirVisor } from './viewer.js';
 import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 import { fichaDoCabecalho } from './src/core/google-file.js';
+import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -64,6 +65,8 @@ export function initProtection() {
   for (const k of ORDER) cls.append(new Option(CLASSES[k], k));
   cls.append(new Option('Cópias repetidas no Google', 'dupGoogle'));
   cls.append(new Option('Cópias repetidas no iCloud', 'dupIcloud'));
+  cls.append(new Option('Melhor cópia no iCloud', 'melhorIcloud'));
+  cls.append(new Option('Melhor cópia no Google', 'melhorGoogle'));
   cls.value = '';
 }
 
@@ -210,7 +213,7 @@ function renderGoogleFiles() {
   const need = data.googleFileNeeded || [];
   const { live, copia } = data.summary;
   const box = $('m-gf-box');
-  box.hidden = !live?.total && !need.length && !(copia?.original + copia?.convertida);
+  box.hidden = !live?.total && !need.length && !(copia?.original + copia?.convertida) && !data.qualidade?.pares;
   if (box.hidden) return;
   const partes = [];
   if (live?.total) {
@@ -223,7 +226,18 @@ function renderGoogleFiles() {
     partes.push(`Arquivos conferidos: ${fmt.format(copia.original)} no mesmo formato do iCloud (original) e <b>${fmt.format(copia.convertida)}</b> em outro formato (em geral JPEG no lugar do HEIC), dos quais ${fmt.format(copia.convertidaCheia || 0)} no tamanho cheio e ${fmt.format(copia.convertida - (copia.convertidaCheia || 0))} também reduzidos.`);
   }
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos do Google.` : 'Todos os arquivos que importam já foram conferidos.');
+  const q = data.qualidade;
+  if (q?.pares) {
+    const m = q.motivos;
+    const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
+    partes.push(`<br><b>Melhor cópia</b> das ${fmt.format(q.pares)} fotos que estão nos dois: equivalentes em ${fmt.format(q.iguais)}; `
+      + `<a href="#rev" data-cls="melhorIcloud">no iCloud em <b>${fmt.format(q.icloud + q.misto)}</b></a>${det ? ` (no Google: ${det})` : ''}; `
+      + `<a href="#rev" data-cls="melhorGoogle">no Google em ${fmt.format(q.google + q.misto)}</a>${q.misto ? ` (${fmt.format(q.misto)} com vantagem dos dois lados)` : ''}.`);
+  }
   $('m-gf').innerHTML = partes.join(' ');
+  for (const a of $('m-gf').querySelectorAll('a[data-cls]')) {
+    a.addEventListener('click', (e) => { e.preventDefault(); $('r-cls').value = a.dataset.cls; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
+  }
   if (!gfJob) { $('m-gf-run').hidden = !need.length; $('m-gf-run').textContent = `Conferir os arquivos do Google (${fmt.format(need.length)})`; }
 }
 
@@ -333,7 +347,7 @@ export function renderPlan() {
   $('m-plan').innerHTML = [
     ['iCloud → Google', plan.toGoogle.n, `${GB(plan.toGoogle.bytes)}, dos quais ${fmt.format(plan.toGoogle.videos)} vídeos somam ${GB(plan.toGoogle.videoBytes)} · ${fmt.format(plan.toGoogle.held)} retidos (Pendente ou Descartar)`],
     ['Google → iCloud', plan.toIcloud.n, `${GB(plan.toIcloud.bytes)} estimados · ${fmt.format(plan.toIcloud.held)} retidos`],
-    ['Reenviar original ao Google', plan.quality.n, 'o Google guarda uma cópia menor; o iCloud tem a melhor'],
+    ['Reenviar original ao Google', plan.quality.n, `o iCloud tem a melhor cópia: ${[`${fmt.format(plan.quality.googleMenor)} menores no Google`, `${fmt.format(plan.quality.googleConvertida)} convertidas`, `${fmt.format(plan.quality.googleSemMovimento)} sem o movimento`].join(', ')}`],
   ].map(([t, n, sub]) => `<article><span>${t}</span><span class="n">${fmt.format(n)}</span><span class="hint">${sub}</span></article>`).join('');
   $('m-plan-note').textContent = 'O tamanho do lado do Google é estimado pela resolução, com a média de bytes por pixel das fotos do iCloud (o Google não informa o tamanho dos arquivos). Vídeos do Google entram pela mesma estimativa.';
 }
@@ -542,6 +556,7 @@ function renderList() {
       + (r.versaoEditada ? ' <span class="tag" title="Mesmo nome de arquivo e mesmo instante, com a imagem mudada: uma versão editada (corte, filtro) da mesma foto.">versão editada</span>' : '')
       + (r.a?.live && r.g?.extrasLidos ? (r.g.motionMs ? ' <span class="tag" title="Live Photo: o Google também tem o movimento.">Live completa no Google</span>' : ' <span class="tag" title="Live Photo no iCloud, mas no Google só a foto parada (sem o movimento).">Google sem o movimento</span>') : '')
       + (r.copiaGoogle === 'convertida' ? ` <span class="tag" title="${escHtml(textoFicha(r.g.file))}">Google: cópia em ${escHtml(r.g.file.formato)}</span>` : '')
+      + (etiquetaQualidade(r.melhor) ? ` <span class="tag" title="${escHtml(porqueQualidade(r.melhor))}">${etiquetaQualidade(r.melhor)}</span>` : '')
       + (r.peloUsuario ? ' <span class="tag" title="Você disse no visualizador que são a mesma foto.">mesma foto, por você</span>' : '')
       + (!r.g && r.a?.diferenteDe?.length ? ' <span class="tag" title="Você disse no visualizador que esta foto é diferente da que o Google tinha no mesmo instante.">diferente, por você</span>' : '')
       + (r.parecida ? ' <span class="tag" title="As imagens foram comparadas: são parecidas, mas não iguais. Pode ser outro quadro da mesma Live Photo ou uma foto de rajada.">imagens só parecidas</span>' : '')
@@ -655,8 +670,10 @@ const thumbInicial = (it, side) => {
 };
 
 /** Dimensões e, quando houver, a ficha do arquivo do Google (busca e guarda se faltar). */
-function infoGoogle(g) {
+function infoGoogle(g, video = false) {
   const dims = dimsTxt(g);
+  // vídeo: o download sem sufixo de vídeo devolve a capa (JPEG); a ficha enganaria
+  if (video || g.video) return [dims, 'vídeo'].join(' · ');
   const mov = g.extrasLidos ? (g.motionMs ? 'com movimento' : '') : '';
   const junta = (f) => [dims, textoFicha(f), mov].filter(Boolean).join(' · ');
   if (g.file || !g.thumb || !g.id) return junta(g.file);
@@ -692,7 +709,7 @@ function verFotos(r, td) {
     fotos.push({ src: src(r.dupOf, 'google'), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });
   }
   if (r.g?.thumb) {
-    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: infoGoogle(r.g), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
+    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: infoGoogle(r.g, Boolean(r.a?.video)), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
   }
   if (!fotos.length) return false;
   // a barra de endereço passa a identificar a foto: copiar o endereço também serve

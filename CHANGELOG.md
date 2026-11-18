@@ -2,6 +2,27 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.38 — 18/11/2026
+
+- Melhor cópia de cada foto que está nos dois serviços (etapa 0.5,
+  `qualidade.js`): o iCloud tem a melhor quando o Google guarda uma cópia
+  menor, convertida (outro formato, recomprimida) ou só a foto parada de uma
+  Live Photo; o Google tem a melhor quando o iCloud é o menor ou só o Google
+  tem o movimento. Etiqueta "melhor cópia no iCloud/Google" na lista (o
+  motivo ao passar o mouse), filtros "Melhor cópia no iCloud/Google" na
+  revisão (painel e celular), resumo na aba Proteção e motivo no detalhe do
+  celular. A versão editada no iPhone não conta como perda.
+- Plano de envio: "Reenviar original ao Google" passa a contar todos os pares
+  em que o iCloud tem a melhor cópia (antes, só as cópias menores), com o
+  motivo de cada um; cópias repetidas ficam de fora.
+- Correção: num par de vídeos, o visualizador buscava a ficha do arquivo do
+  Google e mostrava a da capa (JPEG pequeno); agora diz só "vídeo".
+
+Verificação: 129 testes passando (`ext-qualidade`, novo). Uso real: resumo da
+melhor cópia na aba Proteção e etiquetas na lista; botões do veredito
+conferidos no visualizador (marcar e desfazer gravam no item e refazem o
+cruzamento).
+
 ## 0.2.37 — 18/11/2026
 
 - "São a mesma foto / São fotos diferentes": o visualizador (painel e

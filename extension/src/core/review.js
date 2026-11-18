@@ -3,13 +3,21 @@ import { suggestDecision } from './classify.js';
 
 /**
  * @param rows linhas do cruzamento
- * @param f {cls, cat, dec, year, kind}: cls '' = todas, 'dupGoogle'/'dupIcloud' = cópias;
+ * @param f {cls, cat, dec, year, kind}: cls '' = todas, 'dupGoogle'/'dupIcloud' = cópias,
+ *   'melhorIcloud'/'melhorGoogle' = pares em que aquele lado guarda a melhor cópia;
  *   dec 'sugestao' = sem marcação; kind 'foto'|'video'
  * @returns linhas filtradas, da mais recente para a mais antiga
  */
+const POR_CLS = {
+  dupGoogle: (r) => r.dup,
+  dupIcloud: (r) => r.dupIcloud,
+  melhorIcloud: (r) => Boolean(r.melhor?.icloud.length),
+  melhorGoogle: (r) => Boolean(r.melhor?.google.length),
+};
+
 export function filterRows(rows, f = {}) {
   const { cls = '', cat = '', dec = '', year = '', kind = '' } = f;
-  return rows.filter((r) => (cls === '' || (cls === 'dupGoogle' ? r.dup : cls === 'dupIcloud' ? r.dupIcloud : r.cls === cls))
+  return rows.filter((r) => (cls === '' || (POR_CLS[cls] ? POR_CLS[cls](r) : r.cls === cls))
     && (!cat || r.cat === cat)
     && (!dec || (dec === 'sugestao' ? !r.decision : r.decision === dec))
     && (!year || new Date(r.ts).getUTCFullYear() === Number(year))

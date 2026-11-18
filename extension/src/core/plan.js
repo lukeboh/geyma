@@ -2,6 +2,7 @@
 // as marcações em vigor. Só entra o que está como Pessoal ou Manter; Pendente e
 // Descartar ficam retidos; cópias repetidas (de qualquer lado) não contam.
 import { suggestDecision } from './classify.js';
+import { melhorCopia } from './qualidade.js';
 
 export const SENDABLE = new Set(['pessoal', 'manter']);
 
@@ -25,7 +26,8 @@ export function sendPlan(rows) {
   const plan = {
     toGoogle: { n: 0, bytes: 0, held: 0, videos: 0, videoBytes: 0 },
     toIcloud: { n: 0, bytes: 0, held: 0 },
-    quality: { n: 0 },
+    // pares em que o iCloud guarda a melhor cópia: reenviar o original ao Google
+    quality: { n: 0, googleMenor: 0, googleConvertida: 0, googleSemMovimento: 0 },
     bpp,
   };
   for (const r of rows) {
@@ -39,8 +41,12 @@ export function sendPlan(rows) {
       if (!goes) { plan.toIcloud.held++; continue; }
       plan.toIcloud.n++;
       plan.toIcloud.bytes += (r.g.w || 0) * (r.g.h || 0) * bpp;
-    } else if (r.cls === 'reduzida' && r.menor === 'google' && goes) {
-      plan.quality.n++;
+    } else if (goes && r.a && r.g) {
+      const m = r.melhor || melhorCopia(r);
+      if (m?.icloud.length && !r.dup && !r.dupIcloud) {
+        plan.quality.n++;
+        for (const k of m.icloud) plan.quality[k]++;
+      }
     }
   }
   return plan;

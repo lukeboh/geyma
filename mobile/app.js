@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.37';
+import { abrirVisor } from './viewer.js?v=0.2.38';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -97,7 +97,7 @@ async function carregarResumo() {
   $('plano').replaceChildren(
     cartao({ rot: 'iCloud → Google', num: fmt.format(p.toGoogle.n), det: `${GB(p.toGoogle.bytes)}; vídeos: ${fmt.format(p.toGoogle.videos)} (${GB(p.toGoogle.videoBytes)})` }),
     cartao({ rot: 'Google → iCloud', num: fmt.format(p.toIcloud.n), det: `${GB(p.toIcloud.bytes)} estimados` }),
-    cartao({ rot: 'Reenviar original ao Google', num: fmt.format(p.quality.n), det: 'o Google guarda cópia menor', largo: true }),
+    cartao({ rot: 'Reenviar original ao Google', num: fmt.format(p.quality.n), det: 'o iCloud tem a melhor cópia (o Google a guarda menor, convertida ou sem o movimento)', largo: true }),
   );
 
   $('categorias').replaceChildren(...Object.entries(s.labels.categories).map(([k, l]) => cartao({
@@ -119,7 +119,7 @@ function preencherFiltros() {
   if (!cls.options.length) {
     cls.append(new Option('Todas', ''));
     for (const k of ORDEM) cls.append(new Option(s.labels.classes[k], k));
-    cls.append(new Option('Cópias no Google', 'dupGoogle'), new Option('Cópias no iCloud', 'dupIcloud'));
+    cls.append(new Option('Cópias no Google', 'dupGoogle'), new Option('Cópias no iCloud', 'dupIcloud'), new Option('Melhor cópia no iCloud', 'melhorIcloud'), new Option('Melhor cópia no Google', 'melhorGoogle'));
     for (const [k, l] of Object.entries(s.labels.categories)) $('f-cat').append(new Option(l, k));
     for (const [k, l] of Object.entries(s.labels.decisions)) { $('f-dec').append(new Option(l, k)); $('sel-dec').append(new Option(l, k)); }
     $('sel-dec').value = 'descartar';
@@ -242,6 +242,14 @@ async function copiarLinkDa(l) {
   try { await navigator.clipboard.writeText(link); toast('Link copiado.'); } catch { window.prompt('Copie o link:', link); }
 }
 
+const MOTIVOS_Q = {
+  googleMenor: 'o Google guarda uma cópia menor',
+  googleConvertida: 'o Google guarda uma cópia convertida',
+  googleSemMovimento: 'o Google guarda só a foto parada',
+  icloudMenor: 'o iCloud guarda uma cópia menor',
+  icloudSemMovimento: 'só o Google tem o movimento',
+};
+
 const RESPOSTA = {
   mesma: 'Anotado: são a mesma foto. O notebook refaz o cruzamento.',
   diferente: 'Anotado: são fotos diferentes. O notebook refaz o cruzamento.',
@@ -302,6 +310,7 @@ function abrirDetalhe(i) {
     l.g && ['Google', [`${l.g.w}×${l.g.h}`, l.g.file?.nome, l.g.file?.formato, l.g.file?.bytes ? `${(l.g.file.bytes / 1048576).toFixed(1)} MB` : null].filter(Boolean).join(' · ')],
     l.a?.live && ['Live Photo', !l.g ? 'só no iCloud' : !l.g.extrasLidos ? 'movimento no Google ainda não conferido' : l.g.motionMs ? 'o Google também tem o movimento' : 'no Google só a foto parada, sem o movimento'],
     l.copiaGoogle === 'convertida' && ['Cópia do Google', `convertida para ${l.g.file.formato} (não é o original)`],
+    l.melhor && ['Melhor cópia', `${l.melhor.lado === 'icloud' ? 'no iCloud' : l.melhor.lado === 'google' ? 'no Google' : 'cada lado tem uma vantagem'}: ${[...l.melhor.icloud, ...l.melhor.google].map((k) => MOTIVOS_Q[k] || k).join('; ')}`],
     l.quadroDiferente && ['Quadro', 'mesmo clique da Live Photo, com o quadro principal diferente'],
     l.versaoEditada && ['Versão', 'mesmo arquivo de origem, imagem editada'],
     l.parecida && ['Imagens', 'parecidas, mas não iguais: confira'],

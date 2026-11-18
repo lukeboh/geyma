@@ -60,6 +60,7 @@ const compact = (r) => ({
   versaoEditada: Boolean(r.versaoEditada),
   parecida: Boolean(r.parecida),
   peloUsuario: Boolean(r.peloUsuario),
+  melhor: r.melhor || null,
   // veredito do usuário sobre o par (botões "São a mesma foto / São fotos diferentes")
   par: r.a?.id ? { a: r.a.id, g: r.g?.id || null, ja: vereditoDoPar(r.a, r.g?.id), recusados: r.a.diferenteDe?.length || 0 } : null,
   thumbs: thumbsOf(r),

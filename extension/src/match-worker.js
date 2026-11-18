@@ -6,6 +6,7 @@ import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
 import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive, paraCruzar } from './core/match.js';
 import { copiaNoGoogle } from './core/google-file.js';
+import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 
 const row = (cls, a, g, extra = {}) => {
@@ -18,7 +19,7 @@ const row = (cls, a, g, extra = {}) => {
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
     a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null, ...versoesIcloud(a), ...(a.mesmaQue ? { mesmaQue: a.mesmaQue } : {}), ...(a.diferenteDe?.length ? { diferenteDe: a.diferenteDe } : {}) },
-    g: g && { id: g.id, w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos) },
+    g: g && { id: g.id, w: g.w, h: g.h, ...(g.video ? { video: true } : {}), thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos) },
     ...(a && g ? { copiaGoogle: copiaNoGoogle(a, g) } : {}),
     ...extra,
   };
@@ -164,6 +165,9 @@ self.onmessage = async (e) => {
       ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
       ...result.soIcloud.map((x) => row('soIcloud', x, null, dupInfo(x, null))),
     ];
+    // melhor cópia de cada par (só guarda quando um lado é melhor)
+    for (const r of rows) { const m = melhorCopia(r); if (m && m.lado !== 'iguais') r.melhor = m; }
+    const qualidade = resumoQualidade(rows);
     const wanted = icloudPhashWanted(result.pairs, dupA.pendingIds, icloudById);
     await setMeta('icloudPhashWanted', wanted);
     const keep = icloudThumbKeep(result.soIcloud, dupA, result.pairs);
@@ -174,6 +178,7 @@ self.onmessage = async (e) => {
       complete,
       until,
       summary,
+      qualidade,
       dup: { google: dupSummary(scopeG, dupG), icloud: dupSummary(scopeA, dupA) },
       phashNeeded: googlePhashNeeded(dupG.pendingIds, result.pairs, new Set(google.filter((g) => g.phash).map((g) => g.id))),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),

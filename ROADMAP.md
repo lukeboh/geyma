@@ -80,6 +80,9 @@ amostra, com a taxa de falso positivo medida contra um controle.
 revisada manualmente.
 
 ### 0.5 — Qualidade
+- [x] Indicador da melhor cópia de cada foto (resolução, formato do arquivo do
+  Google, movimento da Live Photo), com filtro na revisão e no plano de
+  envio (0.2.38)
 - Redimensionamento pelos metadados
 - Recorte, edição e recompressão pela comparação de miniaturas e, por amostragem,
   dos originais
