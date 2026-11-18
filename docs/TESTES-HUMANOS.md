@@ -184,7 +184,8 @@ vídeos) e abra três pares no visualizador.
 **Esperado:** os números fazem sentido para a sua biblioteca; nos pares, a
 legenda mostra a duração dos dois lados e o placar diz "mesma duração" ou
 "durações diferentes". Num par de durações diferentes, um vídeo é outro ou
-foi cortado.
+foi cortado. Clique "▶ assistir" nos dois lados: os dois tocam, com som e
+controles (o do Google em qualidade menor, 360 linhas).
 Observado:
 
 ### V2 — Arquivos de vídeo do Google ☐

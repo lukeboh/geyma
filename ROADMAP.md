@@ -155,7 +155,7 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
   do Google, com SHA-1 em pedaços (0.3.18)
 - [x] Vídeos do Google ao iCloud de qualquer tamanho, pela ponte embutida na
   página do iCloud, com senha de uso único (0.3.19)
-- [ ] Assistir os dois lados no visualizador
+- [x] Assistir os dois lados no visualizador (0.3.20)
 - [ ] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
 
 ### 1.0 — Uso pessoal completo

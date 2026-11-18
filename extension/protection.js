@@ -1072,6 +1072,23 @@ function infoGoogle(g, video = false) {
   return fichaGoogle(g.thumb).then((file) => { g.file = file; patchItems([{ id: g.id, file }]).catch(() => {}); return junta(file); }, () => junta(null));
 }
 
+/** Link da versão de 720 linhas de um vídeo do iCloud (renova o link da Apple se venceu). */
+async function videoIcloud(a) {
+  const vale = (it) => it?.vidMed && Date.now() - (it.thumbAt || 0) < ICLOUD_URL_VALIDA_MS;
+  let it = await getItem(a.id);
+  if (!vale(it)) { await renovarIcloud(a.id, true); it = await getItem(a.id); }
+  if (!it?.vidMed) throw new Error('o iCloud ainda não deu o link do vídeo (vem no próximo percurso)');
+  return it.vidMed.replace('${f}', 'video.mp4');
+}
+
+/** Versão de 360 linhas do Google (`=m18`): o endereço final, assinado, que o vídeo toca sem a sessão. */
+async function videoGoogle(g) {
+  const res = await fetch(`${g.thumb}=m18`, { headers: { Range: 'bytes=0-1' }, credentials: 'include' });
+  res.body?.cancel().catch(() => {});
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.url;
+}
+
 /** Duração, codec, quadros por segundo e tamanho de um vídeo do iCloud. */
 const infoVideoIcloud = (a) => (a.video ? [textoDuracao(a.durMs), [a.codec, a.fps ? `${Math.round(a.fps)} qps` : null].filter(Boolean).join(' '), a.size ? MB(a.size) : null] : []);
 
@@ -1093,7 +1110,7 @@ function verFotos(r, td, lista = null) {
     // dimensões da editada só quando mudaram (um corte); trocadas = só girada
     const mesmas = (r.a.editW === r.a.w && r.a.editH === r.a.h) || (r.a.editW === r.a.h && r.a.editH === r.a.w);
     const dimsEd = editada && r.a.editW && !mesmas ? `cortada: ${r.a.editW}×${r.a.editH} (original ${dimsTxt(r.a)})` : '';
-    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name, ...infoVideoIcloud(r.a)].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), reserva: icloudGrande(r.a) ? icloudRenova(r.a, { forcar: true }) : null, carregando: icloudGrande(r.a) ? null : RENOVANDO });
+    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name, ...infoVideoIcloud(r.a)].filter(Boolean).join(' · '), ...(r.a.video ? { video: () => videoIcloud(r.a) } : {}), grande: icloudGrandeOuRenova(r.a), reserva: icloudGrande(r.a) ? icloudRenova(r.a, { forcar: true }) : null, carregando: icloudGrande(r.a) ? null : RENOVANDO });
     if (editada) {
       // o original fica ao lado: o Google pode ter guardado qualquer uma das duas
       fotos.push({ src: icloudOriginal(r.a) || (r.a.thumbOrig || '').replace('${f}', 'thumb.jpg'), rotulo: 'iCloud · original, antes da edição', semImagem: SEM_ICLOUD, info: dimsTxt(r.a), grande: icloudGrandeOuRenova(r.a, { original: true }), reserva: icloudOriginal(r.a) ? icloudRenova(r.a, { original: true, forcar: true }) : null, carregando: icloudOriginal(r.a) ? null : RENOVANDO });
@@ -1108,7 +1125,7 @@ function verFotos(r, td, lista = null) {
     fotos.push({ src: src(r.dupOf, 'google'), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });
   }
   if (r.g?.thumb) {
-    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: infoGoogle(r.g, Boolean(r.a?.video)), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
+    fotos.push({ src: src(r.g, 'google'), rotulo: 'Google', info: infoGoogle(r.g, Boolean(r.a?.video)), ...(r.g.video ? { video: () => videoGoogle(r.g) } : {}), grande: () => googleBlob(googleGrande(r.g.thumb)), link: r.g.key ? `https://photos.google.com/photo/${r.g.key}` : null });
   }
   if (!fotos.length) return false;
   // a barra de endereço passa a identificar a foto: copiar o endereço também serve

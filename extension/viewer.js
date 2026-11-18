@@ -228,6 +228,38 @@ function ligarGestos(v, i) {
  *   anterior/proxima: andar pela lista sem fechar (‹ ›, Page Up/Down); depois
  *   de uma resposta, o visualizador passa sozinho para a próxima.
  */
+/** Botão que toca o vídeo no lugar da imagem do painel. */
+function botaoAssistir(f, area, img) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'visor-assistir';
+  b.textContent = '▶ assistir';
+  b.addEventListener('click', async () => {
+    b.disabled = true;
+    b.textContent = 'carregando o vídeo…';
+    try {
+      const url = await f.video();
+      if (!url) throw new Error('sem o link do vídeo');
+      const v = document.createElement('video');
+      v.className = 'visor-video';
+      v.controls = true;
+      v.autoplay = true;
+      v.playsInline = true;
+      // os gestos de zoom do painel não pegam nos controles do vídeo
+      for (const ev of ['pointerdown', 'wheel', 'dblclick']) v.addEventListener(ev, (e) => e.stopPropagation());
+      v.onloadeddata = () => b.remove();
+      v.onerror = () => { v.remove(); img.hidden = false; b.disabled = false; b.textContent = '▶ assistir (o Chrome não conseguiu tocar este vídeo)'; };
+      v.src = url;
+      img.hidden = true;
+      area.append(v);
+    } catch (err) {
+      b.disabled = false;
+      b.textContent = `▶ assistir (falhou: ${err.message || err})`;
+    }
+  });
+  return b;
+}
+
 // resposta da ação em andamento (para mostrar o progresso de um envio longo)
 let respostaAtiva = null;
 
@@ -282,6 +314,8 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
       a.textContent = 'abrir no serviço';
       leg.append(' ', a);
     }
+    // vídeo: "assistir" troca a imagem pelo vídeo (f.video devolve o link)
+    if (f.video) leg.append(' ', botaoAssistir(f, area, img));
     painel.append(area, leg);
     ui.paineis.append(painel);
     const v = { area, img, s: 1, x: 0, y: 0 };

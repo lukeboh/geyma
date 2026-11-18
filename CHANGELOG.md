@@ -2,6 +2,20 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.20 — 18/11/2026
+
+- Assistir os vídeos no visualizador (etapa 0.9): botão "▶ assistir" em
+  cada lado. iCloud: a versão de 720 linhas que a Apple gera (o link é
+  renovado pela grade quando venceu). Google: a versão de 360 linhas
+  (`=m18`), pelo endereço final assinado (nova permissão para
+  *.googlevideo.com), que o vídeo toca sem a sessão. Os gestos de zoom do
+  painel não pegam nos controles do vídeo.
+
+Verificação: 221 testes passando. Na biblioteca real, os dois links de um
+par entregam MP4 (cabeçalho "ftyp") e aceitam pedidos por trecho (para
+avançar no vídeo). Tocar não deu para conferir pela automação: com o
+painel em segundo plano o Chrome não carrega vídeo; fica no caso V1.
+
 ## 0.3.19 — 18/11/2026
 
 - Envio direto também do Google ao iCloud, sem limite de tamanho: uma

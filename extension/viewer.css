@@ -80,6 +80,11 @@ html.visor-aberto, html.visor-aberto body { overflow: hidden; }
   padding: 24px; font-size: 14px; line-height: 1.5; color: var(--v-texto-2);
 }
 .visor-sem[hidden], .visor-area img[hidden] { display: none; }
+.visor-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; background: #000;
+}
+.visor-assistir { font: inherit; font-size: 12px; padding: 2px 8px; cursor: pointer; }
 .visor-area.ampliada:active { cursor: grabbing; }
 .visor-area img {
   position: absolute;

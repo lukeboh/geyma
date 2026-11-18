@@ -347,8 +347,8 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
    serviço, só com confirmação explícita.
 6. **Vídeos (0.9):** casos V1 a V3; a duração do iCloud chega com o próximo
-   percurso completo. Falta: assistir no visualizador (em aba de fundo o Chrome não carrega o vídeo;
-   testar com o painel visível) e quadros amostrados.
+   percurso completo. Falta: quadros amostrados. "Assistir" (0.3.20) só
+   carrega com o painel visível (em aba de fundo o Chrome não carrega vídeo).
 
 ### Como retomar (passo a passo)
 1. Chrome de automação aberto (`he chrome-automation`), com as abas do Google
