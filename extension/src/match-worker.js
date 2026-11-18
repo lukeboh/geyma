@@ -11,7 +11,7 @@ import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 import { conferirChegadas, marcarChegadas } from './core/envio.js';
 import { candidatosRecorte, candidatosEdicao } from './core/recorte.js';
-import { ehVideo, copiaVideoNoGoogle, videoFileNeeded, movimentosDeLive, resumoVideos } from './core/video.js';
+import { ehVideo, copiaVideoNoGoogle, videoFileNeeded, movimentosDeLive, resumoVideos, quadrosNeeded } from './core/video.js';
 import { separarPorTipo, itensPorTipo, juntarDuplicatas, tipoDaLinha } from './core/tipo.js';
 
 const row = (cls, a, g, extra = {}) => {
@@ -187,7 +187,7 @@ self.onmessage = async (e) => {
         ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
         ident: estadoIdentidade(p),
         // provas brutas, para o placar no visualizador (placar.js)
-        prova: { dt: p.dt, dist: p.dist ?? null, rel: p.rel || null, ...(p.recorte ? { recorte: p.recorteNcc } : {}), ...(p.edicaoNcc ? { edicao: p.edicaoNcc } : {}), ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}), ...(p.rajada ? { rajada: p.rajada } : {}), ...(p.duracao ? { dur: p.duracao, durA: p.a.durMs, durG: p.g.videoMs } : {}) },
+        prova: { dt: p.dt, dist: p.dist ?? null, ...(p.quadros ? { quadros: p.quadros } : {}), rel: p.rel || null, ...(p.recorte ? { recorte: p.recorteNcc } : {}), ...(p.edicaoNcc ? { edicao: p.edicaoNcc } : {}), ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}), ...(p.rajada ? { rajada: p.rajada } : {}), ...(p.duracao ? { dur: p.duracao, durA: p.a.durMs, durG: p.g.videoMs } : {}) },
         ...(p.duracao ? { duracao: p.duracao } : {}),
         ...(p.fuso ? { fuso: p.deslocamentoMs } : {}),
         ...(p.recorte ? { recorte: p.recorte } : {}),
@@ -235,6 +235,7 @@ self.onmessage = async (e) => {
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       googleFileNeeded: googleFileNeeded(result.pairs),
       videoFileNeeded: videoFileNeeded(result.pairs, result.soGoogle),
+      quadrosNeeded: quadrosNeeded(result.pairs, icloudById),
       recorteNeeded: candidatosRecorte(result.soIcloud, result.soGoogle),
       edicaoNeeded: candidatosEdicao(result.pairs),
       icloudPhashWanted: wanted.length,

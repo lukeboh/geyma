@@ -26,6 +26,9 @@ import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
 import { compararCodificacao } from './src/core/jpeg.js';
 import { cinza, tamanhoPara, recorteEntre, edicaoEntre } from './src/core/recorte.js';
 import { textoDuracao } from './src/core/video.js';
+import { hashesDoVideo } from './src/core/quadros-video.js';
+import { compararQuadros } from './src/core/mp4.js';
+import { hamming } from './src/core/phash.js';
 import { vistaPorTipo, nomeDoTipo, tipoDaLinha } from './src/core/tipo.js';
 
 const $ = (id) => document.getElementById(id);
@@ -118,6 +121,8 @@ export function initProtection() {
   $('m-gf-run').addEventListener('click', () => runFichas('gf'));
   $('m-vf-run').addEventListener('click', () => runFichas('vf'));
   $('m-vf-stop').addEventListener('click', () => { if (fichaJobs.vf) fichaJobs.vf.stop = true; });
+  $('m-qd-run').addEventListener('click', runQuadros);
+  $('m-qd-stop').addEventListener('click', () => { if (qdJob) qdJob.stop = true; });
   $('m-rc-run').addEventListener('click', runProvaRecompressao);
   $('m-mc-run').addEventListener('click', runMiniaturas);
   $('m-mc-stop').addEventListener('click', () => { if (mcJob) mcJob.stop = true; });
@@ -368,6 +373,60 @@ function renderVideos() {
     a.addEventListener('click', (e) => { e.preventDefault(); pedirTipo('video'); $('r-cls').value = a.dataset.vid; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
   }
   if (!fichaJobs.vf) { $('m-vf-run').hidden = !need.length; $('m-vf-run').textContent = `Conferir os arquivos de vídeo do Google (${fmt.format(need.length)})`; }
+  const qd = data.quadrosNeeded || [];
+  if (!qdJob) { $('m-qd-run').hidden = !qd.length; $('m-qd-run').textContent = `Comparar quadros dos vídeos a confirmar (${fmt.format(qd.length)})`; }
+}
+
+// ---------- quadros amostrados dos vídeos (0.9) ----------
+// Para os pares de vídeo ainda sem confirmação: os mesmos instantes dos dois
+// vídeos (WebCodecs, quadros-video.js), comparados pelo pHash. O link do
+// iCloud vale poucos minutos: renova pela grade (aba do iCloud visível).
+let qdJob = null;
+async function runQuadros() {
+  const need = data?.quadrosNeeded || [];
+  if (!need.length || qdJob) return;
+  qdJob = { stop: false, feitos: 0, iguais: 0, diferentes: 0, incertos: 0 };
+  $('m-qd-run').hidden = true;
+  $('m-qd-stop').hidden = false;
+  const show = (t) => { $('m-qd-state').textContent = t || `comparando… ${fmt.format(qdJob.feitos)} de ${fmt.format(need.length)} (${fmt.format(qdJob.iguais)} iguais, ${fmt.format(qdJob.diferentes)} diferentes)`; };
+  const hashesA = new Map();
+  let erro = null;
+  show();
+  for (const x of need) {
+    if (qdJob.stop) break;
+    try {
+      let ha = hashesA.get(x.a);
+      if (!ha) {
+        ha = (await hashesDoVideo(await videoIcloud({ id: x.a }))).hashes;
+        hashesA.set(x.a, ha);
+      }
+      const thumb = x.gThumb || (await getItem(x.g))?.thumb;
+      let resultado;
+      try {
+        resultado = compararQuadros(ha, (await hashesDoVideo(await videoGoogle({ thumb }))).hashes, hamming);
+      } catch (e) {
+        // o Google não tem a versão para assistir (só a capa): sem como comparar
+        if (e.status === 404 || /HTTP 404/.test(e.message)) resultado = { dist: null, alinhado: null, iguais: null, n: 0, semVideo: true };
+        else throw e;
+      }
+      const it = await getItem(x.a);
+      const lista = (it?.quadros || []).filter((q) => q.g !== x.g);
+      await patchItems([{ id: x.a, quadros: [...lista, { g: x.g, ...resultado, at: Date.now() }] }]);
+      qdJob.feitos++;
+      if (resultado.iguais === true) qdJob.iguais++;
+      else if (resultado.iguais === false) qdJob.diferentes++;
+      else qdJob.incertos++;
+      show();
+    } catch (e) {
+      erro = String(e.message || e);
+      break;
+    }
+  }
+  const j = qdJob;
+  qdJob = null;
+  $('m-qd-stop').hidden = true;
+  show(`${erro ? `parou: ${erro}${/link|grade|iCloud/.test(erro) ? ' (deixe a aba do iCloud Fotos visível)' : ''}` : j.stop ? 'parada por você' : 'concluída'}: ${fmt.format(j.feitos)} comparados, ${fmt.format(j.iguais)} iguais, ${fmt.format(j.diferentes)} diferentes, ${fmt.format(j.incertos)} sem decisão.`);
+  if (j.feitos) compute();
 }
 
 // ---------- recortes e edições pelas miniaturas ----------

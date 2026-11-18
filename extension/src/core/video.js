@@ -104,6 +104,30 @@ export function videoFileNeeded(pairs, soGoogle = []) {
 }
 
 /**
+ * Pares de vídeo que os quadros amostrados decidiriam: a confirmar, de
+ * duração diferente ou sem confirmação (sem a duração do iCloud). Num par
+ * disputado, cada candidato do Google. Sem os já comparados (a.quadros).
+ * Na ordem do instante, para aproveitar os links renovados juntos na grade.
+ * @returns {{a: string, g: string, gThumb: string, ts: number}[]}
+ */
+export function quadrosNeeded(pairs, icloudById = null) {
+  const out = [];
+  for (const p of pairs) {
+    if (!ehVideo(p.a) || !p.g.video) continue;
+    if (p.confirmadoPeloUsuario || p.confirmadoPorImagem || (p.confirmadoPorDuracao && p.cls !== 'confirmar')) continue;
+    const feitos = new Set((p.a.quadros || []).map((q) => q.g));
+    const ids = p.candidatos?.length ? p.candidatos : [p.g.id];
+    for (const g of ids) {
+      if (feitos.has(g)) continue;
+      const gi = g === p.g.id ? p.g : null;
+      const thumb = gi?.thumb || null;
+      out.push({ a: p.a.id, g, gThumb: thumb, ts: p.a.ts });
+    }
+  }
+  return out.sort((x, y) => x.ts - y.ts);
+}
+
+/**
  * Vídeo curto do Google no mesmo instante de uma Live Photo do iCloud: é o
  * movimento da Live Photo enviado à parte (como vídeo), não um vídeo novo.
  * @returns {Map<string, string>} id do Google -> id da Live Photo do iCloud

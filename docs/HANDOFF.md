@@ -194,6 +194,14 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     `lixeira-clicar` à `src/page/envio.js` (botão com rótulo "Mover para a
     lixeira", confirmação do site; ensaio não clica), aba fechada, registro
     na meta `lixeira`. Na mesma fila do envio (`envioChain`).
+31. **Quadros amostrados (0.3.25):** `core/mp4.js` (moov, faixa de vídeo,
+    `trechoAte`, `compararQuadros`) e `core/quadros-video.js`
+    (`hashesDoVideo`: WebCodecs; feche cada VideoFrame na hora, ou o
+    decodificador para). Resultado no item do iCloud: `quadros: [{g, dist,
+    alinhado, iguais, n}]`; `match.js` tira o candidato com `iguais:
+    false` e confirma com `iguais: true` (`porQuadros`). Fila:
+    `quadrosNeeded` (video.js), na ordem do instante (os links do iCloud,
+    de 12 minutos, são renovados pela grade).
 
 ## 4. Decisões e motivos
 

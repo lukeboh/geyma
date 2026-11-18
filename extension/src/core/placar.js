@@ -50,6 +50,8 @@ export function placarIdentidade(r) {
   } else add('imagem', -4, `imagens diferentes (distância ${p.dist})`);
 
   if (p.nome) add('nome', 2, 'mesmo nome de arquivo');
+  // quadros amostrados de um vídeo (mp4.js, quadros-video.js)
+  if (p.quadros) add('quadros', 4, `mesmos quadros (${p.quadros.n} quadros comparados, distância ${Math.min(p.quadros.dist, p.quadros.alinhado ?? 64)})`);
 
   // duração (vídeos; video.js)
   const durA = textoDuracao(p.durA);

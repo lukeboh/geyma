@@ -162,7 +162,8 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - [x] Assistir os dois lados no visualizador (0.3.20)
 - [x] Fotos e vídeos separados em todas as etapas, pela chave Fotos | Vídeos |
   Tudo (0.3.21)
-- [ ] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
+- [x] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
+  (0.3.25)
 
 ### 1.0 — Uso pessoal completo
 - Biblioteca pessoal protegida e sanitizada, rotina de manutenção funcionando

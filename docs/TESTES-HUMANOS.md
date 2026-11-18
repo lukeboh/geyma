@@ -232,6 +232,17 @@ arquivo; nos vídeos com a melhor cópia no iCloud, o do Google é menor
 (link do visualizador) para conferir.
 Observado:
 
+### V4 — Quadros dos vídeos a confirmar ☐
+Deixe a aba do iCloud Fotos visível (outra janela). Bloco **Vídeos** →
+**Comparar quadros dos vídeos a confirmar**; depois de uns minutos,
+**Parar**. Abra pela Revisão ("Mesma foto: confirmada", chave em Vídeos)
+dois pares que acabaram de ser comparados.
+**Esperado:** o andamento conta "iguais" e "diferentes"; nos pares, o
+placar mostra "mesmos quadros"; assista os dois lados (▶ assistir): são o
+mesmo vídeo. Um par desfeito por quadros diferentes vira dois itens, cada
+um num serviço só.
+Observado:
+
 ### V3 — Envio de um vídeo pequeno ☐
 Marque como Pessoal um vídeo só do iCloud com menos de 300 MB. No
 visualizador: **Ensaiar** e depois **Enviar ao Google**.

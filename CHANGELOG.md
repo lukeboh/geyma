@@ -2,6 +2,28 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.25 — 18/11/2026
+
+- Quadros amostrados dos vídeos (etapa 0.9): para os pares de vídeo ainda
+  sem confirmação (a confirmar, duração diferente ou sem a duração do
+  iCloud), o Geyma lê o índice do MP4 por trechos (`core/mp4.js`: moov no
+  começo ou no fim, codec avc1/hvc1, rotação, tempos com quadros B),
+  decodifica com o WebCodecs só o grupo de quadros em volta de cinco
+  instantes de cada vídeo (`core/quadros-video.js`; funciona com o painel
+  em segundo plano) e compara o pHash dos quadros: alinhados (o vídeo
+  inteiro) e cruzados (um vídeo cortado). Quadros iguais confirmam o par,
+  mesmo de duração diferente; quadros claramente diferentes desfazem o
+  candidato. Botão "Comparar quadros dos vídeos a confirmar" no bloco
+  Vídeos; o placar ganha a prova "mesmos quadros".
+- Cruzamento refeito (versão de cálculo 7).
+
+Verificação: 246 testes passando (com um MP4 montado no teste). Na
+biblioteca real, calibragem: o mesmo vídeo dá distância de 0 a 2 e vídeos
+diferentes, de 26 a 38 (limiares: iguais até 10, diferentes a partir de
+22); cerca de 0,6 MB por vídeo do Google e alguns MB por vídeo do iCloud;
+10 pares comparados em pouco mais de 1 minuto, todos com os mesmos
+quadros.
+
 ## 0.3.24 — 18/11/2026
 
 - Lixeira (etapa 0.8): bloco na Proteção com o que você marcou Descartar

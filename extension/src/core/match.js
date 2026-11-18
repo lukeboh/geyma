@@ -157,18 +157,22 @@ export function matchLibraries(google, icloud, opts = {}) {
     const recortada = a.recorte && !a.diferenteDe?.includes(a.recorte.g) && gById?.get(a.recorte.g);
     if (recortada) return [{ g: recortada, rel: 'recorte', dt: Math.abs(recortada.ts - a.ts), dimsA: { w: a.w, h: a.h }, porRecorte: true }];
     const recusadas = a.diferenteDe?.length ? new Set(a.diferenteDe) : null;
+    // quadros amostrados (vídeos): quadros claramente diferentes desfazem o candidato
+    const quadros = a.quadros?.length ? new Map(a.quadros.map((q) => [q.g, q])) : null;
     const s = Math.floor(a.ts / 1000);
     const out = [];
     for (const k of [s - 1, s, s + 1]) {
       for (const g of bySec.get(k) || []) {
         const dt = Math.abs(g.ts - a.ts);
         if (dt > TOLERANCE_MS || recusadas?.has(g.id) || !tipoCompativel(a, g)) continue;
+        const q = quadros?.get(g.id);
+        if (q?.iguais === false) continue;
         const { rel, dimsA } = relacaoDims(a, g);
-        if (rel) out.push({ g, rel, dt, dimsA });
+        if (rel) out.push({ g, rel, dt, dimsA, ...(q?.iguais ? { porQuadros: q } : {}) });
       }
     }
-    // melhor primeiro: dimensões iguais, depois menor diferença de instante
-    out.sort((x, y) => (x.rel === y.rel ? x.dt - y.dt : x.rel === 'igual' ? -1 : 1));
+    // melhor primeiro: quadros iguais, dimensões iguais, depois menor diferença de instante
+    out.sort((x, y) => (Boolean(y.porQuadros) - Boolean(x.porQuadros)) || (x.rel === y.rel ? x.dt - y.dt : x.rel === 'igual' ? -1 : 1));
     return out;
   };
 
@@ -187,7 +191,7 @@ export function matchLibraries(google, icloud, opts = {}) {
   // Vídeos: a duração decide. Candidatos com a duração que bate vêm primeiro e,
   // se houver algum, os de duração claramente diferente saem.
   const porDuracao = (a, c) => {
-    if (!ehVideo(a) || !a.durMs || c[0]?.peloUsuario) return c;
+    if (!ehVideo(a) || !a.durMs || c[0]?.peloUsuario || c[0]?.porQuadros) return c;
     const com = c.map((x) => ({ ...x, dur: relacaoDuracao(a, x.g) }));
     const bate = com.filter((x) => duracaoBate(x.dur));
     if (!bate.length) return com;
@@ -216,7 +220,7 @@ export function matchLibraries(google, icloud, opts = {}) {
 
   // atribuição um-para-um: primeiro os casos sem disputa, depois os demais
   // (os pares que o usuário confirmou vêm antes de todos)
-  const confirmou = (x) => (cands.get(x.id)[0]?.peloUsuario || cands.get(x.id)[0]?.porRecorte ? 0 : 1);
+  const confirmou = (x) => (cands.get(x.id)[0]?.peloUsuario || cands.get(x.id)[0]?.porRecorte || cands.get(x.id)[0]?.porQuadros ? 0 : 1);
   const order = [...A].sort((x, y) => confirmou(x) - confirmou(y) || cands.get(x.id).length - cands.get(y.id).length || x.ts - y.ts);
   const usedG = new Set();
   const pairs = [];
@@ -235,7 +239,8 @@ export function matchLibraries(google, icloud, opts = {}) {
     usedG.add(pick.g.id);
     const peloUsuario = Boolean(pick.peloUsuario);
     // recorte: a imagem já provou (uma é pedaço da outra); o pHash não serve
-    const imageConfirmed = peloUsuario || Boolean(pick.porRecorte) || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
+    // vídeo: os quadros amostrados iguais também provam (cortado ou não)
+    const imageConfirmed = peloUsuario || Boolean(pick.porRecorte) || Boolean(pick.porQuadros) || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
     // vídeo: mesma duração, e nenhum outro candidato com a duração que bate
     const duracaoConfirma = !imageConfirmed && duracaoBate(pick.dur) && c.filter((x) => duracaoBate(x.dur)).length === 1;
     const duracaoDiferente = pick.dur === 'diferente';
@@ -248,6 +253,7 @@ export function matchLibraries(google, icloud, opts = {}) {
     // provas guardadas para o placar de identidade (placar.js)
     const pair = { a, g: pick.g, dt: pick.dt, rel: pick.rel, dist: pick.porRecorte ? null : pick.d ?? distImagem(a, pick.g) };
     if (pick.porRecorte) { pair.recorte = a.recorte.cortada; pair.recorteNcc = a.recorte.ncc; }
+    if (pick.porQuadros) pair.quadros = { dist: pick.porQuadros.dist, alinhado: pick.porQuadros.alinhado ?? null, n: pick.porQuadros.n };
     if (peloUsuario) pair.confirmadoPeloUsuario = true;
     else if (imageConfirmed) pair.confirmadoPorImagem = true;
     else if (duracaoConfirma) pair.confirmadoPorDuracao = true;

@@ -228,7 +228,12 @@
         <button id="m-vf-stop" hidden>Parar</button>
         <span class="muted" id="m-vf-state" role="status"></span>
       </div>
-      <p class="hint">Um vídeo é o mesmo nos dois serviços quando o instante, as dimensões e a duração batem; duração diferente fica a confirmar (outro vídeo, ou um deles foi cortado). Foto e vídeo nunca formam par. A conferência lê só o cabeçalho do download de cada vídeo do Google (formato, tamanho e nome do arquivo; nada é baixado) e diz se o Google guarda o arquivo original ou uma cópia recomprimida, reduzida ou cortada. Até 4 por vez; um erro do Google num arquivo só (404, 500) pula esse arquivo, e um vídeo que o Google não serve mais (400: só a capa) fica anotado; uma recusa do Google, ou cinco erros seguidos, param a conferência.</p>
+      <div class="actions">
+        <button id="m-qd-run" hidden>Comparar quadros dos vídeos a confirmar</button>
+        <button id="m-qd-stop" hidden>Parar</button>
+        <span class="muted" id="m-qd-state" role="status"></span>
+      </div>
+      <p class="hint">Um vídeo é o mesmo nos dois serviços quando o instante, as dimensões e a duração batem; duração diferente fica a confirmar (outro vídeo, ou um deles foi cortado). Foto e vídeo nunca formam par. A conferência lê só o cabeçalho do download de cada vídeo do Google (formato, tamanho e nome do arquivo; nada é baixado) e diz se o Google guarda o arquivo original ou uma cópia recomprimida, reduzida ou cortada. Até 4 por vez; um erro do Google num arquivo só (404, 500) pula esse arquivo, e um vídeo que o Google não serve mais (400: só a capa) fica anotado; uma recusa do Google, ou cinco erros seguidos, param a conferência. A comparação de quadros, para os pares ainda sem confirmação, decodifica cinco instantes de cada vídeo (poucas centenas de KB no Google, alguns MB no iCloud) e compara as imagens; quadros iguais confirmam o par, mesmo de um vídeo cortado, e quadros claramente diferentes o desfazem. O link de vídeo do iCloud vale poucos minutos: deixe a aba do iCloud Fotos visível para o Geyma renovar.</p>
     </section>
   </main>
 

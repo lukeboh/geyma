@@ -25,8 +25,9 @@ export const textoEtapa = (k) => ETAPAS.find((e) => e.k === k)?.txt || k;
  * 4: vídeos: duração, tipo e ficha do arquivo de vídeo (0.3.17).
  * 5: fichas dos vídeos só do Google; sem limite de tamanho no envio (0.3.19).
  * 6: números separados entre fotos e vídeos (porTipo, 0.3.21).
+ * 7: quadros amostrados dos vídeos (0.3.25).
  */
-export const CALCULO_VERSAO = 6;
+export const CALCULO_VERSAO = 7;
 
 /** O cruzamento guardado ficou para trás? (o inventário ou as regras mudaram depois dele) */
 export const desatualizado = (cache, versaoAtual) => Boolean(cache)
