@@ -120,6 +120,17 @@ html.visor-aberto, html.visor-aberto body { overflow: hidden; }
 .visor-acao { font-size: 14px; padding: 0 14px; }
 .visor-acao:disabled { opacity: 0.5; cursor: default; }
 .visor-resposta { color: var(--v-texto); font-weight: 600; }
+.visor-sugestoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.visor-sugestoes:empty { display: none; }
+.visor-sugestao {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px; border-radius: 10px; border: 1px solid var(--v-borda);
+  background: rgba(255, 255, 255, 0.06); color: var(--v-texto-2); font: inherit; font-size: 11px; cursor: pointer;
+}
+.visor-sugestao:hover { background: rgba(255, 255, 255, 0.14); color: var(--v-texto); }
+.visor-sugestao:focus-visible { outline: 2px solid var(--v-acento); outline-offset: 2px; }
+.visor-sugestao:disabled { opacity: 0.5; cursor: default; }
+.visor-sugestao img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; background: rgba(255, 255, 255, 0.08); }
 .visor-dica { margin: 0; padding: 6px 14px 10px; font-size: 12px; color: var(--v-texto-2); text-align: center; }
 
 /* tela estreita: uma foto em cima da outra; a dica some (gestos de toque são os usuais) */

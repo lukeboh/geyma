@@ -14,6 +14,7 @@ import { fichaDoCabecalho } from './src/core/google-file.js';
 import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
 import { resumoProtecao } from './src/core/protecao.js';
 import { proximosPassos } from './src/core/passos.js';
+import { sugestoesDoGoogle } from './src/core/sugestoes.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -831,11 +832,25 @@ function vereditoNoVisor(r) {
       ],
     };
   }
+  // só no iCloud: fotos do Google sem par, mesmas dimensões e instante próximo
+  const sugestoes = r.cls === 'soIcloud' ? sugestoesParaParear(r) : [];
   // só no iCloud porque o usuário recusou um par: dá para desfazer
   if (r.a.diferenteDe?.length) {
-    return { pergunta: `Você disse que esta foto é diferente de ${r.a.diferenteDe.length === 1 ? 'uma foto' : `${r.a.diferenteDe.length} fotos`} do Google.`, acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', tecla: 'z', aoClicar: age('desfazer', null) }] };
+    return { pergunta: `Você disse que esta foto é diferente de ${r.a.diferenteDe.length === 1 ? 'uma foto' : `${r.a.diferenteDe.length} fotos`} do Google.${sugestoes.length ? ' Ou é uma destas?' : ''}`, acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', tecla: 'z', aoClicar: age('desfazer', null) }], sugestoes };
   }
+  if (sugestoes.length) return { pergunta: 'Está no Google com outro horário? Se for uma destas, clique nela:', sugestoes };
   return {};
+}
+
+// fotos só do Google, por instante, para sugerir pares à mão (refeito a cada cruzamento)
+let soGoogleCache = null;
+function sugestoesParaParear(r) {
+  if (soGoogleCache?.data !== data) soGoogleCache = { data, lista: data.rows.filter((x) => x.cls === 'soGoogle' && !x.dup && x.g?.thumb).map((x) => ({ ...x.g, ts: x.ts })) };
+  return sugestoesDoGoogle({ ...r.a, ts: r.ts }, soGoogleCache.lista).map((g) => ({
+    src: googleThumb(g.thumb),
+    rotulo: `${when(g.ts)} · ${dimsTxt(g)}`,
+    aoEscolher: async () => { await registrarVeredito(r.a.id, g.id, 'mesma'); return RESPOSTA.mesma; },
+  }));
 }
 
 /** Anterior e próxima da lista no visualizador. */

@@ -2,6 +2,20 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.49 — 18/11/2026
+
+- Parear à mão: ao abrir uma foto que ficou só no iCloud, o visualizador
+  sugere fotos que ficaram só no Google com as mesmas dimensões (ou giradas)
+  e o instante a até 36 h (`sugestoesDoGoogle` em `sugestoes.js`), da mais
+  próxima para a mais distante, até seis. Um clique numa sugestão grava "São
+  a mesma foto" (desfazível) e passa para a próxima. Cobre o que o motor não
+  pareia sozinho, como fotos antigas digitalizadas sem fuso guardado em
+  nenhum dos lados.
+
+Verificação: 150 testes passando (`ext-sugestoes`, novo). Uso real: mais de
+mil fotos só do iCloud ganham sugestões; a primeira conferida era a mesma
+foto, 3 h deslocada.
+
 ## 0.2.48 — 18/11/2026
 
 - iCloud: o inventário passa a registrar se a foto tem localização (`local`,

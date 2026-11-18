@@ -40,7 +40,7 @@ function montar() {
       </div>
     </div>
     <div class="visor-paineis"></div>
-    <div class="visor-acoes-foto" hidden><span class="visor-pergunta"></span><span class="visor-botoes"></span><span class="visor-resposta" role="status"></span></div>
+    <div class="visor-acoes-foto" hidden><span class="visor-pergunta"></span><span class="visor-botoes"></span><span class="visor-sugestoes"></span><span class="visor-resposta" role="status"></span></div>
     <p class="visor-dica">Roda ou pinça amplia · arraste para mover · duplo clique alterna · Esc fecha</p>`;
   document.body.append(raiz);
   ui = {
@@ -219,6 +219,7 @@ function ligarGestos(v, i) {
  * @param {string} [titulo]
  * @param {{ link?: string, aoFechar?: () => void, pergunta?: string,
  *   acoes?: { rotulo: string, titulo?: string, tecla?: string, aoClicar: () => Promise<string> }[],
+ *   sugestoes?: { src: string|Promise<string>, rotulo: string, aoEscolher: () => Promise<string> }[],
  *   anterior?: () => void, proxima?: () => void, posicao?: string }} [opcoes]
  *   link: o que "Copiar link" copia. acoes: botões sob as fotos (por exemplo,
  *   "São a mesma foto"); aoClicar devolve a resposta a mostrar; tecla: atalho.
@@ -296,9 +297,10 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   ui.raiz.querySelector('.visor-fechar').focus({ preventScroll: true });
 }
 
-function montarAcoes({ pergunta = '', acoes = [] }) {
+function montarAcoes({ pergunta = '', acoes = [], sugestoes = [] }) {
   const caixa = ui.acoes;
-  caixa.hidden = !acoes.length;
+  caixa.hidden = !acoes.length && !sugestoes.length;
+  montarSugestoes(caixa, sugestoes);
   caixa.querySelector('.visor-pergunta').textContent = pergunta;
   const resposta = caixa.querySelector('.visor-resposta');
   resposta.textContent = '';
@@ -321,6 +323,40 @@ function montarAcoes({ pergunta = '', acoes = [] }) {
       } catch (err) {
         resposta.textContent = `Não foi possível: ${err.message || err}`;
         for (const x of botoes.querySelectorAll('button')) x.disabled = false;
+      }
+    });
+    return b;
+  }));
+}
+
+/**
+ * Miniaturas clicáveis sob as fotos (por exemplo, fotos do Google que podem
+ * ser a mesma). Cada uma: {src (pode ser Promise), rotulo, aoEscolher}.
+ */
+function montarSugestoes(caixa, sugestoes) {
+  const lugar = caixa.querySelector('.visor-sugestoes');
+  const resposta = caixa.querySelector('.visor-resposta');
+  lugar.replaceChildren(...sugestoes.map((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'visor-sugestao';
+    b.title = s.rotulo;
+    const img = document.createElement('img');
+    img.alt = s.rotulo;
+    Promise.resolve(s.src).then((u) => { if (u) img.src = u; }, () => {});
+    const leg = document.createElement('span');
+    leg.textContent = s.rotulo;
+    b.append(img, leg);
+    b.addEventListener('click', async () => {
+      for (const x of caixa.querySelectorAll('button')) x.disabled = true;
+      resposta.textContent = 'gravando…';
+      try {
+        resposta.textContent = (await s.aoEscolher()) || 'Anotado.';
+        const seguir = estado?.proxima;
+        if (seguir) { resposta.textContent += ' Indo para a próxima…'; const daqui = estado; setTimeout(() => { if (estado === daqui) seguir(); }, 900); }
+      } catch (err) {
+        resposta.textContent = `Não foi possível: ${err.message || err}`;
+        for (const x of caixa.querySelectorAll('button')) x.disabled = false;
       }
     });
     return b;

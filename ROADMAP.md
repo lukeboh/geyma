@@ -77,6 +77,7 @@ amostra, com a taxa de falso positivo medida contra um controle.
   imagem (0.2.42)
 - Tratamento de rajadas
 - [x] Estado "confirmada / provável / incerta", com resumo e filtro (0.2.39)
+- [x] Sugestões do Google para parear à mão uma foto só do iCloud (0.2.49)
 
 **Critério:** falso positivo abaixo de um limite definido na 0.2, numa amostra
 revisada manualmente.
