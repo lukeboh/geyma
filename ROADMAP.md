@@ -105,13 +105,9 @@ revisada manualmente.
 - [x] Fotos só do Google: movimento, vídeo e nome do arquivo nas regras (0.2.44)
 - [x] Resposta em números: fotos pessoais nos dois lugares sem perda, com a
   melhor cópia num lugar só, a confirmar e num lugar só (0.2.45)
-- [ ] Modelo visual local para o que as regras deixam como indefinido
-- Marcações da Apple, regras baratas e modelo visual local (CLIP)
-- Categorias: pessoal, print, internet, propaganda, documento, indefinido
-  (indefinido conta como pessoal)
-- **Marcação de decisão** por item: Pessoal, Pendente, Manter, Descartar
-  (suspeita de lixo e indefinido entram como Pendente)
-- Painel "protegida" com motivos e **revisão em lote** dos Pendentes
+- [x] Categorias documento e propaganda nas regras baratas (0.3.3)
+- [ ] Modelo visual local (CLIP) para o que as regras deixam como indefinido
+  e para achar documentos e propagandas pela imagem
 
 **Critério:** responder com números "quais fotos pessoais estão nos dois lugares
 com qualidade preservada". Marco de validação do uso pessoal.

@@ -67,6 +67,31 @@ test('Google: foto com movimento, vídeo e nome do arquivo (quando a ficha foi l
   assert.equal(classifyGoogle({ w: 640, h: 480, video: true, file: { nome: 'IMG_1234.jpg' } }).cat, 'indefinido');
 });
 
+test('documentos: nome ou app de digitalizar, antes de "recebida"', () => {
+  assert.equal(classifyIcloud(a({ filename: 'Comprovante_pix.jpg' })).cat, 'documento');
+  assert.equal(classifyIcloud(a({ filename: 'CamScanner 01-02-2020.jpg', w: 2480, h: 3508 })).cat, 'documento');
+  assert.equal(classifyIcloud(a({ filename: 'IMG_0001.PNG', importedBy: 'com.microsoft.officemobile' })).cat, 'documento');
+  assert.equal(classifyIcloud(a({ filename: 'Recibo.jpg', importedBy: 'net.whatsapp.WhatsApp' })).cat, 'documento');
+  assert.equal(classifyGoogle({ w: 2480, h: 3508, file: { nome: 'Boleto-agosto.jpg' } }).cat, 'documento');
+  // fotos antigas digitalizadas não são documento
+  for (const filename of ['scan0042.jpg', 'SCANS_A12.jpeg', 'Scan-110-AA (3).jpg', 'filme-1981-B-04-scan.jpg']) {
+    assert.notEqual(classifyIcloud(a({ filename, w: 2524, h: 1686 })).cat, 'documento', filename);
+  }
+  // captura de tela continua vencendo
+  assert.equal(classifyIcloud(a({ subtype: 3, filename: 'Comprovante.png' })).cat, 'print');
+});
+
+test('propaganda: nome ou loja', () => {
+  assert.equal(classifyIcloud(a({ filename: 'Promoção Natal.jpg' })).cat, 'propaganda');
+  assert.equal(classifyIcloud(a({ filename: 'convite-aniversario.png', importedBy: 'net.whatsapp.WhatsApp' })).cat, 'propaganda');
+  assert.equal(classifyIcloud(a({ filename: 'IMG_1.JPG', importedBy: 'com.beeasy.shopee.br' })).cat, 'propaganda');
+  assert.equal(classifyGoogle({ w: 1080, h: 1080, file: { nome: 'flyer_evento.jpg' } }).cat, 'propaganda');
+  // nome de câmera não vira propaganda por acaso
+  assert.equal(classifyIcloud(a({ filename: 'IMG_4445.HEIC', w: 5712, h: 4284 })).cat, 'pessoal');
+  assert.equal(suggestDecision('documento'), 'pendente');
+  assert.equal(suggestDecision('propaganda'), 'pendente');
+});
+
 test('iCloud: localização (GPS) conta como câmera, depois das regras de lixo', () => {
   assert.deepEqual(classifyIcloud({ w: 1920, h: 1080, local: true }), { cat: 'pessoal', reasons: ['com localização (GPS)'] });
   // captura de tela e mensageiro continuam vencendo

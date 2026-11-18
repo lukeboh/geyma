@@ -8,6 +8,8 @@ export const CATEGORIES = {
   print: 'Captura de tela',
   recebida: 'Recebida de mensageiro ou rede social',
   internet: 'Salva da internet ou de apps',
+  documento: 'Documento, recibo ou digitalização de papel',
+  propaganda: 'Propaganda, oferta ou convite',
   indefinido: 'Indefinido',
 };
 
@@ -24,6 +26,15 @@ const SUBTYPE = { 1: 'panorama', 2: 'live', 3: 'screenshot', 100: 'slomo', 101: 
 const MESSENGERS = /whatsapp|MobileSMS|telegram|instagram|picaboo|facebook|messenger|twitter|tiktok|discord|signal/i;
 const APPS = /openai|chrome|safari|pinterest|canva|reddit|imgur/i;
 const CAMERA_APPS = /com\.apple\.camera|lrmobile|halide|vsco|snapseed/i;
+// apps de digitalizar papel (Office Lens, Notas, CamScanner, Adobe Scan, Genius Scan...)
+const DOC_APPS = /officemobile|officelens|com\.apple\.mobilenotes|camscanner|intsig|com\.adobe\.scan|geniusscan|grizzlylabs|scannerpro|readdle\.scanner|tinyscanner/i;
+// lojas e apps de compras ou entrega: o que vem delas é anúncio de produto
+const SHOP_APPS = /shopee|mercadoli|mercadopago|amazon|aliexpress|alibaba|ifood|magalu|magazineluiza|americanas|casasbahia|submarino|temu|shein|rappi|netshoes|centauro/i;
+
+// Nomes de documento e de propaganda. Nunca "scan" sozinho: na prática, os
+// arquivos "scan*.jpg" e "SCANS_*" são fotos antigas digitalizadas.
+const DOC_NAME = /^(CamScanner|Scanned[ _-]|Adobe Scan|Office Lens|Doc(umento)?[ _-]?\d|Comprovante|Recibo|Boleto|Fatura|Nota[ _-]?Fiscal|NF-?e|Receita[ _-]|Laudo|Exame|Certid[aã]o|Contrato|Receipt|Invoice|RG[ _-]|CNH[ _-]|CPF[ _-]|Passaporte)/i;
+const AD_NAME = /(promo[cç][aã]o|^promo[ _-]|oferta|flyer|panfleto|cartaz|banner|cupom|desconto|black ?friday|an[uú]ncio|convite[ _-]|propaganda)/i;
 
 // telas de celular e tablet (retrato), comuns em capturas de tela
 const SCREENS = new Set([
@@ -52,6 +63,15 @@ function cameraShape(w, h) {
   return (w * h) / 1e6 >= 1 && (Math.abs(r - 4 / 3) < 0.02 || Math.abs(r - 3 / 2) < 0.02);
 }
 
+/** Documento ou propaganda pelo nome do arquivo ou pelo app que gravou a foto; null se nenhum. */
+export function documentoOuPropaganda(name = '', from = '') {
+  if (DOC_NAME.test(name)) return { cat: 'documento', reasons: ['nome de documento'] };
+  if (DOC_APPS.test(from)) return { cat: 'documento', reasons: [`importada por ${from} (app de digitalizar)`] };
+  if (AD_NAME.test(name)) return { cat: 'propaganda', reasons: ['nome de propaganda ou convite'] };
+  if (SHOP_APPS.test(from)) return { cat: 'propaganda', reasons: [`importada por ${from} (loja)`] };
+  return null;
+}
+
 /** Classifica um item do iCloud (metadados completos). */
 export function classifyIcloud(a) {
   const reasons = [];
@@ -60,6 +80,10 @@ export function classifyIcloud(a) {
   const from = a.importedBy || '';
   if (sub === 'screenshot') return { cat: 'print', reasons: ['marcada pela Apple como captura de tela'] };
   for (const [re, cat, why] of NAME) if (cat === 'print' && re.test(name)) return { cat, reasons: [why] };
+  // documento e propaganda antes de "recebida": um comprovante mandado pelo
+  // WhatsApp é antes de tudo um comprovante
+  const doc = documentoOuPropaganda(name, from);
+  if (doc) return doc;
   if (MESSENGERS.test(from)) return { cat: 'recebida', reasons: [`importada por ${from}`] };
   for (const [re, cat, why] of NAME) if (cat === 'recebida' && re.test(name)) return { cat, reasons: [why] };
   if (APPS.test(from)) return { cat: 'internet', reasons: [`importada por ${from}`] };
@@ -91,7 +115,10 @@ export function classifyIcloud(a) {
  */
 export function classifyGoogle(g) {
   const nome = (!g.video && g.file?.nome) || '';
-  for (const [re, cat, why] of NAME) if (cat !== 'pessoal' && re.test(nome)) return { cat, reasons: [why] };
+  for (const [re, cat, why] of NAME) if (cat === 'print' && re.test(nome)) return { cat, reasons: [why] };
+  const doc = nome && documentoOuPropaganda(nome);
+  if (doc) return doc;
+  for (const [re, cat, why] of NAME) if (cat === 'recebida' && re.test(nome)) return { cat, reasons: [why] };
   if (!g.video && !g.motionMs && isScreen(g.w, g.h)) return { cat: 'print', reasons: ['do tamanho de uma tela de celular ou tablet'] };
   const reasons = [];
   // foto com movimento: Live Photo (ou foto em movimento do Android), só a câmera faz

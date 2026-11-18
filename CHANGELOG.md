@@ -2,6 +2,22 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.3 — 18/11/2026
+
+- Classificação: categorias novas **Documento** e **Propaganda**, pelas
+  regras baratas. Documento: nome de comprovante, recibo, boleto, nota
+  fiscal, CamScanner etc., ou gravada por app de digitalizar papel (Office,
+  Notas, CamScanner, Adobe Scan). Propaganda: nome de promoção, oferta,
+  convite, cartaz etc., ou gravada por app de loja. Vêm antes de "recebida"
+  (um comprovante mandado pelo WhatsApp é antes de tudo um comprovante) e
+  depois de captura de tela; a sugestão é Pendente.
+- "scan" sozinho no nome não vira documento: na biblioteca real, os arquivos
+  `scan*.jpg` e `SCANS_*` são fotos antigas digitalizadas.
+
+Verificação: 153 testes passando. Na biblioteca real, as regras pegam
+pouquíssimos itens (os nomes quase nunca dizem o que é a imagem); o grosso
+dos documentos e propagandas fica para o modelo visual local (0.6).
+
 ## 0.3.2 — 18/11/2026
 
 - Documentação: validação em uso real do pareamento por fuso horário e da
