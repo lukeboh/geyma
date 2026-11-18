@@ -56,20 +56,37 @@ chrome.debugger.onDetach.addListener((src) => { if (src.tabId === focusTab) focu
 // cópias repetidas nele.
 const thumbQueue = new ThumbQueue({
   concurrency: 8,
-  work: async (url, need) => {
-    const res = await fetch(url, { credentials: 'omit' });
-    if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
-    const blob = await res.blob();
+  work: async (url, need, urlOrig) => {
+    const baixar = async (u) => {
+      const res = await fetch(u, { credentials: 'omit' });
+      if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
+      return res.blob();
+    };
+    const blob = await baixar(url);
     const got = {};
-    if (need.phash) got.phash = await phashFromBlob(blob);
+    if (need.phash) {
+      got.phash = await phashFromBlob(blob);
+      got.phashV = 2;
+      // editada: o original também conta (o Google pode ter guardado qualquer uma)
+      if (urlOrig) got.phashOrig = await baixar(urlOrig).then(phashFromBlob).catch(() => null);
+    }
     if (need.keep) got.blob = blob;
     return got;
   },
   save: async (results) => {
-    const hashes = results.filter((r) => r.phash).map((r) => ({ id: r.id, phash: r.phash }));
+    const hashes = results.filter((r) => r.phash).map((r) => ({ id: r.id, phash: r.phash, phashV: r.phashV, ...(r.phashOrig ? { phashOrig: r.phashOrig } : {}) }));
     const blobs = results.filter((r) => r.blob).map((r) => ({ id: r.id, blob: r.blob }));
     if (hashes.length) await patchItems(hashes);
-    if (blobs.length) await putThumbs(blobs);
+    if (blobs.length) {
+      await putThumbs(blobs);
+      // miniaturas de editadas já na versão atual (as guardadas antes eram do original)
+      const novas = results.filter((r) => r.blob && r.editada).map((r) => r.id);
+      if (novas.length) {
+        const atual = new Set((await getMeta('icloudThumbAtual'))?.value || []);
+        for (const id of novas) { atual.add(id); thumbQueue.keepIfEdited.delete(id); }
+        await setMeta('icloudThumbAtual', [...atual]);
+      }
+    }
     const st = thumbQueue.stats();
     await setMeta('icloudPhashLive', st);
     broadcast({ site: 'icloud', event: 'phash-icloud', ...st });
@@ -78,9 +95,12 @@ const thumbQueue = new ThumbQueue({
 let wantedLoaded = false;
 async function offerIcloudThumbs(items) {
   if (!wantedLoaded) {
-    const [phash, keep, have] = await Promise.all([getMeta('icloudPhashWanted'), getMeta('icloudThumbKeep'), thumbIds()]);
+    const [phash, keep, have, atual] = await Promise.all([getMeta('icloudPhashWanted'), getMeta('icloudThumbKeep'), thumbIds(), getMeta('icloudThumbAtual')]);
     const saved = new Set(have);
-    thumbQueue.setWanted(phash?.value || [], (keep?.value || []).filter((id) => !saved.has(id)));
+    const jaAtual = new Set(atual?.value || []);
+    const lista = keep?.value || [];
+    // guardadas antes da 0.2.36: numa editada, a miniatura é a do original e é trocada pela atual
+    thumbQueue.setWanted(phash?.value || [], lista.filter((id) => !saved.has(id)), lista.filter((id) => saved.has(id) && !jaAtual.has(id)));
     wantedLoaded = true;
   }
   thumbQueue.offer(items);
@@ -102,12 +122,13 @@ function noteRefreshed(items) {
     if (it.ts > seenRange.max) seenRange.max = it.ts;
   }
 }
-const freshOf = (it, since) => it && it.thumbAt > since && { thumb: it.thumb, med: it.med || null, thumbAt: it.thumbAt };
+const linksDe = (it) => ({ thumb: it.thumb, med: it.med || null, full: it.full || null, thumbOrig: it.thumbOrig || null, medOrig: it.medOrig || null, edited: Boolean(it.edited), thumbAt: it.thumbAt });
+const freshOf = (it, since) => it && it.thumbAt > since && linksDe(it);
 
 async function refreshIcloud(id) {
   const it = await getItem(id);
   if (!it || it.source !== 'icloud') return { ok: false, erro: 'foto não encontrada no inventário' };
-  if (it.thumbAt && Date.now() - it.thumbAt < ICLOUD_URL_VALIDA_MS) return { ok: true, thumb: it.thumb, med: it.med || null, thumbAt: it.thumbAt };
+  if (it.thumbAt && Date.now() - it.thumbAt < ICLOUD_URL_VALIDA_MS) return { ok: true, ...linksDe(it) };
   if (shouldKeepAwake({ icloud: taskStates.icloud })) return { ok: false, erro: 'o percurso do iCloud está rodando; a foto ganha link novo quando ele passar por ela' };
   const [tab] = await chrome.tabs.query({ url: SITES.icloud.match });
   if (!tab) return { ok: false, erro: 'abra o iCloud Fotos no Chrome do notebook' };

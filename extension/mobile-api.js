@@ -8,7 +8,7 @@ import { sendPlan } from './src/core/plan.js';
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { getMeta, getThumb } from './src/core/db.js';
-import { googleGrande, icloudGrande } from './src/core/viewer-src.js';
+import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 
 const THUMB_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(usercontent\.google\.com|googleusercontent\.com|icloud-content\.com)\//;
 
@@ -27,8 +27,15 @@ const thumbsOf = (r) => {
   const t = [];
   // full: a versão grande para o visualizador (Google pela sessão; iCloud só enquanto a URL vale)
   const dims = (it) => (it?.w && it?.h ? `${it.w}×${it.h}` : '');
-  if (r.a?.thumb) t.push({ side: 'icloud', url: r.a.thumb.replace('${f}', 'thumb.jpg'), id: r.a.id, full: icloudGrande(r.a), dims: dims(r.a) });
-  if (r.dupOfIcloud?.thumb) t.push({ side: 'icloud-fica', url: r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg'), id: r.dupOfIcloud.id, full: icloudGrande(r.dupOfIcloud), dims: dims(r.dupOfIcloud) });
+  // celular: a versão média basta (a cheia de uma editada pesa megabytes)
+  const media = { cheia: false };
+  if (r.a?.thumb) {
+    const editada = temOriginal(r.a);
+    t.push({ side: editada ? 'icloud-atual' : 'icloud', url: r.a.thumb.replace('${f}', 'thumb.jpg'), id: r.a.id, full: icloudGrande(r.a, Date.now(), media), dims: dims(r.a) });
+    // editada: o original ao lado (sem a miniatura guardada, que pode ser de qualquer versão)
+    if (editada) t.push({ side: 'icloud-original', url: (r.a.thumbOrig || r.a.medOrig).replace('${f}', 'thumb.jpg'), id: r.a.id, versao: 'original', semGuardada: true, full: icloudOriginal(r.a), dims: dims(r.a) });
+  }
+  if (r.dupOfIcloud?.thumb) t.push({ side: 'icloud-fica', url: r.dupOfIcloud.thumb.replace('${f}', 'thumb.jpg'), id: r.dupOfIcloud.id, full: icloudGrande(r.dupOfIcloud, Date.now(), media), dims: dims(r.dupOfIcloud) });
   if (r.dupOf?.thumb) t.push({ side: 'google-fica', url: `${r.dupOf.thumb}=w320-h320-c`, full: googleGrande(r.dupOf.thumb, 2000), dims: dims(r.dupOf) });
   if (r.g?.thumb) t.push({ side: 'google', url: `${r.g.thumb}=w320-h320-c`, full: googleGrande(r.g.thumb, 2000), dims: dims(r.g) });
   return t;
@@ -136,11 +143,12 @@ window.geymaApi = {
   },
 
   /** Link novo de uma foto do iCloud (a extensão rola a grade do site até ela). Devolve a URL da versão maior disponível. */
-  async icloudRefresh(id) {
+  async icloudRefresh(id, versao = 'atual') {
     if (typeof id !== 'string' || !id.startsWith('a:')) throw new Error('item inválido');
     const r = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id });
     if (!r?.ok) return { ok: false, erro: r?.erro || 'sem link novo' };
-    return { ok: true, url: (r.med || r.thumb).replace('${f}', r.med ? 'med.jpg' : 'thumb.jpg') };
+    const url = (versao === 'original' ? linkOriginal(r) : linkAtual(r, { cheia: false })) || (r.thumb || '').replace('${f}', 'thumb.jpg');
+    return url ? { ok: true, url } : { ok: false, erro: 'sem link novo' };
   },
 
   /** Recalcula o cruzamento (por exemplo, depois de uma leitura). */

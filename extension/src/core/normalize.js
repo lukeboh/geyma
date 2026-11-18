@@ -117,12 +117,46 @@ export function normalizeIcloudPair(asset, master) {
     foraDoPercurso: false,
     favorite: Number(a('isFavorite')) === 1,
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
-    // miniatura JPEG (URL temporária assinada pela Apple); thumbAt diz quando foi vista
-    thumb: typeof m('resJPEGThumbRes')?.downloadURL === 'string' ? m('resJPEGThumbRes').downloadURL : null,
-    // versão média em JPEG (também temporária), para ver a foto grande logo depois do percurso
-    med: typeof m('resJPEGMedRes')?.downloadURL === 'string' ? m('resJPEGMedRes').downloadURL : null,
+    ...icloudVersoes(a, m),
     thumbAt: Date.now(),
   };
+}
+
+const urlDe = (v) => (typeof v?.downloadURL === 'string' ? v.downloadURL : null);
+
+/**
+ * Imagens do iCloud (URLs temporárias assinadas pela Apple; thumbAt diz quando
+ * foram vistas). Numa foto editada (corte, filtro, quadro principal trocado
+ * numa Live Photo), o registro da foto (CPLAsset) traz a miniatura, a versão
+ * média e a versão cheia JÁ EDITADAS, e o registro do arquivo (CPLMaster), as
+ * do original. Conferido no site em 17/11: as 32 editadas de uma página tinham
+ * a miniatura no CPLAsset. thumb/med são sempre a foto como está agora; o
+ * original fica em thumbOrig/medOrig.
+ */
+export function icloudVersoes(a, m) {
+  const thumbM = urlDe(m('resJPEGThumbRes'));
+  const medM = urlDe(m('resJPEGMedRes'));
+  const thumbA = urlDe(a('resJPEGThumbRes'));
+  const medA = urlDe(a('resJPEGMedRes'));
+  const fullA = urlDe(a('resJPEGFullRes'));
+  const out = {
+    thumb: thumbA || thumbM,
+    med: medA || medM,
+    // versão cheia em JPEG: só existe para as editadas (a do original é o HEIC)
+    full: fullA,
+    thumbOrig: null,
+    medOrig: null,
+    editW: null,
+    editH: null,
+  };
+  if (thumbA || medA || fullA) {
+    out.thumbOrig = thumbM;
+    out.medOrig = medM;
+    // dimensões da versão editada (um corte muda as dimensões)
+    out.editW = Number(a('resJPEGFullWidth')) || null;
+    out.editH = Number(a('resJPEGFullHeight')) || null;
+  }
+  return out;
 }
 
 /** Contagens oficiais do iCloud (HyperionIndexCountLookup): pares [indice, total]. */

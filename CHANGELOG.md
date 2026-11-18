@@ -2,6 +2,35 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.36 — 18/11/2026
+
+- A foto do iCloud como está agora: numa foto editada no iPhone (corte,
+  filtro, quadro principal trocado numa Live Photo), o registro da foto
+  (CPLAsset) traz a miniatura, a versão média e a versão cheia em JPEG já
+  editadas; o Geyma só lia as do original (CPLMaster) e o visualizador
+  mostrava a foto de antes da edição. Agora `thumb`/`med` são a versão atual,
+  `full` é a versão cheia editada e `thumbOrig`/`medOrig` guardam o original
+  (`icloudVersoes` em `normalize.js`); `editW`/`editH` são as dimensões da
+  editada.
+- Visualizador (painel e celular): numa editada, "iCloud · como está agora"
+  (no notebook, a versão cheia) ao lado de "iCloud · original, antes da
+  edição" e do Google; o corte aparece nas dimensões. A renovação do link
+  traz as duas versões numa única ida à grade.
+- Cruzamento: a versão cortada também casa pelas dimensões (`relacaoDims`) e
+  a imagem vale pela menor distância entre a atual e o original
+  (`distImagem`), porque o Google pode ter guardado qualquer uma. A impressão
+  digital das editadas passa a ser calculada sobre as duas versões
+  (`phashOrig`, `phashV` = 2); as calculadas antes (só o original) são
+  refeitas no próximo percurso para os pares em dúvida ou só parecidos.
+- Miniaturas guardadas no notebook de fotos editadas eram as do original;
+  o próximo percurso as troca pela versão atual (`icloudThumbAtual`).
+
+Verificação: 115 testes passando (`ext-icloud-editada`, novo). Uso real: a
+página aberta do iCloud tinha 32 editadas, todas com a miniatura própria no
+CPLAsset; link renovado de uma editada em 7 s, com as duas versões; nas 30
+editadas conferidas, a distância de pHash entre a atual e o original foi de
+0 a 38 (metade acima de 12), o que explica fotos "diferentes" na comparação.
+
 ## 0.2.35 — 16/11/2026
 
 - Documentação: handoff atualizado para a retomada (o que foi feito de 0.2.12

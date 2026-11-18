@@ -8,7 +8,7 @@ import { sendPlan, effectiveDecision } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
 import { abrirVisor } from './viewer.js';
-import { googleGrande, icloudGrande } from './src/core/viewer-src.js';
+import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 import { fichaDoCabecalho } from './src/core/google-file.js';
 
 const $ = (id) => document.getElementById(id);
@@ -298,7 +298,13 @@ async function runIcloudCheck() {
           if (icJob.done === 0 && icJob.expired >= 8) icJob.stop = 'expiradas';
           continue;
         }
-        batch.push({ id: it.id, phash: await phashFromBlob(await res.blob()) });
+        const p = { id: it.id, phash: await phashFromBlob(await res.blob()), phashV: 2 };
+        // editada: o original também conta
+        if (it.urlOrig) {
+          const ro = await fetch(it.urlOrig.replace('${f}', 'thumb.jpg')).catch(() => null);
+          if (ro?.ok) p.phashOrig = await phashFromBlob(await ro.blob()).catch(() => null);
+        }
+        batch.push(p);
         icJob.done++;
         if (batch.length >= 50) await flush();
         if (icJob.done % 50 === 0) show();
@@ -605,16 +611,31 @@ async function googleBlob(url) {
   return res.ok && type.startsWith('image/') ? URL.createObjectURL(await res.blob()) : null;
 }
 
-/** Versão grande do iCloud: a média se o link ainda vale; senão pede ao percurso um link novo (rola a grade até a foto). */
-function icloudGrandeOuRenova(it) {
-  const med = icloudGrande(it);
-  if (med) return async () => med;
+/**
+ * Versão grande do iCloud: a foto como está agora (numa editada, a versão
+ * cheia já editada) se o link ainda vale; senão pede ao percurso um link novo
+ * (rola a grade até a foto). original: o original de uma editada.
+ */
+function icloudGrandeOuRenova(it, { original = false } = {}) {
+  const pronto = original ? icloudOriginal(it) : icloudGrande(it);
+  if (pronto) return async () => pronto;
   if (!it.id) return null;
   return async () => {
-    const r = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id: it.id });
-    if (!r?.ok) throw new Error(r?.erro || 'sem link novo');
-    return (r.med || r.thumb || '').replace('${f}', r.med ? 'med.jpg' : 'thumb.jpg') || null;
+    const r = await renovarIcloud(it.id);
+    return (original ? linkOriginal(r) : linkAtual(r)) || (r.thumb || '').replace('${f}', 'thumb.jpg') || null;
   };
+}
+// uma renovação por foto, mesmo com dois painéis (atual e original) pedindo
+const renovacoes = new Map();
+function renovarIcloud(id) {
+  if (!renovacoes.has(id)) {
+    renovacoes.set(id, chrome.runtime.sendMessage({ kind: 'icloud-refresh', id }).then((r) => {
+      if (!r?.ok) throw new Error(r?.erro || 'sem link novo');
+      return r;
+    }));
+    renovacoes.get(id).catch(() => {}).finally(() => setTimeout(() => renovacoes.delete(id), 60000));
+  }
+  return renovacoes.get(id);
 }
 const RENOVANDO = 'buscando um link novo no iCloud (alguns segundos)…';
 
@@ -649,7 +670,17 @@ function verFotos(r, td) {
   let i = 0;
   const src = (it, side) => { const img = imgs[i++]; return img?.currentSrc || img?.src || thumbInicial(it, side); };
   if (r.a?.thumb) {
-    fotos.push({ src: src(r.a, 'icloud'), rotulo: 'iCloud', semImagem: SEM_ICLOUD, info: [dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), carregando: icloudGrande(r.a) ? null : RENOVANDO });
+    const editada = temOriginal(r.a);
+    // dimensões da editada só quando mudaram (um corte); trocadas = só girada
+    const mesmas = (r.a.editW === r.a.w && r.a.editH === r.a.h) || (r.a.editW === r.a.h && r.a.editH === r.a.w);
+    const dimsEd = editada && r.a.editW && !mesmas ? `cortada: ${r.a.editW}×${r.a.editH} (original ${dimsTxt(r.a)})` : '';
+    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), carregando: icloudGrande(r.a) ? null : RENOVANDO });
+    if (editada) {
+      // o original fica ao lado: o Google pode ter guardado qualquer uma das duas
+      fotos.push({ src: icloudOriginal(r.a) || (r.a.thumbOrig || '').replace('${f}', 'thumb.jpg'), rotulo: 'iCloud · original, antes da edição', semImagem: SEM_ICLOUD, info: dimsTxt(r.a), grande: icloudGrandeOuRenova(r.a, { original: true }), carregando: icloudOriginal(r.a) ? null : RENOVANDO });
+    } else if (r.a.edited) {
+      fotos[fotos.length - 1].info = Promise.resolve(fotos[fotos.length - 1].info).then((t) => [t, 'editada no iPhone; o próximo percurso traz também o original'].filter(Boolean).join(' · '));
+    }
   }
   if (r.dupOfIcloud?.thumb) {
     fotos.push({ src: src(r.dupOfIcloud, 'icloud'), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: icloudGrandeOuRenova(r.dupOfIcloud), carregando: icloudGrande(r.dupOfIcloud) ? null : RENOVANDO });

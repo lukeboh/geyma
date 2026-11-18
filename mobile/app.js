@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.32';
+import { abrirVisor } from './viewer.js?v=0.2.36';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -44,7 +44,8 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
 }
-const thumbUrl = (th) => `/api/thumb?u=${encodeURIComponent(th.url)}${th.id ? `&id=${encodeURIComponent(th.id)}` : ''}`;
+// semGuardada: o original de uma foto editada (a miniatura guardada no notebook pode ser da outra versão)
+const thumbUrl = (th) => `/api/thumb?u=${encodeURIComponent(th.url)}${th.id && !th.semGuardada ? `&id=${encodeURIComponent(th.id)}` : ''}`;
 
 // ---------- navegação ----------
 function mostrar(nome) {
@@ -227,7 +228,7 @@ $('sel-aplicar').addEventListener('click', () => {
 });
 
 // ---------- detalhe ----------
-const NOMES = { icloud: 'iCloud', google: 'Google', 'google-fica': 'Google (a que fica)', 'icloud-fica': 'iCloud (a que fica)' };
+const NOMES = { icloud: 'iCloud', 'icloud-atual': 'iCloud · como está agora (editada)', 'icloud-original': 'iCloud · original, antes da edição', google: 'Google', 'google-fica': 'Google (a que fica)', 'icloud-fica': 'iCloud (a que fica)' };
 
 // link do painel do notebook que abre esta foto (para mandar a quem vai investigar)
 let painelUrl = null;
@@ -255,7 +256,7 @@ async function verGrande(l) {
     grande: t.full ? async () => `/api/thumb?u=${encodeURIComponent(t.full)}`
       : t.id ? async () => {
         // link do iCloud vencido: o notebook rola a grade do iCloud até a foto e traz um link novo
-        const r = await (await fetch(`/api/icloud-grande?id=${encodeURIComponent(t.id)}`)).json();
+        const r = await (await fetch(`/api/icloud-grande?id=${encodeURIComponent(t.id)}${t.versao ? `&versao=${t.versao}` : ''}`)).json();
         return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
       } : null,
     carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,

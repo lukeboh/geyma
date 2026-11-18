@@ -195,7 +195,8 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/icloud-grande') {
       const id = url.searchParams.get('id') || '';
       if (!/^a:[A-Za-z0-9-]{1,80}$/.test(id)) return json(res, 400, { erro: 'item inválido' });
-      return json(res, 200, await api('icloudRefresh', id));
+      const versao = url.searchParams.get('versao') === 'original' ? 'original' : 'atual';
+      return json(res, 200, await api('icloudRefresh', id, versao));
     }
     if (url.pathname === '/api/thumb') {
       const u = url.searchParams.get('u') || '';

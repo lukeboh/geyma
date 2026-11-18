@@ -56,6 +56,31 @@ export function dimRelation(a, b) {
 }
 
 /**
+ * Relação de dimensões entre um item do iCloud e um do Google, considerando
+ * também a versão editada do iCloud (um corte muda as dimensões, e o Google
+ * pode ter guardado a foto já cortada). Prefere 'igual'. dimsA = as dimensões
+ * do iCloud que valeram.
+ */
+export function relacaoDims(a, g) {
+  const orig = dimRelation(a, g);
+  const ed = a.editW && a.editH && (a.editW !== a.w || a.editH !== a.h) ? { w: a.editW, h: a.editH } : null;
+  const rEd = ed ? dimRelation(ed, g) : null;
+  if (orig === 'igual' || !rEd) return { rel: orig, dimsA: { w: a.w, h: a.h } };
+  if (rEd === 'igual' || !orig) return { rel: rEd, dimsA: ed };
+  return { rel: orig, dimsA: { w: a.w, h: a.h } };
+}
+
+/**
+ * Distância entre as imagens de um item do iCloud e um do Google: a menor
+ * entre a versão atual (phash) e o original (phashOrig, só nas editadas).
+ * null se não der para comparar.
+ */
+export function distImagem(a, g) {
+  const ds = [hamming(a.phash, g.phash), hamming(a.phashOrig, g.phash)].filter((d) => d !== null && d !== undefined);
+  return ds.length ? Math.min(...ds) : null;
+}
+
+/**
  * Cruza as duas bibliotecas.
  * @param {Array} google itens normalizados do Google ({id, ts, w, h, ...})
  * @param {Array} icloud itens normalizados do iCloud
@@ -84,8 +109,8 @@ export function matchLibraries(google, icloud, opts = {}) {
       for (const g of bySec.get(k) || []) {
         const dt = Math.abs(g.ts - a.ts);
         if (dt > TOLERANCE_MS) continue;
-        const rel = dimRelation(a, g);
-        if (rel) out.push({ g, rel, dt });
+        const { rel, dimsA } = relacaoDims(a, g);
+        if (rel) out.push({ g, rel, dt, dimsA });
       }
     }
     // melhor primeiro: dimensões iguais, depois menor diferença de instante
@@ -96,8 +121,8 @@ export function matchLibraries(google, icloud, opts = {}) {
   // Com o pHash dos dois lados, a imagem decide: candidatos claramente
   // diferentes saem, e os mais parecidos vêm primeiro.
   const byImage = (a, c) => {
-    if (!a.phash) return c;
-    const scored = c.map((x) => ({ ...x, d: hamming(a.phash, x.g.phash), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaFoto(x.g)) }));
+    if (!a.phash && !a.phashOrig) return c;
+    const scored = c.map((x) => ({ ...x, d: distImagem(a, x.g), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaFoto(x.g)) }));
     return scored
       // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de
       // uma Live Photo ou o mesmo arquivo de origem (nome igual, no mesmo instante)
@@ -150,7 +175,7 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (editada) pair.versaoEditada = true;
     if (nome) pair.mesmoNome = true;
     if (pick.rel === 'reduzida') {
-      pair.menor = a.w * a.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
+      pair.menor = pick.dimsA.w * pick.dimsA.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
       // só é "cópia reduzida" se não houver dúvida de que é a mesma imagem
       pair.cls = parecida || disputed ? 'confirmar' : 'reduzida';
     } else {

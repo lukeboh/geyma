@@ -17,27 +17,44 @@ const row = (cls, a, g, extra = {}) => {
     cat,
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
-    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null },
+    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null, ...versoesIcloud(a) },
     g: g && { id: g.id, w: g.w, h: g.h, thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos) },
     ...(a && g ? { copiaGoogle: copiaNoGoogle(a, g) } : {}),
     ...extra,
   };
 };
 
+/** Versões de uma foto editada do iCloud (a atual está em thumb/med): só aparecem quando existem. */
+function versoesIcloud(a) {
+  const o = {};
+  if (a.edited) o.edited = true;
+  if (a.full) o.full = a.full;
+  if (a.thumbOrig) o.thumbOrig = a.thumbOrig;
+  if (a.medOrig) o.medOrig = a.medOrig;
+  if (a.editW && a.editH) { o.editW = a.editW; o.editH = a.editH; }
+  return o;
+}
+
+/**
+ * Falta a impressão digital: sem pHash, ou editada com o pHash de antes da
+ * 0.2.36 (calculado só sobre o original, sem a versão atual).
+ */
+export const faltaPhash = (a) => !a.phash || (a.edited && a.phashV !== 2);
+
 /** Itens do iCloud com miniatura e sem pHash que a imagem decidiria: pares disputados ou reduzidos e candidatas a duplicata. */
 function icloudPhashNeeded(pairs, dupPending, icloudById) {
   const need = new Map();
   for (const p of pairs) {
-    if ((p.cls === 'confirmar' || p.cls === 'reduzida') && p.a.thumb && !p.a.phash) need.set(p.a.id, p.a);
+    if ((p.cls === 'confirmar' || p.cls === 'reduzida' || p.parecida) && p.a.thumb && faltaPhash(p.a)) need.set(p.a.id, p.a);
   }
   for (const id of dupPending) { const a = icloudById.get(id); if (a?.thumb && !a.phash) need.set(id, a); }
-  return [...need.values()].map((a) => ({ id: a.id, url: a.thumb, at: a.thumbAt || 0 }));
+  return [...need.values()].map((a) => ({ id: a.id, url: a.thumb, urlOrig: a.thumbOrig || null, at: a.thumbAt || 0 }));
 }
 
 /** Itens do iCloud sem pHash que a imagem decidiria, com ou sem miniatura: o próximo percurso baixa a miniatura deles na hora em que a vê. */
 function icloudPhashWanted(pairs, dupPending, icloudById) {
   const ids = new Set();
-  for (const p of pairs) if ((p.cls === 'confirmar' || p.cls === 'reduzida') && !p.a.phash) ids.add(p.a.id);
+  for (const p of pairs) if ((p.cls === 'confirmar' || p.cls === 'reduzida' || p.parecida) && faltaPhash(p.a)) ids.add(p.a.id);
   for (const id of dupPending) if (!icloudById.get(id)?.phash) ids.add(id);
   return [...ids];
 }
@@ -66,7 +83,7 @@ const dupSummary = (items, d) => ({
 });
 
 /** Miniatura da cópia a manter, para mostrar ao lado da cópia na revisão. */
-const keeperInfo = (it, side) => it && { id: it.id, med: it.med || null, thumbAt: it.thumbAt || null, thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h };
+const keeperInfo = (it, side) => it && { id: it.id, med: it.med || null, thumbAt: it.thumbAt || null, thumb: it.thumb || null, key: side === 'google' ? it.id.slice(2) : null, side, w: it.w, h: it.h, ...(side === 'icloud' ? versoesIcloud(it) : {}) };
 
 // avisa o painel de cada etapa (com o tempo da anterior, para achar gargalos)
 let t0 = 0;
