@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.42';
+import { abrirVisor } from './viewer.js?v=0.2.43';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -256,6 +256,16 @@ const RESPOSTA = {
   desfazer: 'Desfeito: volta a decisão automática. O notebook refaz o cruzamento.',
 };
 
+/** Anterior e próxima da página aberta, sem fechar o visualizador (pula as sem miniatura). */
+function navegacaoDa(l) {
+  const i = linhas.indexOf(l);
+  if (i < 0) return {};
+  const achar = (passo) => { for (let j = i + passo; j >= 0 && j < linhas.length; j += passo) if (linhas[j].thumbs.length) return linhas[j]; return null; };
+  const ant = achar(-1);
+  const prox = achar(1);
+  return { anterior: ant && (() => verGrande(ant)), proxima: prox && (() => verGrande(prox)), posicao: `${i + 1} de ${linhas.length}` };
+}
+
 /** Pergunta "São a mesma foto?" no visualizador, como no painel do notebook. */
 function vereditoDa(l) {
   const p = l.par;
@@ -287,7 +297,7 @@ async function verGrande(l) {
         return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
       } : null,
     carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,
-  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link, ...vereditoDa(l) });
+  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link, ...vereditoDa(l), ...navegacaoDa(l) });
 }
 
 function abrirDetalhe(i) {

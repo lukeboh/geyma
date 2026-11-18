@@ -47,6 +47,11 @@ html.visor-aberto, html.visor-aberto body { overflow: hidden; }
 .visor-btn:hover { background: rgba(255, 255, 255, 0.14); }
 .visor-btn:focus-visible { outline: 2px solid var(--v-acento); outline-offset: 2px; }
 .visor-fechar { font-size: 22px; }
+.visor-nav { display: flex; align-items: center; gap: 4px; margin-right: 6px; }
+.visor-nav[hidden] { display: none; }
+.visor-nav .visor-btn { font-size: 22px; }
+.visor-nav .visor-btn:disabled { opacity: 0.35; cursor: default; }
+.visor-pos { font-size: 13px; color: var(--v-texto-2); min-width: 4em; text-align: center; }
 
 .visor-paineis {
   flex: 1;

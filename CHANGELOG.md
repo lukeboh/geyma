@@ -2,6 +2,18 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.43 — 18/11/2026
+
+- Revisar par a par sem fechar o visualizador: botões ‹ › com a posição
+  ("2 de 371") e Page Up/Page Down andam pela lista do filtro em vigor
+  (no celular, pela página aberta), pulando as linhas sem miniatura. Atalhos
+  das respostas: M (São a mesma foto), D (São fotos diferentes), Z
+  (Desfazer). Depois de responder, o visualizador passa sozinho para a
+  próxima.
+
+Verificação: 142 testes passando. Uso real: filtro "Em ambos, a confirmar",
+abrir a primeira, Page Down abre a segunda com os atalhos nos botões.
+
 ## 0.2.42 — 18/11/2026
 
 - Fuso horário (etapa 0.4, `parearPorFuso` em `match.js`): uma segunda

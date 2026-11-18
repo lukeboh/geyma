@@ -702,7 +702,11 @@ function infoGoogle(g, video = false) {
 export const linkDaFoto = (r) => `${location.origin}${location.pathname}#rev?foto=${encodeURIComponent(r.ids[0])}`;
 
 /** Abre as fotos da linha em tamanho grande, lado a lado quando há mais de uma. td = célula com as miniaturas já carregadas (opcional). */
-function verFotos(r, td) {
+/**
+ * Abre a linha r no visualizador. lista: as linhas do filtro em vigor, para
+ * andar entre elas sem fechar (as sem miniatura são puladas).
+ */
+function verFotos(r, td, lista = null) {
   const imgs = td ? [...td.querySelectorAll('img')] : [];
   const fotos = [];
   let i = 0;
@@ -739,6 +743,7 @@ function verFotos(r, td) {
   abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.peloUsuario ? ' · mesma foto, por você' : ''}${r.fuso ? ` · instante deslocado por fuso horário (${textoFuso(r.fuso)})` : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,
     ...vereditoNoVisor(r),
+    ...navegacao(r, lista),
     aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },
   });
   return true;
@@ -772,20 +777,30 @@ function vereditoNoVisor(r) {
   const age = (tipo, gId = r.g?.id) => async () => { await registrarVeredito(r.a.id, gId, tipo); return RESPOSTA[tipo]; };
   if (r.g?.id) {
     const ja = vereditoDoPar(r.a, r.g.id);
-    if (ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', aoClicar: age('desfazer') }] };
+    if (ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', tecla: 'z', aoClicar: age('desfazer') }] };
     return {
       pergunta: 'Estas fotos são a mesma?',
       acoes: [
-        { rotulo: 'São a mesma foto', titulo: 'Conta como guardada nos dois serviços, mesmo com imagens só parecidas (por exemplo, outro quadro da mesma Live Photo)', aoClicar: age('mesma') },
-        { rotulo: 'São fotos diferentes', titulo: 'Desfaz o par: cada foto passa a contar só no seu serviço, se não houver outra igual', aoClicar: age('diferente') },
+        { rotulo: 'São a mesma foto', tecla: 'm', titulo: 'Conta como guardada nos dois serviços, mesmo com imagens só parecidas (por exemplo, outro quadro da mesma Live Photo)', aoClicar: age('mesma') },
+        { rotulo: 'São fotos diferentes', tecla: 'd', titulo: 'Desfaz o par: cada foto passa a contar só no seu serviço, se não houver outra igual', aoClicar: age('diferente') },
       ],
     };
   }
   // só no iCloud porque o usuário recusou um par: dá para desfazer
   if (r.a.diferenteDe?.length) {
-    return { pergunta: `Você disse que esta foto é diferente de ${r.a.diferenteDe.length === 1 ? 'uma foto' : `${r.a.diferenteDe.length} fotos`} do Google.`, acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', aoClicar: age('desfazer', null) }] };
+    return { pergunta: `Você disse que esta foto é diferente de ${r.a.diferenteDe.length === 1 ? 'uma foto' : `${r.a.diferenteDe.length} fotos`} do Google.`, acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', tecla: 'z', aoClicar: age('desfazer', null) }] };
   }
   return {};
+}
+
+/** Anterior e próxima da lista no visualizador. */
+function navegacao(r, lista) {
+  const i = lista ? lista.indexOf(r) : -1;
+  if (i < 0) return {};
+  const ir = (passo) => () => {
+    for (let j = i + passo; j >= 0 && j < lista.length; j += passo) if (verFotos(lista[j], null, lista)) return;
+  };
+  return { anterior: i > 0 ? ir(-1) : null, proxima: i < lista.length - 1 ? ir(1) : null, posicao: `${fmt.format(i + 1)} de ${fmt.format(lista.length)}` };
 }
 
 /** Abre a foto de um link (#rev?foto=<id>): a linha que contém o item, na lista e no visualizador. */
@@ -805,7 +820,7 @@ function fillThumbs(td, r, link = true) {
     if (link) {
       fig.title = `${label} · clique para ver em tamanho grande`;
       fig.href = '#';
-      fig.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); verFotos(r, td); });
+      fig.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); verFotos(r, td, filtered()); });
     } else fig.title = label;
     const img = document.createElement('img');
     img.alt = label;
@@ -881,7 +896,7 @@ function renderGrid() {
     ver.textContent = '⤢';
     ver.title = 'Ver em tamanho grande';
     ver.setAttribute('aria-label', 'Ver em tamanho grande');
-    ver.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); verFotos(r, pic); });
+    ver.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); verFotos(r, pic, filtered()); });
     pic.append(ver);
     const cap = document.createElement('span');
     cap.className = 'cap';

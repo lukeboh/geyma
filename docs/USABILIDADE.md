@@ -96,6 +96,9 @@ Pedido do usuário: o painel não era fácil de entender sozinho.
 
 ## Próximos passos de interface
 
+(Feito em 0.2.43: andar pela lista no visualizador, com atalhos para responder
+"São a mesma foto?" e passagem automática para a próxima.)
+
 - Grade de miniaturas grandes para revisar um filtro inteiro de uma vez
   (selecionar as exceções e marcar o resto em lote), com atalhos de teclado.
 - Assistente de início que verifica de verdade: extensão instalada, sessões

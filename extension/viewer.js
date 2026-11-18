@@ -30,6 +30,7 @@ function montar() {
     <div class="visor-barra">
       <span class="visor-titulo"></span>
       <div class="visor-acoes">
+        <span class="visor-nav" hidden><button type="button" class="visor-btn" data-nav="-1" aria-label="Anterior" title="Anterior (Page Up)">‹</button><span class="visor-pos"></span><button type="button" class="visor-btn" data-nav="1" aria-label="Próxima" title="Próxima (Page Down)">›</button></span>
         <button type="button" class="visor-btn visor-link" hidden title="Copiar um link que abre estas fotos (para mandar a quem vai investigar)">Copiar link</button>
         <label class="visor-sync" title="Ampliar e mover todas as fotos juntas"><input type="checkbox" checked> Mover juntas</label>
         <button type="button" class="visor-btn" data-z="-" aria-label="Reduzir">−</button>
@@ -49,7 +50,9 @@ function montar() {
     sync: raiz.querySelector('.visor-sync input'),
     link: raiz.querySelector('.visor-link'),
     acoes: raiz.querySelector('.visor-acoes-foto'),
+    nav: raiz.querySelector('.visor-nav'),
   };
+  raiz.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => navegar(Number(b.dataset.nav))));
   ui.link.addEventListener('click', () => copiarLink(estado?.link));
   raiz.querySelector('.visor-fechar').addEventListener('click', fecharVisor);
   raiz.querySelectorAll('[data-z]').forEach((b) => b.addEventListener('click', () => {
@@ -67,6 +70,11 @@ function montar() {
   });
   addEventListener('keydown', (e) => {
     if (!estado) return;
+    if (e.ctrlKey || e.altKey || e.metaKey || e.target?.closest?.('input, textarea, select')) return;
+    if (e.key === 'PageDown' || e.key === 'PageUp') { e.preventDefault(); navegar(e.key === 'PageDown' ? 1 : -1); return; }
+    // atalhos das perguntas (por exemplo, M = São a mesma foto)
+    const atalho = estado.atalhos?.get(e.key.toLowerCase());
+    if (atalho && !atalho.disabled) { e.preventDefault(); atalho.click(); return; }
     const v = estado.vistas[estado.ativo] || estado.vistas[0];
     const passo = 60 / v.s;
     const mapa = { Escape: () => fecharVisor(), '+': () => zoomEm(v, 1.5, 0.5, 0.5), '=': () => zoomEm(v, 1.5, 0.5, 0.5), '-': () => zoomEm(v, 1 / 1.5, 0.5, 0.5), 0: () => Object.assign(v, { s: 1, x: 0, y: 0 }),
@@ -210,9 +218,12 @@ function ligarGestos(v, i) {
  *   src pode ser uma Promise (miniatura que ainda está chegando).
  * @param {string} [titulo]
  * @param {{ link?: string, aoFechar?: () => void, pergunta?: string,
- *   acoes?: { rotulo: string, titulo?: string, aoClicar: () => Promise<string> }[] }} [opcoes]
+ *   acoes?: { rotulo: string, titulo?: string, tecla?: string, aoClicar: () => Promise<string> }[],
+ *   anterior?: () => void, proxima?: () => void, posicao?: string }} [opcoes]
  *   link: o que "Copiar link" copia. acoes: botões sob as fotos (por exemplo,
- *   "São a mesma foto"); aoClicar devolve a resposta a mostrar.
+ *   "São a mesma foto"); aoClicar devolve a resposta a mostrar; tecla: atalho.
+ *   anterior/proxima: andar pela lista sem fechar (‹ ›, Page Up/Down); depois
+ *   de uma resposta, o visualizador passa sozinho para a próxima.
  */
 export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   montar();
@@ -220,8 +231,12 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   ui.titulo.textContent = titulo;
   ui.paineis.replaceChildren();
   ui.paineis.dataset.n = String(fotos.length);
-  estado = { vistas: [], ativo: 0, link: opcoes.link || null, aoFechar: opcoes.aoFechar || null };
+  estado = { vistas: [], ativo: 0, link: opcoes.link || null, aoFechar: opcoes.aoFechar || null, anterior: opcoes.anterior || null, proxima: opcoes.proxima || null, atalhos: new Map() };
   ui.link.hidden = !opcoes.link;
+  ui.nav.hidden = !opcoes.anterior && !opcoes.proxima;
+  ui.nav.querySelector('[data-nav="-1"]').disabled = !opcoes.anterior;
+  ui.nav.querySelector('[data-nav="1"]').disabled = !opcoes.proxima;
+  ui.nav.querySelector('.visor-pos').textContent = opcoes.posicao || '';
   montarAcoes(opcoes);
   fotos.forEach((f, i) => {
     const painel = document.createElement('figure');
@@ -293,12 +308,16 @@ function montarAcoes({ pergunta = '', acoes = [] }) {
     b.type = 'button';
     b.className = 'visor-btn visor-acao';
     b.textContent = a.rotulo;
-    if (a.titulo) b.title = a.titulo;
+    if (a.titulo || a.tecla) b.title = [a.titulo, a.tecla && `atalho: ${a.tecla.toUpperCase()}`].filter(Boolean).join(' · ');
+    if (a.tecla) estado.atalhos.set(a.tecla.toLowerCase(), b);
     b.addEventListener('click', async () => {
       for (const x of botoes.querySelectorAll('button')) x.disabled = true;
       resposta.textContent = 'gravando…';
       try {
         resposta.textContent = (await a.aoClicar()) || 'Anotado.';
+        // respondida: segue para a próxima da lista, se houver
+        const seguir = estado?.proxima;
+        if (seguir) { resposta.textContent += ' Indo para a próxima…'; const daqui = estado; setTimeout(() => { if (estado === daqui) seguir(); }, 900); }
       } catch (err) {
         resposta.textContent = `Não foi possível: ${err.message || err}`;
         for (const x of botoes.querySelectorAll('button')) x.disabled = false;
@@ -306,6 +325,11 @@ function montarAcoes({ pergunta = '', acoes = [] }) {
     });
     return b;
   }));
+}
+
+function navegar(passo) {
+  const f = passo > 0 ? estado?.proxima : estado?.anterior;
+  if (f) f();
 }
 
 export function fecharVisor() {
