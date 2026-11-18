@@ -126,7 +126,7 @@ Observado (quantos, quantos errados):
 
 ### C2 — Propaganda ☐
 Revisão → categoria **Propaganda**.
-**Esperado:** a imagem salva da Shopee é um anúncio.
+**Esperado:** as imagens salvas de apps de loja são anúncios.
 Observado:
 
 ### C4 — Gravações de tela ☐
@@ -191,7 +191,7 @@ Observado (mesma foto em quantos de 10):
 Procure, nos pares, um placar com "a mais parecida entre N fotos do Google
 no mesmo segundo".
 **Esperado:** a foto do Google mostrada é de fato a mesma (não a anterior ou
-a seguinte da sequência). São poucos casos (4 em 18/11).
+a seguinte da sequência). São poucos casos.
 Observado:
 
 ---

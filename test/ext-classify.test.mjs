@@ -81,7 +81,7 @@ test('documentos: nome ou app de digitalizar, antes de "recebida"', () => {
   assert.equal(classifyIcloud(a({ filename: 'Recibo.jpg', importedBy: 'net.whatsapp.WhatsApp' })).cat, 'documento');
   assert.equal(classifyGoogle({ w: 2480, h: 3508, file: { nome: 'Boleto-agosto.jpg' } }).cat, 'documento');
   // fotos antigas digitalizadas não são documento
-  for (const filename of ['scan0042.jpg', 'SCANS_A12.jpeg', 'Scan-110-AA (3).jpg', 'filme-1981-B-04-scan.jpg']) {
+  for (const filename of ['scan0001.jpg', 'SCANS_01.jpeg', 'Scan-001.jpg', 'foto-scan.jpg']) {
     assert.notEqual(classifyIcloud(a({ filename, w: 2524, h: 1686 })).cat, 'documento', filename);
   }
   // captura de tela continua vencendo

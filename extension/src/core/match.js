@@ -23,9 +23,9 @@ export const TOLERANCE_MS = 1000;
 // Fotos em sequência no mesmo segundo (rajadas): a candidata mais parecida
 // resolve a disputa quando está perto (até RAJADA_MAX) e ganha das outras
 // candidatas, e das outras fotos do iCloud que a querem, por RAJADA_MARGEM.
-// Medido em 18/11: resolve poucas (4 de ~200 disputas); nas outras, a
-// escolhida não tem imagem comparada (78), outra candidata está quase à mesma
-// distância (84) ou a melhor está longe (40). Essas ficam para o usuário.
+// Medido em 18/11: resolve poucas disputas; nas outras, a escolhida não tem
+// imagem comparada, outra candidata está quase à mesma distância ou a melhor
+// está longe. Essas ficam para o usuário.
 export const RAJADA_MAX = 16;
 export const RAJADA_MARGEM = 8;
 

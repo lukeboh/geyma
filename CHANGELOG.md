@@ -2,6 +2,12 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.13 — 18/11/2026
+
+- Documentação e comentários: tirados os números e os padrões de nomes da
+  biblioteca pessoal que entraram nas entradas de 0.3.3 a 0.3.11 (o
+  repositório é público). Ficam só os tamanhos das amostras de verificação.
+
 ## 0.3.12 — 18/11/2026
 
 - Documentação: HANDOFF atualizado com o trabalho da manhã de 18/11 (envio
@@ -18,9 +24,9 @@ Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 Verificação: 177 testes passando. Cartão conferido no painel.
 
 Observação de uso real: a conferência do Google pelas miniaturas percorre a
-listagem do Google e, nesta madrugada, trouxe 2.247 fotos que o inventário
-ainda não tinha (a maioria de 2025 e 2026; só 146 repetem foto e dimensões
-de uma antiga). Com elas, os pares a confirmar subiram até as imagens novas
+listagem do Google e, nesta madrugada, trouxe milhares de fotos que o
+inventário ainda não tinha (a maioria recentes; poucas repetem foto e
+dimensões de uma antiga). Com elas, os pares a confirmar subiram até as imagens novas
 serem comparadas. Nenhum envio de verdade foi feito (só ensaios).
 
 ## 0.3.10 — 18/11/2026
@@ -32,8 +38,7 @@ serem comparadas. Nenhum envio de verdade foi feito (só ensaios).
   novo. Para usar depois do piloto de uma foto.
 - Classificação: gravações de tela do iPhone (nome `ScreenRecording…`,
   `RPReplay…`, ou gravadas pelo `com.apple.replayd`) passam de "Pessoal
-  (câmera)" para captura de tela (Pendente). Achado olhando a lista: 101
-  vídeos na biblioteca.
+  (câmera)" para captura de tela (Pendente). Achado olhando a lista.
 - Roteiro de testes: casos do placar (I5, I6), das fotos em sequência (I7),
   do envio em lote (E10) e das gravações de tela (C4).
 
@@ -49,15 +54,15 @@ enviado).
   essas tenham uma opção claramente melhor (rajada dos dois lados). O par
   passa a "provável", e o placar mostra "a mais parecida entre N fotos do
   Google no mesmo segundo (folga de M)".
-- A marca de rajada da Apple quase não aparece na biblioteca (12 fotos); o
-  que existe de fato são fotos em sequência no mesmo segundo.
+- A marca de rajada da Apple quase não aparece na biblioteca; o que existe de
+  fato são fotos em sequência no mesmo segundo.
 
-Verificação: 175 testes passando. Uso real: a regra resolve só 4 das cerca
-de 200 disputas (uma primeira medição, que contava candidatas já descartadas
-pelo cruzamento, tinha sugerido umas 56). Nas restantes, a foto escolhida
-ainda não tem a imagem comparada (78; a conferência pelas miniaturas do
-Google resolve parte), outra candidata está quase à mesma distância (84;
-quadros quase iguais, ambíguos de verdade) ou a melhor está longe (40).
+Verificação: 175 testes passando. Uso real: a regra resolve poucas disputas
+(uma primeira medição, que contava candidatas já descartadas pelo
+cruzamento, tinha prometido bem mais). Nas restantes, a foto escolhida ainda
+não tem a imagem comparada (a conferência pelas miniaturas do Google resolve
+parte), outra candidata está quase à mesma distância (quadros quase iguais,
+ambíguos de verdade) ou a melhor está longe.
 Essas ficam para "São a mesma foto?".
 
 ## 0.3.8 — 18/11/2026
@@ -75,9 +80,10 @@ Essas ficam para "São a mesma foto?".
   diferente desconta pouco (-1), porque o cruzamento o aceita pelo mesmo nome
   no mesmo milissegundo.
 
-Verificação: 170 testes passando. Uso real: cruzamento refeito em 25 s; 219
-pares com placar baixo (quase todos já "incertos"); os 7 "confirmados" com
-placar baixo eram quadros de Live Photo, o que levou ao ajuste acima.
+Verificação: 170 testes passando. Uso real: cruzamento refeito em segundos;
+os pares com placar baixo são quase todos os já "incertos"; os poucos
+"confirmados" com placar baixo eram quadros de Live Photo, o que levou ao
+ajuste acima.
 
 ## 0.3.7 — 18/11/2026
 
@@ -158,8 +164,8 @@ Verificação: 162 testes passando.
   convite, cartaz etc., ou gravada por app de loja. Vêm antes de "recebida"
   (um comprovante mandado pelo WhatsApp é antes de tudo um comprovante) e
   depois de captura de tela; a sugestão é Pendente.
-- "scan" sozinho no nome não vira documento: na biblioteca real, os arquivos
-  `scan*.jpg` e `SCANS_*` são fotos antigas digitalizadas.
+- "scan" sozinho no nome não vira documento: fotos antigas digitalizadas
+  costumam ter "scan" no nome.
 
 Verificação: 153 testes passando. Na biblioteca real, as regras pegam
 pouquíssimos itens (os nomes quase nunca dizem o que é a imagem); o grosso

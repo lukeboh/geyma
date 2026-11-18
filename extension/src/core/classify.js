@@ -31,8 +31,8 @@ const DOC_APPS = /officemobile|officelens|com\.apple\.mobilenotes|camscanner|int
 // lojas e apps de compras ou entrega: o que vem delas é anúncio de produto
 const SHOP_APPS = /shopee|mercadoli|mercadopago|amazon|aliexpress|alibaba|ifood|magalu|magazineluiza|americanas|casasbahia|submarino|temu|shein|rappi|netshoes|centauro/i;
 
-// Nomes de documento e de propaganda. Nunca "scan" sozinho: na prática, os
-// arquivos "scan*.jpg" e "SCANS_*" são fotos antigas digitalizadas.
+// Nomes de documento e de propaganda. Nunca "scan" sozinho: fotos antigas
+// digitalizadas costumam ter "scan" no nome.
 const DOC_NAME = /^(CamScanner|Scanned[ _-]|Adobe Scan|Office Lens|Doc(umento)?[ _-]?\d|Comprovante|Recibo|Boleto|Fatura|Nota[ _-]?Fiscal|NF-?e|Receita[ _-]|Laudo|Exame|Certid[aã]o|Contrato|Receipt|Invoice|RG[ _-]|CNH[ _-]|CPF[ _-]|Passaporte)/i;
 const AD_NAME = /(promo[cç][aã]o|^promo[ _-]|oferta|flyer|panfleto|cartaz|banner|cupom|desconto|black ?friday|an[uú]ncio|convite[ _-]|propaganda)/i;
 
