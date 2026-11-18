@@ -74,7 +74,7 @@ amostra, com a taxa de falso positivo medida contra um controle.
 - Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
   houver, nome como evidência
 - Tratamento de rajadas e fusos horários
-- Estado "confirmada / provável / incerta"
+- [x] Estado "confirmada / provável / incerta", com resumo e filtro (0.2.39)
 
 **Critério:** falso positivo abaixo de um limite definido na 0.2, numa amostra
 revisada manualmente.

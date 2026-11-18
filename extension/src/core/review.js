@@ -4,7 +4,8 @@ import { suggestDecision } from './classify.js';
 /**
  * @param rows linhas do cruzamento
  * @param f {cls, cat, dec, year, kind}: cls '' = todas, 'dupGoogle'/'dupIcloud' = cópias,
- *   'melhorIcloud'/'melhorGoogle' = pares em que aquele lado guarda a melhor cópia;
+ *   'melhorIcloud'/'melhorGoogle' = pares em que aquele lado guarda a melhor cópia,
+ *   'idConfirmada'/'idProvavel'/'idIncerta' = pares pela certeza de que são a mesma foto;
  *   dec 'sugestao' = sem marcação; kind 'foto'|'video'
  * @returns linhas filtradas, da mais recente para a mais antiga
  */
@@ -13,6 +14,9 @@ const POR_CLS = {
   dupIcloud: (r) => r.dupIcloud,
   melhorIcloud: (r) => Boolean(r.melhor?.icloud.length),
   melhorGoogle: (r) => Boolean(r.melhor?.google.length),
+  idConfirmada: (r) => r.ident === 'confirmada',
+  idProvavel: (r) => r.ident === 'provavel',
+  idIncerta: (r) => r.ident === 'incerta',
 };
 
 export function filterRows(rows, f = {}) {

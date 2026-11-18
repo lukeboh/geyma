@@ -2,6 +2,19 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.39 — 18/11/2026
+
+- Certeza de que um par é a mesma foto (etapa 0.4, `estadoIdentidade` em
+  `match.js`): **confirmada** (você disse, imagens conferidas e iguais, ou o
+  mesmo arquivo de origem no mesmo instante ao milissegundo), **incerta** (a
+  confirmar, imagens só parecidas, disputa, ou cópia reduzida sem a imagem
+  conferida) e **provável** (o resto: instante e dimensões batem, sem outra
+  candidata). Resumo na aba Proteção, logo abaixo dos totais, com links para
+  a lista; filtros "Mesma foto: confirmada/provável/incerta" na revisão do
+  painel e do celular.
+
+Verificação: 134 testes passando (`ext-identidade`, novo).
+
 ## 0.2.38 — 18/11/2026
 
 - Melhor cópia de cada foto que está nos dois serviços (etapa 0.5,

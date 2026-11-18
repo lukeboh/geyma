@@ -4,7 +4,7 @@ import { getItemsBySource, getMeta, setMeta, putCache, setInventorySummary, regi
 import { summarize } from './core/normalize.js';
 import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
-import { matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive, paraCruzar } from './core/match.js';
+import { estadoIdentidade, matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive, paraCruzar } from './core/match.js';
 import { copiaNoGoogle } from './core/google-file.js';
 import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
@@ -158,6 +158,7 @@ self.onmessage = async (e) => {
         ...(p.cls === 'reduzida' && !p.confirmadoPorImagem ? { semConferencia: true } : {}),
         ...(p.parecida ? { parecida: true } : {}),
         ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
+        ident: estadoIdentidade(p),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...(p.versaoEditada ? { versaoEditada: true } : {}),
         ...dupInfo(p.a, p.g),

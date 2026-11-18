@@ -65,6 +65,9 @@ export function initProtection() {
   for (const k of ORDER) cls.append(new Option(CLASSES[k], k));
   cls.append(new Option('Cópias repetidas no Google', 'dupGoogle'));
   cls.append(new Option('Cópias repetidas no iCloud', 'dupIcloud'));
+  cls.append(new Option('Mesma foto: confirmada', 'idConfirmada'));
+  cls.append(new Option('Mesma foto: provável', 'idProvavel'));
+  cls.append(new Option('Mesma foto: incerta', 'idIncerta'));
   cls.append(new Option('Melhor cópia no iCloud', 'melhorIcloud'));
   cls.append(new Option('Melhor cópia no Google', 'melhorGoogle'));
   cls.value = '';
@@ -166,6 +169,18 @@ function renderProtection() {
   $('m-headline').innerHTML = `<b>${pct(both, icloudScope)}</b> das fotos do iCloud também estão no Google, e <b>${pct(both, googleScope)}</b> das fotos do Google também estão no iCloud.`;
   $('m-sub').textContent = `${fmt.format(both)} fotos em ambos · ${fmt.format(t.soGoogle)} só no Google · ${fmt.format(t.soIcloud)} só no iCloud`
     + (counts.ocultas ? ` · ${fmt.format(counts.ocultas)} do iCloud ficam de fora, sem entrar em nenhum envio (ocultas, ou não encontradas no último percurso completo: ocultas ou apagadas)` : '');
+
+  const id = s.identidade;
+  $('m-ident').hidden = !id || !both;
+  if (id && both) {
+    $('m-ident').innerHTML = `Certeza de que é a mesma foto, nas ${fmt.format(both)} em ambos: `
+      + `<a href="#rev" data-cls="idConfirmada" title="Imagens conferidas e iguais, mesmo arquivo de origem no mesmo instante, ou você confirmou">confirmada em ${fmt.format(id.confirmada)}</a> · `
+      + `<a href="#rev" data-cls="idProvavel" title="Instante e dimensões batem e não há outra candidata; as imagens ainda não foram comparadas (ou são outro quadro da mesma Live Photo, ou a versão editada)">provável em ${fmt.format(id.provavel)}</a> · `
+      + `<a href="#rev" data-cls="idIncerta" title="Há outra foto no mesmo segundo, as imagens são só parecidas, ou é uma cópia reduzida sem a imagem conferida: abra e responda São a mesma foto?">incerta em ${fmt.format(id.incerta)}</a>`;
+    for (const a of $('m-ident').querySelectorAll('a[data-cls]')) {
+      a.addEventListener('click', (e) => { e.preventDefault(); $('r-cls').value = a.dataset.cls; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
+    }
+  }
 
   const box = $('m-classes');
   box.innerHTML = '';

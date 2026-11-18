@@ -201,6 +201,22 @@ export function matchLibraries(google, icloud, opts = {}) {
   return { pairs, soGoogle, soIcloud };
 }
 
+/**
+ * Certeza de que um par é a mesma foto:
+ * - 'confirmada': você disse que é; ou as imagens foram conferidas e são
+ *   iguais; ou é o mesmo arquivo de origem (mesmo nome) no mesmo instante ao
+ *   milissegundo;
+ * - 'incerta': a confirmar (outra candidata no mesmo segundo, imagens só
+ *   parecidas) ou cópia reduzida sem a imagem conferida;
+ * - 'provavel': o resto — instante e dimensões batem, sem outra candidata
+ *   (inclui o outro quadro de uma Live Photo e a versão editada).
+ */
+export function estadoIdentidade(p) {
+  if (p.confirmadoPeloUsuario || p.confirmadoPorImagem || (p.mesmoNome && p.a.ts === p.g.ts)) return 'confirmada';
+  if (p.cls === 'confirmar' || p.parecida || p.disputado || (p.cls === 'reduzida' && !p.confirmadoPorImagem)) return 'incerta';
+  return 'provavel';
+}
+
 /** Mesma imagem pelo pHash (os dois precisam ter o hash calculado). */
 export function samePicture(x, y) {
   if (x === y) return true;
@@ -256,6 +272,7 @@ export function googleSameSecondGroups(google) {
 /** Resumo do cruzamento: totais por classe e por ano (ano UTC da captura). */
 export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   const totals = { ambos: 0, confirmar: 0, reduzida: 0, soGoogle: soGoogle.length, soIcloud: soIcloud.length };
+  const identidade = { confirmada: 0, provavel: 0, incerta: 0 };
   const reduzidaMenor = { google: 0, icloud: 0 };
   let quadroDiferente = 0;
   // Live Photos do iCloud que estão nos dois: o Google tem o movimento? (só se a leitura do Google já trouxe esse dado)
@@ -269,6 +286,7 @@ export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   };
   for (const p of pairs) {
     totals[p.cls]++;
+    identidade[estadoIdentidade(p)]++;
     if (p.cls === 'reduzida') reduzidaMenor[p.menor]++;
     if (p.quadroDiferente) quadroDiferente++;
     if (isLive(p.a)) {
@@ -285,7 +303,7 @@ export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   }
   for (const g of soGoogle) bump(g.ts, 'soGoogle');
   for (const a of soIcloud) bump(a.ts, 'soIcloud');
-  return { totals, reduzidaMenor, quadroDiferente, live, copia, byYear };
+  return { totals, identidade, reduzidaMenor, quadroDiferente, live, copia, byYear };
 }
 
 /** Limite do trecho já lido do iCloud enquanto o percurso não termina. */
