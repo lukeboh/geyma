@@ -10,7 +10,6 @@ import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
 import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, pedacosDeBytes, registrarEnvio, envioDireto } from './core/envio.js';
-import { LIMITE_VIDEO_ENVIO } from './core/video.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -206,9 +205,6 @@ async function enviarUm(id, destino, ensaio) {
   for (const f of arquivos) {
     const res = await fetch(f.url, { credentials: f.credenciais });
     if (!res.ok) throw erroHttp(res.status);
-    // vídeo grande demais para passar pela memória: para antes de baixar
-    const tamanho = Number(res.headers.get('content-length')) || 0;
-    if (f.papel === 'video' && tamanho > LIMITE_VIDEO_ENVIO) { res.body?.cancel().catch(() => {}); throw new Error(`vídeo grande demais para o envio pelo site (${Math.round(tamanho / 1048576)} MB)`); }
     const tipo = tipoDoArquivo(f.nome, res.headers.get('content-type'));
     const bytes = new Uint8Array(await res.arrayBuffer());
     const sha1 = await sha1Base64Url(bytes);
@@ -241,11 +237,21 @@ async function enviarUm(id, destino, ensaio) {
  * original, confere (SHA-1 em pedaços) e entrega ao envio do site. O ensaio
  * também roda na página (baixa e confere, sem entregar).
  */
+// senhas de uso único da ponte (ponte.html): senha -> endereço que ela libera
+const ponteSenhas = new Map();
+
 async function enviarDireto(it, destino, f, ensaio) {
   const tab = await findOrOpenTab(destino);
   const { frameId } = await acharCampoDeEnvio(tab.id);
   const pedido = crypto.randomUUID();
-  const r = await chrome.tabs.sendMessage(tab.id, { kind: 'envio-direto', pedido, url: f.url, nome: f.nome, tipo: tipoDoArquivo(f.nome, null), lastModified: it.ts, ensaio }, { frameId });
+  // do Google ao iCloud: a ponte baixa com a sessão da extensão; o endereço não passa pela página
+  let senha = null;
+  if (it.source === 'google') {
+    senha = crypto.randomUUID();
+    ponteSenhas.set(senha, f.url);
+    setTimeout(() => ponteSenhas.delete(senha), 60000);
+  }
+  const r = await chrome.tabs.sendMessage(tab.id, { kind: 'envio-direto', pedido, ...(senha ? { senha } : { url: f.url }), nome: f.nome, tipo: tipoDoArquivo(f.nome, null), lastModified: it.ts, ensaio }, { frameId });
   if (!r?.ok) throw (r?.status ? erroHttp(r.status) : new Error(r?.erro || 'a página não aceitou o arquivo'));
   const info = { destino, sha1: r.sha1, ts: it.ts, bytes: r.bytes, arquivos: [`${f.nome} (${tipoDoArquivo(f.nome, null)})`], direto: true };
   return ensaio ? { estado: 'ensaio', ...info } : { estado: 'enviado', estrategia: r.estrategia, ...info };
@@ -346,6 +352,14 @@ async function findOrOpenTab(site) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'page-event') {
     handlePageEvent(msg.site, msg.type, msg.payload, sender.tab?.id).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
+    return false;
+  }
+  // a ponte pede o endereço que a senha libera (uma vez só; só a própria ponte)
+  if (msg?.kind === 'ponte-url') {
+    const daPonte = sender.url?.startsWith(chrome.runtime.getURL('ponte.html'));
+    const url = daPonte ? ponteSenhas.get(String(msg.senha)) : null;
+    ponteSenhas.delete(String(msg.senha));
+    sendResponse({ url: url || null });
     return false;
   }
   // andamento do envio direto (a página baixa e confere o vídeo): mostra no painel

@@ -164,6 +164,12 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     com `core/sha1.js` (importado pela página: `web_accessible_resources`)
     e entrega; manda `envio-andamento` a cada 10 s, o que também mantém o
     service worker acordado.
+26. **Ponte (0.3.19):** do Google ao iCloud, `ponte.html`/`ponte.js` (página
+    da extensão, `web_accessible_resources` só para www.icloud.com) é
+    embutida pela `src/page/envio.js`; recebe pelo `postMessage` uma senha
+    de uso único (`ponteSenhas` no service worker, 60 s) e uma porta de
+    MessageChannel, pede o endereço com `ponte-url` (só aceito vindo da
+    própria ponte), baixa com a sessão e devolve o Blob pela porta.
 
 ## 4. Decisões e motivos
 
@@ -341,8 +347,7 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
    serviço, só com confirmação explícita.
 6. **Vídeos (0.9):** casos V1 a V3; a duração do iCloud chega com o próximo
-   percurso completo. Falta: vídeos do Google ao iCloud acima de 300 MB,
-   assistir no visualizador (em aba de fundo o Chrome não carrega o vídeo;
+   percurso completo. Falta: assistir no visualizador (em aba de fundo o Chrome não carrega o vídeo;
    testar com o painel visível) e quadros amostrados.
 
 ### Como retomar (passo a passo)

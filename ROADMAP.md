@@ -148,12 +148,13 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
   reconhece câmera lenta; foto e vídeo nunca formam par (0.3.17)
 - [x] Qualidade: ficha do arquivo de vídeo do Google (original, recomprimido,
   reduzido, cortado) e melhor cópia (0.3.17)
-- [x] Envio pelo site até 300 MB, nos dois sentidos (0.3.17)
+- [x] Envio pelo site nos dois sentidos (0.3.17; sem limite de tamanho desde 0.3.19)
 - [x] Painel "Vídeos" e visualizador com duração, codec e ficha (0.3.17)
 - [ ] Piloto do envio de um vídeo (caso V3) e conferência da chegada
 - [x] Vídeos do iCloud ao Google de qualquer tamanho: envio direto pela página
   do Google, com SHA-1 em pedaços (0.3.18)
-- [ ] Vídeos do Google ao iCloud acima de 300 MB
+- [x] Vídeos do Google ao iCloud de qualquer tamanho, pela ponte embutida na
+  página do iCloud, com senha de uso único (0.3.19)
 - [ ] Assistir os dois lados no visualizador
 - [ ] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
 

@@ -3,7 +3,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeIcloudPair } from '../extension/src/core/normalize.js';
-import { relacaoDuracao, textoDuracao, copiaVideoNoGoogle, movimentosDeLive, videoFileNeeded, resumoVideos, ehVideo, LIMITE_VIDEO_ENVIO } from '../extension/src/core/video.js';
+import { relacaoDuracao, textoDuracao, copiaVideoNoGoogle, movimentosDeLive, videoFileNeeded, resumoVideos, ehVideo } from '../extension/src/core/video.js';
+
+const GRANDE = 3e9;
 import { matchLibraries, estadoIdentidade, tipoCompativel } from '../extension/src/core/match.js';
 import { placarIdentidade } from '../extension/src/core/placar.js';
 import { melhorCopia } from '../extension/src/core/qualidade.js';
@@ -136,15 +138,17 @@ test('fichas de vídeo a conferir: primeiro as que ajudam na identidade', () => 
     { cls: 'ambos', a: A({ video: false }), g: G({ id: 'g:4', video: false }) },
   ];
   assert.deepEqual(videoFileNeeded(pares).map((x) => x.id), ['g:2', 'g:1']);
+  // os só do Google vêm por último (nome e tamanho)
+  assert.deepEqual(videoFileNeeded(pares, [G({ id: 'g:9' }), G({ id: 'g:8', video: false }), G({ id: 'g:7', fileV: { bytes: 1 } })]).map((x) => x.id), ['g:2', 'g:1', 'g:9']);
   assert.equal(videoFileNeeded(pares)[0].v, true);
 });
 
 test('resumo dos vídeos para o painel', () => {
   const rows = [
     { cls: 'ambos', ident: 'confirmada', duracao: 'igual', copiaGoogle: 'original', a: { video: true, durMs: 10000, size: 5 }, g: { video: true, videoMs: 10000, fileV: { bytes: 5 } } },
-    { cls: 'soIcloud', a: { video: true, durMs: 2000, size: LIMITE_VIDEO_ENVIO + 1 } },
+    { cls: 'soIcloud', a: { video: true, durMs: 2000, size: GRANDE } },
     { cls: 'soGoogle', movimentoDe: 'a:9', g: { video: true, videoMs: 1500 } },
-    { cls: 'soGoogle', g: { video: true, videoMs: 9000, fileV: { bytes: LIMITE_VIDEO_ENVIO + 1 } } },
+    { cls: 'soGoogle', g: { video: true, videoMs: 9000, fileV: { bytes: GRANDE } } },
     { cls: 'ambos', a: { video: false }, g: { video: true } },
     { cls: 'ambos', a: { video: false }, g: {} },
   ];
@@ -155,7 +159,6 @@ test('resumo dos vídeos para o painel', () => {
   assert.equal(v.duracao.igual, 1);
   assert.equal(v.copia.original, 1);
   assert.equal(v.soIcloud.n, 1);
-  assert.equal(v.grandes, 1);
   assert.equal(v.soGoogle.ms, 10500);
   assert.equal(v.movimentoLive, 1);
   assert.equal(v.misturados, 1);
@@ -169,16 +172,16 @@ test('classificação: nomes de vídeo do WhatsApp e de câmera; o nome do víde
   assert.equal(classifyGoogle(G({ w: 480, h: 848, file: { nome: 'VID-20200101-WA0003.mp4.jpg' } })).cat, 'indefinido');
 });
 
-test('envio de vídeos: o arquivo de vídeo dos dois lados, até o limite de tamanho', () => {
+test('envio de vídeos: o arquivo de vídeo dos dois lados, de qualquer tamanho', () => {
   assert.deepEqual(arquivosDoItem(A({ orig: 'https://x/o', edited: true, full: 'https://x/full.jpg' })).map((f) => [f.url, f.nome, f.papel]), [['https://x/o', 'IMG_1.MOV', 'video']]);
   assert.deepEqual(arquivosDoItem(A({ orig: 'https://x/o', filename: 'clipe.m4v', video: false })).map((f) => f.nome), ['clipe.M4V']);
   const g = arquivosDoItem(G({ fileV: { nome: 'IMG_2.MOV' } }));
   assert.equal(g[0].url, 'https://lh3.googleusercontent.com/g1=dv');
   assert.equal(g[0].nome, 'IMG_2.MOV');
   assert.match(arquivosDoItem(G())[0].nome, /\.MP4$/);
-  const soG = { cls: 'soGoogle', cat: 'pessoal', g: G({ fileV: { bytes: LIMITE_VIDEO_ENVIO + 1 } }) };
-  assert.equal(podeEnviar(soG, 'icloud').ok, false);
-  assert.equal(podeEnviar({ ...soG, g: G({ fileV: { bytes: 10 } }) }, 'icloud').ok, true);
+  // pelo envio direto, sem limite de tamanho nos dois sentidos
+  const soG = { cls: 'soGoogle', cat: 'pessoal', g: G({ fileV: { bytes: GRANDE } }) };
+  assert.equal(podeEnviar(soG, 'icloud').ok, true);
 });
 
 test('pedaços em base64 direto dos bytes remontam o arquivo', () => {
@@ -218,11 +221,12 @@ test('SHA-1 em pedaços confere com o do Node, em qualquer divisão', async () =
   assert.equal(await sha1DoBlob(new Blob([dados])), esperado);
 });
 
-test('envio direto: vídeo do iCloud ao Google sem limite de tamanho', async () => {
+test('envio direto: vídeos nos dois sentidos, sem limite de tamanho', async () => {
   const { envioDireto } = await import('../extension/src/core/envio.js');
   const grande = { cls: 'soIcloud', cat: 'pessoal', a: A({ size: 3e9 }) };
   assert.equal(podeEnviar(grande, 'google').ok, true);
   assert.equal(envioDireto(A(), 'google'), true);
   assert.equal(envioDireto(A({ video: false, filename: 'IMG_1.HEIC' }), 'google'), false);
-  assert.equal(envioDireto(G(), 'icloud'), false);
+  assert.equal(envioDireto(G(), 'icloud'), true);
+  assert.equal(envioDireto(G({ video: false }), 'icloud'), false);
 });

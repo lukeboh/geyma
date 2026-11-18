@@ -2,6 +2,27 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.19 — 18/11/2026
+
+- Envio direto também do Google ao iCloud, sem limite de tamanho: uma
+  página da extensão embutida e invisível na aba do iCloud (`ponte.html`)
+  baixa o vídeo do Google com a sessão da extensão para um Blob em disco,
+  calcula o SHA-1 em pedaços e devolve o Blob à página do iCloud por um
+  MessageChannel (passa a referência, não os bytes). A ponte não aceita
+  endereço vindo da página: recebe uma senha de uso único criada pelo
+  service worker para aquele envio e pede a ele o endereço; um script do
+  próprio site não consegue usá-la. Fim do limite de 300 MB.
+- Conferência das fichas do Google (fotos e vídeos): um erro 500 num
+  arquivo pula esse arquivo; uma recusa (401, 403, 429), outro erro ou
+  cinco erros seguidos param a conferência.
+- Fichas também dos vídeos só do Google, depois dos pares: o nome do
+  arquivo classifica (WhatsApp, câmera).
+
+Verificação: 221 testes passando. Na biblioteca real, ensaios pela ponte:
+um vídeo de 8,9 MB em 4 s e um de 448 MB em 1 minuto, com o tamanho
+igual ao da ficha e, no grande, o SHA-1 igual ao da listagem do Google; a
+memória da página do iCloud ficou em 50 MB.
+
 ## 0.3.18 — 18/11/2026
 
 - Envio direto de vídeos do iCloud ao Google (etapa 0.9), sem limite de

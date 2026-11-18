@@ -212,7 +212,7 @@ self.onmessage = async (e) => {
       phashNeeded: googlePhashNeeded(dupG.pendingIds, result.pairs, new Set(google.filter((g) => g.phash).map((g) => g.id))),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       googleFileNeeded: googleFileNeeded(result.pairs),
-      videoFileNeeded: videoFileNeeded(result.pairs),
+      videoFileNeeded: videoFileNeeded(result.pairs, result.soGoogle),
       recorteNeeded: candidatosRecorte(result.soIcloud, result.soGoogle),
       edicaoNeeded: candidatosEdicao(result.pairs),
       icloudPhashWanted: wanted.length,

@@ -34,7 +34,7 @@ test('envio: conta as fotos que podem ir e muda o texto depois do primeiro envio
     { cls: 'soIcloud', cat: 'pessoal', a: { id: 'a:2' } },
     { cls: 'soIcloud', cat: 'print', a: { id: 'a:3' } }, // Pendente: não vai
     { cls: 'soGoogle', cat: 'pessoal', g: { id: 'g:1' } },
-    { cls: 'soGoogle', cat: 'pessoal', g: { id: 'g:2', video: true, fileV: { bytes: 400 * 1048576 } } }, // vídeo grande demais: fica
+    { cls: 'soGoogle', cat: 'pessoal', g: { id: 'g:2', video: true, fileV: { bytes: 400 * 1048576 } }, decision: 'descartar' }, // descartado: fica
   ];
   const sem = proximosPassos({ rows }, { icloudConcluidoEm: 1, agora: 2 }).find((x) => x.id === 'enviar');
   assert.equal(sem.n, 3);

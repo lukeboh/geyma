@@ -204,8 +204,9 @@ visualizador: **Ensaiar** e depois **Enviar ao Google**.
 original; o envio aparece no Google Fotos com a data certa e toca; na
 próxima leitura do Google ele aparece como "chegou". Repita com um vídeo
 grande (mais de 300 MB): o ensaio mostra o andamento ("baixando o vídeo do
-iCloud", "conferindo o arquivo") e o notebook não fica lento. Do Google ao
-iCloud, um vídeo acima de 300 MB não oferece o envio e diz o motivo.
+iCloud", "conferindo o arquivo") e o notebook não fica lento. Faça também
+um vídeo só do Google ao iCloud (Enviar ao iCloud): ele aparece no iCloud
+com a data certa e toca.
 Observado:
 
 ---

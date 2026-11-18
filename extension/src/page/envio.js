@@ -53,6 +53,28 @@
   // avisa a extensão a cada 10 s (mantém o service worker acordado e mostra o andamento)
   const avisar = (pedido, fase, feitos, total) => chrome.runtime.sendMessage({ kind: 'envio-andamento', pedido, fase, feitos, total }).catch(() => {});
 
+  /**
+   * Ponte (ponte.html, página da extensão embutida e invisível): baixa o
+   * vídeo do Google com a sessão da extensão e devolve o Blob pela porta. A
+   * senha de uso único veio do service worker; a ponte pede a ele o endereço.
+   */
+  async function baixarPelaPonte(senha, aoAndar) {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'display:none';
+    f.src = chrome.runtime.getURL('ponte.html');
+    const abriu = new Promise((ok, falha) => { f.onload = ok; setTimeout(() => falha(new Error('a ponte de envio não abriu')), 15000); });
+    document.documentElement.appendChild(f);
+    try {
+      await abriu;
+      const canal = new MessageChannel();
+      const resposta = new Promise((ok) => { canal.port1.onmessage = (e) => { if (e.data?.andamento) aoAndar(e.data); else ok(e.data); }; });
+      f.contentWindow.postMessage({ kind: 'geyma-ponte', senha }, new URL(chrome.runtime.getURL('')).origin, [canal.port2]);
+      return await resposta;
+    } finally {
+      f.remove();
+    }
+  }
+
   async function envioDireto(msg) {
     const { sha1DoBlob } = await import(chrome.runtime.getURL('src/core/sha1.js'));
     let fase = 'baixando';
@@ -60,15 +82,24 @@
     let total = 0;
     const timer = setInterval(() => avisar(msg.pedido, fase, feitos, total), 10000);
     try {
-      const res = await fetch(msg.url);
-      if (!res.ok) return { ok: false, erro: `HTTP ${res.status}`, status: res.status };
-      total = Number(res.headers.get('content-length')) || 0;
-      const blob = await res.blob();
-      if (!blob.size) return { ok: false, erro: `o arquivo ${msg.nome} veio vazio` };
-      if (total && blob.size !== total) return { ok: false, erro: `o arquivo ${msg.nome} veio incompleto (${blob.size} de ${total} bytes)` };
-      fase = 'conferindo';
-      total = blob.size;
-      const sha1 = await sha1DoBlob(blob, (n) => { feitos = n; });
+      let blob;
+      let sha1;
+      if (msg.senha) {
+        // do Google ao iCloud: a ponte (página da extensão) baixa com a sessão do Google
+        const r = await baixarPelaPonte(msg.senha, (a) => { fase = a.andamento; feitos = a.feitos || 0; total = a.total || total; });
+        if (!r?.ok) return r || { ok: false, erro: 'a ponte de envio não respondeu' };
+        ({ blob, sha1 } = r);
+      } else {
+        const res = await fetch(msg.url);
+        if (!res.ok) return { ok: false, erro: `HTTP ${res.status}`, status: res.status };
+        total = Number(res.headers.get('content-length')) || 0;
+        blob = await res.blob();
+        if (!blob.size) return { ok: false, erro: `o arquivo ${msg.nome} veio vazio` };
+        if (total && blob.size !== total) return { ok: false, erro: `o arquivo ${msg.nome} veio incompleto (${blob.size} de ${total} bytes)` };
+        fase = 'conferindo';
+        total = blob.size;
+        sha1 = await sha1DoBlob(blob, (n) => { feitos = n; });
+      }
       const info = { ok: true, bytes: blob.size, sha1 };
       if (msg.ensaio) return info;
       fase = 'entregando';

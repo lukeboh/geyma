@@ -21,7 +21,7 @@ import { filaDoClip, classificarEmbed, registroClip, googleParaClip } from './sr
 import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
 import { compararCodificacao } from './src/core/jpeg.js';
 import { cinza, tamanhoPara, recorteEntre, edicaoEntre } from './src/core/recorte.js';
-import { textoDuracao, LIMITE_VIDEO_ENVIO } from './src/core/video.js';
+import { textoDuracao } from './src/core/video.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -310,7 +310,6 @@ function renderVideos() {
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos de vídeo do Google.` : 'Todos os arquivos de vídeo do Google já foram conferidos.');
   if (v.melhorIcloud) partes.push(`<a href="#rev" data-vid="melhorIcloud">Melhor cópia no iCloud em <b>${fmt.format(v.melhorIcloud)}</b> vídeos</a>.`);
   if (v.movimentoLive) partes.push(`${fmt.format(v.movimentoLive)} vídeos curtos só do Google são o movimento de uma Live Photo do iCloud, enviado à parte (ficam Pendentes).`);
-  if (v.grandes) partes.push(`${fmt.format(v.grandes)} vídeos só do Google passam de ${Math.round(LIMITE_VIDEO_ENVIO / 1048576)} MB e não vão ao iCloud pelo envio do site (memória do notebook); do iCloud ao Google não há limite.`);
   if (v.misturados) partes.push(`${fmt.format(v.misturados)} pares juntam uma foto e um vídeo (decididos por você ou de leituras antigas do Google).`);
   $('m-vid').innerHTML = partes.join(' ');
   for (const a of $('m-vid').querySelectorAll('a[data-vid]')) {
@@ -464,9 +463,13 @@ async function runFichas(k) {
         gfJob.done++;
       } catch (e) {
         gfJob.failed++;
-        // 404: a foto saiu do Google; outros erros (403, 429...) param tudo
-        if (e.status !== 404) { gfJob.stop = 'erro'; gfJob.status = e.status || e.message; }
+        gfJob.seguidos = (gfJob.seguidos || 0) + 1;
+        // 404: saiu do Google; 500: erro do servidor naquele arquivo (pula).
+        // Recusa (401, 403, 429), outro erro, ou 5 erros seguidos: para tudo.
+        if (![404, 500].includes(e.status) || gfJob.seguidos >= 5) { gfJob.stop = 'erro'; gfJob.status = e.status || e.message; }
+        continue;
       }
+      gfJob.seguidos = 0;
       if (batch.length >= 200) await flush();
       if (gfJob.done % 20 === 0) show();
     }
@@ -1151,7 +1154,7 @@ const lerEnvio = () => getMeta('envio').then((m) => { envioEstado = m?.value || 
 lerEnvio();
 
 // andamento do envio direto de um vídeo (a página do Google baixa e confere)
-const FASE_ENVIO = { baixando: 'baixando o vídeo do iCloud', conferindo: 'conferindo o arquivo', entregando: 'entregando ao Google' };
+const FASE_ENVIO = { baixando: 'baixando o vídeo', conferindo: 'conferindo o arquivo', entregando: 'entregando ao site' };
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.kind !== 'status' || msg.event !== 'envio-andamento') return;
   const quanto = msg.total ? ` (${msg.fase === 'baixando' ? MB(msg.total) : `${MB(msg.feitos || 0)} de ${MB(msg.total)}`})` : '';
@@ -1209,7 +1212,7 @@ function renderEnvioLote(rows = filtered()) {
   $('r-envio').hidden = !l?.fila.length;
   loteConfirmar = false;
   if (!l?.fila.length) return;
-  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} as próximas ${l.fila.length} fotos desta lista que podem ir (marcadas Pessoal ou Manter, sem repetidas; vídeos do Google acima de 300 MB ficam). Uma por vez; para no primeiro erro. Faça antes o piloto de uma foto (docs/TESTES-HUMANOS.md).`;
+  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} as próximas ${l.fila.length} fotos desta lista que podem ir (marcadas Pessoal ou Manter, sem repetidas). Uma por vez; para no primeiro erro. Faça antes o piloto de uma foto (docs/TESTES-HUMANOS.md).`;
   $('r-envio-go').textContent = `Enviar ${l.fila.length}`;
   $('r-envio-stop').hidden = true;
 }

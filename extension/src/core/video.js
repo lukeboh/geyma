@@ -84,25 +84,22 @@ export function copiaVideoNoGoogle(a, g) {
   return 'recomprimida';
 }
 
-// Envio do Google ao iCloud pelo site: o arquivo inteiro passa pela memória
-// da extensão e da página. Acima disto, fica para o envio pelo computador (o
-// notebook tem pouca memória). Do iCloud ao Google não há limite: a página do
-// Google baixa o original direto para o disco (envio direto, envio.js).
-export const LIMITE_VIDEO_ENVIO = 300 * 1024 * 1024;
-
 /**
  * Itens do Google cuja ficha do vídeo ajuda: pares de vídeo sem ficha
- * (qualidade e nome do arquivo). Primeiro os que também ajudam na
- * identidade: a confirmar, durações diferentes ou sem duração do iCloud.
+ * (qualidade e nome do arquivo); primeiro os que também ajudam na
+ * identidade (a confirmar, durações diferentes ou sem duração do iCloud).
+ * Depois, os vídeos só do Google: o nome classifica (WhatsApp, câmera) e o
+ * tamanho diz se o vídeo pode ir ao iCloud pelo site.
  */
-export function videoFileNeeded(pairs) {
+export function videoFileNeeded(pairs, soGoogle = []) {
   const primeiro = [];
   const depois = [];
   for (const p of pairs) {
     if (!p.g.video || !ehVideo(p.a) || p.g.fileV || !p.g.thumb) continue;
     (p.cls !== 'ambos' || !duracaoBate(p.duracao) ? primeiro : depois).push({ id: p.g.id, url: p.g.thumb, v: true });
   }
-  return [...primeiro, ...depois];
+  const sos = soGoogle.filter((g) => g.video && !g.fileV && g.thumb).map((g) => ({ id: g.id, url: g.thumb, v: true }));
+  return [...primeiro, ...depois, ...sos];
 }
 
 /**
@@ -139,7 +136,7 @@ export function resumoVideos(rows) {
     identidade: { confirmada: 0, provavel: 0, incerta: 0 },
     duracao: { igual: 0, lenta: 0, proxima: 0, diferente: 0, semDuracao: 0 },
     copia: { original: 0, recomprimida: 0, reduzida: 0, aparada: 0, semFicha: 0 },
-    melhorIcloud: 0, melhorGoogle: 0, movimentoLive: 0, grandes: 0, misturados: 0,
+    melhorIcloud: 0, melhorGoogle: 0, movimentoLive: 0, misturados: 0,
   };
   const somar = (l, ms, bytes) => { l.n++; if (ms) l.ms += ms; else l.semDuracao++; l.bytes += bytes || 0; };
   for (const r of rows) {
@@ -160,8 +157,6 @@ export function resumoVideos(rows) {
     } else {
       somar(out.soGoogle, r.g.videoMs, r.g.fileV?.bytes);
       if (r.movimentoDe) out.movimentoLive++;
-      // do Google ao iCloud o vídeo passa pela memória: acima do limite, não vai pelo site
-      if (r.g.fileV?.bytes > LIMITE_VIDEO_ENVIO) out.grandes++;
     }
   }
   return out;

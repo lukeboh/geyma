@@ -23,8 +23,9 @@ export const textoEtapa = (k) => ETAPAS.find((e) => e.k === k)?.txt || k;
  * 2: classificação pela imagem (0.3.14) e recompressão (0.3.15).
  * 3: recortes e edições achados pelas miniaturas (0.3.16).
  * 4: vídeos: duração, tipo e ficha do arquivo de vídeo (0.3.17).
+ * 5: fichas dos vídeos só do Google; sem limite de tamanho no envio (0.3.19).
  */
-export const CALCULO_VERSAO = 4;
+export const CALCULO_VERSAO = 5;
 
 /** O cruzamento guardado ficou para trás? (o inventário ou as regras mudaram depois dele) */
 export const desatualizado = (cache, versaoAtual) => Boolean(cache)
