@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.4 — 18/11/2026
+
+- Envio pelo site de cada serviço (0.7), primeira parte: módulo
+  `envio.js` com o que pode ir (só Pessoal ou Manter, sem repetidas,
+  ocultas nem vídeos), quais arquivos baixar (original do iCloud; par
+  HEIC + MOV na Live Photo; versão atual na editada; `=d` do Google),
+  SHA-1 no formato do Google para conferir a chegada exata, transporte em
+  pedaços e o estado de cada envio.
+- O inventário passa a guardar o link do original do iCloud e o do vídeo da
+  Live Photo (`orig`, `origVid`), lidos dos mesmos registros.
+- Corrige a versão do manifesto, que ficou em 0.3.2 no commit da 0.3.3
+  (o teste que confere isso falhava naquele commit).
+
+Verificação: 162 testes passando.
+
 ## 0.3.3 — 18/11/2026
 
 - Classificação: categorias novas **Documento** e **Propaganda**, pelas

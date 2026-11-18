@@ -150,6 +150,9 @@ export function icloudVersoes(a, m) {
     medOrig: null,
     editW: null,
     editH: null,
+    // arquivo original (HEIC, JPEG, RAW...) e, na Live Photo, o vídeo do clique: para o envio (0.7)
+    orig: urlDe(m('resOriginalRes')),
+    origVid: urlDe(m('resOriginalVidComplRes')),
   };
   if (thumbA || medA || fullA) {
     out.thumbOrig = thumbM;
