@@ -167,6 +167,15 @@ do Google pode mostrar menos detalhe ou blocos em áreas lisas. As fotos
 "recomprimidas" aparecem com a melhor cópia no iCloud.
 Observado:
 
+### Q2 — Recortes e edições ☐
+Proteção → "Como o Google guarda as suas fotos" → **Comparar recortes e
+edições pelas miniaturas**. Depois, na Revisão, abra pares com o placar
+"uma é recorte da outra" e "uma foi editada".
+**Esperado:** no recorte, uma foto é de fato um pedaço da outra, e a melhor
+cópia é a inteira. Na edição, a mesma cena com outro tom ou cor, e não outra
+foto do mesmo segundo.
+Observado:
+
 ---
 
 ## 3. Identidade (0.4)

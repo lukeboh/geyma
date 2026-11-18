@@ -142,6 +142,13 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     item do Google. `CALCULO_VERSAO` (`core/calc-cache.js`) refaz o
     cruzamento guardado quando as regras mudam: subir a cada mudança de
     código que altera o resultado.
+23. **Recortes e edições (0.3.16):** `core/recorte.js`. Recorte: foto só
+    do iCloud × só do Google no mesmo segundo e de outra proporção; achado,
+    grava `recorte: {g, cortada, ncc, caixa}` (ou `semRecorte`) no item do
+    iCloud e o cruzamento pareia com `rel: 'recorte'`. Edição: pares
+    `parecida`; grava `edicao: {g, ncc}` (ou `semEdicao`) e o par vira
+    `versaoEditada`. Limiares medidos na biblioteca: `RECORTE_MIN` 0,85,
+    `EDICAO_MIN` 0,95, `CONTRASTE_MIN` 12.
 
 ## 4. Decisões e motivos
 
@@ -314,9 +321,8 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 3. Terminar a classificação pela imagem (botão na aba Proteção; pode rodar
    de noite) e revisar as categorias com o caso C5; ajustar frases e
    limiares (`core/clip.js`, subir `CLIP_VERSAO`) com o que o usuário corrigir.
-4. **Qualidade (0.5):** conferir os arquivos do Google que faltam (a
-   recompressão depende da ficha); depois, recorte e edição pela comparação
-   de miniaturas.
+4. **Qualidade (0.5):** itens concluídos; conferir os arquivos do Google que
+   faltam (a recompressão depende da ficha) e o caso Q2.
 5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
    serviço, só com confirmação explícita.
 

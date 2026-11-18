@@ -15,6 +15,8 @@ export const MOTIVOS = {
   googleRecomprimida: 'o Google guarda uma cópia recomprimida (mesmo formato e tamanho, arquivo bem menor)',
   googleSemMovimento: 'o Google guarda só a foto parada (sem o movimento da Live Photo)',
   icloudMenor: 'o iCloud guarda uma cópia menor',
+  googleRecortada: 'o Google guarda a foto recortada (o iCloud tem a imagem inteira)',
+  icloudRecortada: 'o iCloud guarda a foto recortada (o Google tem a imagem inteira)',
   icloudSemMovimento: 'só o Google tem o movimento',
 };
 
@@ -31,6 +33,8 @@ export function melhorCopia(r) {
   if (r.cls === 'reduzida' && r.menor === 'icloud') google.push('icloudMenor');
   if (r.copiaGoogle === 'convertida') icloud.push('googleConvertida');
   if (r.copiaGoogle === 'recomprimida') icloud.push('googleRecomprimida');
+  if (r.recorte === 'google') icloud.push('googleRecortada');
+  if (r.recorte === 'icloud') google.push('icloudRecortada');
   if (!r.a.video && r.g.extrasLidos) {
     if (r.a.live && !r.g.motionMs) icloud.push('googleSemMovimento');
     if (!r.a.live && r.g.motionMs) google.push('icloudSemMovimento');

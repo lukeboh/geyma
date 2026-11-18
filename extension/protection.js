@@ -20,6 +20,7 @@ import { placarIdentidade, textoPlacar } from './src/core/placar.js';
 import { filaDoClip, classificarEmbed, registroClip, googleParaClip } from './src/core/clip.js';
 import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
 import { compararCodificacao } from './src/core/jpeg.js';
+import { cinza, tamanhoPara, recorteEntre, edicaoEntre } from './src/core/recorte.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -71,6 +72,8 @@ export function initProtection() {
   $('m-ic-stop').addEventListener('click', () => { if (icJob) icJob.stop = true; });
   $('m-gf-run').addEventListener('click', runGoogleFiles);
   $('m-rc-run').addEventListener('click', runProvaRecompressao);
+  $('m-mc-run').addEventListener('click', runMiniaturas);
+  $('m-mc-stop').addEventListener('click', () => { if (mcJob) mcJob.stop = true; });
   $('m-rc-stop').addEventListener('click', () => { if (rcJob) rcJob.stop = true; });
   $('m-gf-stop').addEventListener('click', () => { if (gfJob) gfJob.stop = true; });
   $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
@@ -261,7 +264,7 @@ function renderGoogleFiles() {
   const q = data.qualidade;
   if (q?.pares) {
     const m = q.motivos;
-    const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleRecomprimida && `${fmt.format(m.googleRecomprimida)} recomprimidas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
+    const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleRecomprimida && `${fmt.format(m.googleRecomprimida)} recomprimidas`, m.googleRecortada && `${fmt.format(m.googleRecortada)} recortadas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
     partes.push(`<br><b>Melhor cópia</b> das ${fmt.format(q.pares)} fotos que estão nos dois: equivalentes em ${fmt.format(q.iguais)}; `
       + `<a href="#rev" data-cls="melhorIcloud">no iCloud em <b>${fmt.format(q.icloud + q.misto)}</b></a>${det ? ` (no Google: ${det})` : ''}; `
       + `<a href="#rev" data-cls="melhorGoogle">no Google em ${fmt.format(q.google + q.misto)}</a>${q.misto ? ` (${fmt.format(q.misto)} com vantagem dos dois lados)` : ''}.`);
@@ -272,6 +275,86 @@ function renderGoogleFiles() {
   }
   if (!gfJob) { $('m-gf-run').hidden = !need.length; $('m-gf-run').textContent = `Conferir os arquivos do Google (${fmt.format(need.length)})`; }
   if (!rcJob) $('m-rc-run').hidden = !paraProvar().length;
+  if (!mcJob) {
+    const n = (data.recorteNeeded?.length || 0) + (data.edicaoNeeded?.length || 0);
+    $('m-mc-run').hidden = !n;
+    $('m-mc-run').textContent = `Comparar recortes e edições pelas miniaturas (${fmt.format(n)})`;
+  }
+}
+
+// ---------- recortes e edições pelas miniaturas ----------
+let mcJob = null;
+const telaMc = new OffscreenCanvas(256, 256).getContext('2d', { willReadFrequently: true });
+
+/** Miniatura em tons de cinza: no tamanho dado ou com o lado maior em 128 px. */
+async function cinzaDe(blob, tam = null) {
+  const bmp = await createImageBitmap(blob);
+  const t = tam || tamanhoPara(bmp.width, bmp.height);
+  telaMc.clearRect(0, 0, 256, 256);
+  telaMc.drawImage(bmp, 0, 0, t.w, t.h);
+  bmp.close();
+  return { px: cinza(telaMc.getImageData(0, 0, t.w, t.h).data, t.w, t.h), w: t.w, h: t.h };
+}
+
+/** Miniatura do iCloud guardada no notebook, ou pelo link se ainda vale; senão null. */
+async function miniaturaIcloud(c) {
+  const guardada = await getThumb(c.aId).catch(() => null);
+  if (guardada) return guardada;
+  if (c.aThumb && Date.now() - c.aThumbAt < ICLOUD_URL_VALIDA_MS) {
+    const res = await fetch(c.aThumb.replace('${f}', 'thumb.jpg'));
+    if (res.ok) return res.blob();
+  }
+  return null;
+}
+
+async function miniaturaGoogle(base) {
+  const res = await fetch(`${base}=w256-h256`, { credentials: 'include' });
+  if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
+  return res.blob();
+}
+
+async function runMiniaturas() {
+  if (mcJob || !data) return;
+  const fila = [...(data.recorteNeeded || []).map((c) => ({ ...c, tipo: 'recorte' })), ...(data.edicaoNeeded || []).map((c) => ({ ...c, tipo: 'edicao' }))];
+  if (!fila.length) return;
+  const job = mcJob = { stop: false, feitos: 0, recortes: 0, edicoes: 0, semMiniatura: 0, falhas: 0, motivo: null };
+  $('m-mc-run').hidden = true;
+  $('m-mc-stop').hidden = false;
+  const show = (msg) => { $('m-mc-state').textContent = msg; };
+  for (const c of fila) {
+    if (job.stop) break;
+    try {
+      const ba = await miniaturaIcloud(c);
+      if (!ba) { job.semMiniatura++; continue; }
+      const bg = await miniaturaGoogle(c.gThumb);
+      const a = await getItem(c.aId);
+      if (!a) continue;
+      const A = await cinzaDe(ba);
+      let patch;
+      if (c.tipo === 'recorte') {
+        const r = recorteEntre(A, await cinzaDe(bg), { a: c.pixA, g: c.pixG });
+        if (r) job.recortes++;
+        patch = r ? { id: c.aId, recorte: { g: c.gId, ...r } } : { id: c.aId, semRecorte: [...(a.semRecorte || []), c.gId] };
+      } else {
+        const r = edicaoEntre(A, await cinzaDe(bg, { w: A.w, h: A.h }));
+        if (r) job.edicoes++;
+        patch = r ? { id: c.aId, edicao: { g: c.gId, ...r } } : { id: c.aId, semEdicao: [...(a.semEdicao || []), c.gId] };
+      }
+      await patchItems([patch]);
+      job.feitos++;
+    } catch (err) {
+      job.falhas++;
+      // o Google recusando: para, não insiste
+      if ([401, 403, 429].includes(err.status)) { job.motivo = `parou: o Google recusou as miniaturas (HTTP ${err.status})`; break; }
+    }
+    if ((job.feitos + job.semMiniatura) % 5 === 0) show(`comparando… ${fmt.format(job.feitos)} de ${fmt.format(fila.length)}`);
+  }
+  const motivo = job.motivo || (job.stop ? 'Parada por você' : 'Pronto');
+  show(`${motivo}: ${fmt.format(job.feitos)} comparados; ${fmt.format(job.recortes)} recortes e ${fmt.format(job.edicoes)} edições achados${job.semMiniatura ? `; ${fmt.format(job.semMiniatura)} sem a miniatura do iCloud (vem no próximo percurso)` : ''}${job.falhas ? `; ${fmt.format(job.falhas)} falhas` : ''}.`);
+  mcJob = null;
+  $('m-mc-stop').hidden = true;
+  if (job.feitos) compute();
+  else renderGoogleFiles();
 }
 
 // ---------- prova da recompressão pelos originais (amostragem) ----------

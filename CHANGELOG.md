@@ -2,6 +2,32 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.16 — 18/11/2026
+
+- Recortes pelas miniaturas (etapa 0.5): uma foto só do iCloud e uma só do
+  Google no mesmo segundo, com proporções diferentes, são comparadas para
+  ver se uma é um pedaço da outra (busca em várias escalas e posições pela
+  correlação dos tons de cinza, grossa a 64 px e refinada a 128 px,
+  `core/recorte.js`). Achado o recorte, as duas viram par confirmado (o
+  pHash não serve entre recortes) e a cópia inteira conta como a melhor.
+  Placar: "uma é recorte da outra (semelhança 0,93)".
+- Edições pelas miniaturas: nos pares só parecidos (mesmo instante e
+  dimensões, pHash entre igual e diferente), a correlação das miniaturas
+  inteiras separa a mesma imagem com outro tom ou cor (edição) de outra
+  foto do mesmo segundo. Com edição achada, o par sai de "a confirmar".
+  Imagens quase lisas (fotos no escuro) e vídeos ficam de fora.
+- Botão "Comparar recortes e edições pelas miniaturas" em Proteção → Como o
+  Google guarda as suas fotos. Usa as miniaturas guardadas do iCloud e as
+  do Google; o resultado fica no item e não é refeito.
+
+Verificação: 204 testes passando (10 novos). Na biblioteca real, conferido
+a olho: dos 18 candidatos a recorte, 8 achados, todos certos, e 1 perdido
+(semelhança 0,83); fotos diferentes ficaram em até 0,79. Para a edição, o
+limiar veio de fotos editadas no iPhone comparadas ao original (5 de 8
+acima de 0,95) e de fotos em sequência (até 0,93 em 16 pares); das edições
+achadas, todas são a mesma imagem com outro tom. Na primeira rodada, pares
+de vídeos e fotos quase pretas passavam: corrigido antes de publicar.
+
 ## 0.3.15 — 18/11/2026
 
 - Recompressão (etapa 0.5): o Geyma diz quando o Google guarda a foto no

@@ -29,9 +29,12 @@ export function placarIdentidade(r) {
   // dimensões
   if (p.rel === 'igual') add('dimensoes', 2, 'mesmas dimensões');
   else if (p.rel === 'reduzida') add('dimensoes', 1, `mesma proporção, ${r.menor === 'icloud' ? 'menor no iCloud' : 'menor no Google'}`);
+  else if (p.rel === 'recorte') add('dimensoes', 0, `proporções diferentes (recortada no ${r.recorte === 'icloud' ? 'iCloud' : 'Google'})`);
 
-  // imagem (pHash: distância de 0 a 64)
-  if (p.dist === null || p.dist === undefined) add('imagem', 0, 'imagens ainda não comparadas');
+  // imagem (pHash: distância de 0 a 64; no recorte, a busca nas miniaturas)
+  if (p.recorte) add('imagem', 4, `uma é recorte da outra (semelhança ${String(p.recorte).replace('.', ',')})`);
+  else if (p.edicao) add('imagem', 3, `mesma imagem com outro tom ou cor: uma foi editada (semelhança ${String(p.edicao).replace('.', ',')})`);
+  else if (p.dist === null || p.dist === undefined) add('imagem', 0, 'imagens ainda não comparadas');
   else if (p.dist <= SAME_MAX) add('imagem', 4, `imagens iguais (distância ${p.dist})`);
   else if (p.dist < DIFFERENT_MIN) {
     if (r.quadroDiferente) add('imagem', 1, `outro quadro do mesmo clique de uma Live Photo (distância ${p.dist})`);

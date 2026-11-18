@@ -10,6 +10,7 @@ import { ICLOUD_URL_VALIDA_MS } from './core/viewer-src.js';
 import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 import { conferirChegadas, marcarChegadas } from './core/envio.js';
+import { candidatosRecorte, candidatosEdicao } from './core/recorte.js';
 
 const row = (cls, a, g, extra = {}) => {
   const { cat, reasons } = classifyRow(a, g);
@@ -175,8 +176,9 @@ self.onmessage = async (e) => {
         ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
         ident: estadoIdentidade(p),
         // provas brutas, para o placar no visualizador (placar.js)
-        prova: { dt: p.dt, dist: p.dist ?? null, rel: p.rel || null, ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}), ...(p.rajada ? { rajada: p.rajada } : {}) },
+        prova: { dt: p.dt, dist: p.dist ?? null, rel: p.rel || null, ...(p.recorte ? { recorte: p.recorteNcc } : {}), ...(p.edicaoNcc ? { edicao: p.edicaoNcc } : {}), ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}), ...(p.rajada ? { rajada: p.rajada } : {}) },
         ...(p.fuso ? { fuso: p.deslocamentoMs } : {}),
+        ...(p.recorte ? { recorte: p.recorte } : {}),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...(p.versaoEditada ? { versaoEditada: true } : {}),
         ...dupInfo(p.a, p.g),
@@ -202,6 +204,8 @@ self.onmessage = async (e) => {
       phashNeeded: googlePhashNeeded(dupG.pendingIds, result.pairs, new Set(google.filter((g) => g.phash).map((g) => g.id))),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       googleFileNeeded: googleFileNeeded(result.pairs),
+      recorteNeeded: candidatosRecorte(result.soIcloud, result.soGoogle),
+      edicaoNeeded: candidatosEdicao(result.pairs),
       icloudPhashWanted: wanted.length,
       icloudThumbKeep: keep.length,
       phashProgress: phashProgress ? { ...phashProgress.value, at: phashProgress.at } : null,

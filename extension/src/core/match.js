@@ -137,13 +137,16 @@ export function matchLibraries(google, icloud, opts = {}) {
     l.push(g);
   }
   // veredito do usuário no visualizador (mesmaQue / diferenteDe, no item do iCloud)
-  const gById = A.some((a) => a.mesmaQue) ? new Map(G.map((g) => [g.id, g])) : null;
+  // recorte achado pelas miniaturas (recorte.js): no item do iCloud, com a foto do Google
+  const gById = A.some((a) => a.mesmaQue || a.recorte) ? new Map(G.map((g) => [g.id, g])) : null;
   const candidatesOf = (a) => {
     const escolhida = a.mesmaQue && gById?.get(a.mesmaQue);
     if (escolhida) {
       const { rel, dimsA } = relacaoDims(a, escolhida);
       return [{ g: escolhida, rel: rel || 'igual', dt: Math.abs(escolhida.ts - a.ts), dimsA, peloUsuario: true }];
     }
+    const recortada = a.recorte && !a.diferenteDe?.includes(a.recorte.g) && gById?.get(a.recorte.g);
+    if (recortada) return [{ g: recortada, rel: 'recorte', dt: Math.abs(recortada.ts - a.ts), dimsA: { w: a.w, h: a.h }, porRecorte: true }];
     const recusadas = a.diferenteDe?.length ? new Set(a.diferenteDe) : null;
     const s = Math.floor(a.ts / 1000);
     const out = [];
@@ -163,7 +166,7 @@ export function matchLibraries(google, icloud, opts = {}) {
   // Com o pHash dos dois lados, a imagem decide: candidatos claramente
   // diferentes saem, e os mais parecidos vêm primeiro.
   const byImage = (a, c) => {
-    if ((!a.phash && !a.phashOrig) || c[0]?.peloUsuario) return c;
+    if ((!a.phash && !a.phashOrig) || c[0]?.peloUsuario || c[0]?.porRecorte) return c;
     const scored = c.map((x) => ({ ...x, d: distImagem(a, x.g), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaFoto(x.g)) }));
     return scored
       // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de
@@ -194,7 +197,7 @@ export function matchLibraries(google, icloud, opts = {}) {
 
   // atribuição um-para-um: primeiro os casos sem disputa, depois os demais
   // (os pares que o usuário confirmou vêm antes de todos)
-  const confirmou = (x) => (cands.get(x.id)[0]?.peloUsuario ? 0 : 1);
+  const confirmou = (x) => (cands.get(x.id)[0]?.peloUsuario || cands.get(x.id)[0]?.porRecorte ? 0 : 1);
   const order = [...A].sort((x, y) => confirmou(x) - confirmou(y) || cands.get(x.id).length - cands.get(y.id).length || x.ts - y.ts);
   const usedG = new Set();
   const pairs = [];
@@ -212,7 +215,8 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (!pick) { soIcloud.push(a); continue; }
     usedG.add(pick.g.id);
     const peloUsuario = Boolean(pick.peloUsuario);
-    const imageConfirmed = peloUsuario || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
+    // recorte: a imagem já provou (uma é pedaço da outra); o pHash não serve
+    const imageConfirmed = peloUsuario || Boolean(pick.porRecorte) || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
     // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
     const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
     let disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
@@ -220,7 +224,8 @@ export function matchLibraries(google, icloud, opts = {}) {
     const rajada = disputed ? rajadaResolvida(pick, c, distPorG.get(pick.g.id).filter((x) => x.aId !== a.id).map((x) => ({ d: x.d, melhor: melhorDist(x.aId) }))) : null;
     if (rajada) disputed = false;
     // provas guardadas para o placar de identidade (placar.js)
-    const pair = { a, g: pick.g, dt: pick.dt, rel: pick.rel, dist: pick.d ?? distImagem(a, pick.g) };
+    const pair = { a, g: pick.g, dt: pick.dt, rel: pick.rel, dist: pick.porRecorte ? null : pick.d ?? distImagem(a, pick.g) };
+    if (pick.porRecorte) { pair.recorte = a.recorte.cortada; pair.recorteNcc = a.recorte.ncc; }
     if (peloUsuario) pair.confirmadoPeloUsuario = true;
     else if (imageConfirmed) pair.confirmadoPorImagem = true;
     if (reused) pair.duplicataNoIcloud = true;
@@ -229,13 +234,16 @@ export function matchLibraries(google, icloud, opts = {}) {
     const comparada = !imageConfirmed && pick.d !== undefined && pick.d !== null;
     const nome = mesmoNome(a, fichaFoto(pick.g));
     const quadro = comparada && (mesmoClique(a, pick.g, c.length) || (nome && isLive(a)));
-    // mesmo arquivo de origem com a imagem mudada: versão editada (corte, filtro)
-    const editada = comparada && !quadro && nome;
+    // mesmo arquivo de origem com a imagem mudada: versão editada (corte, filtro);
+    // ou a mesma imagem com outro tom, pela comparação das miniaturas (recorte.js)
+    const pelaMiniatura = comparada && !quadro && !nome && a.edicao?.g === pick.g.id;
+    const editada = comparada && !quadro && (nome || pelaMiniatura);
     const parecida = comparada && !quadro && !editada;
     if (parecida) pair.parecida = true;
     if (rajada) pair.rajada = rajada;
     if (quadro) pair.quadroDiferente = true;
     if (editada) pair.versaoEditada = true;
+    if (pelaMiniatura) pair.edicaoNcc = a.edicao.ncc;
     if (nome) pair.mesmoNome = true;
     if (pick.rel === 'reduzida') {
       pair.menor = pick.dimsA.w * pick.dimsA.h < pick.g.w * pick.g.h ? 'icloud' : 'google';

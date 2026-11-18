@@ -96,7 +96,7 @@ revisada manualmente.
   sai depois, na limpeza (0.8)
 - [x] Recompressão: pelo tamanho do arquivo no mesmo formato e dimensões,
   provada por amostragem pelas tabelas de quantização dos originais (0.3.15)
-- [ ] Recorte e edição pela comparação de miniaturas
+- [x] Recorte e edição pela comparação de miniaturas (0.3.16)
 
 ### 0.6 — Classificação e painel de proteção
 - [x] Regras baratas sobre metadados, com categoria, motivo e sugestão (0.2.8)
