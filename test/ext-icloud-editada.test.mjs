@@ -109,3 +109,12 @@ test('fila: editada baixa as duas versões para a impressão digital e troca a m
   ]);
   assert.deepEqual(saved[0], { id: 'a:1', editada: true, phash: 'h', phashOrig: 'o', blob: 'b' });
 });
+
+test('localização: só a presença, nunca o conteúdo', () => {
+  const comLocal = { ...asset, fields: { ...asset.fields, locationEnc: { value: 'QUJD' } } };
+  const [it] = parseIcloudQuery({ records: [master, comLocal] });
+  assert.equal(it.local, true);
+  assert.ok(!JSON.stringify(it).includes('QUJD'));
+  const [sem] = parseIcloudQuery({ records: [master, asset] });
+  assert.equal(sem.local, false);
+});

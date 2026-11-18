@@ -66,3 +66,11 @@ test('Google: foto com movimento, vídeo e nome do arquivo (quando a ficha foi l
   // ficha de vídeo é a da capa: não conta
   assert.equal(classifyGoogle({ w: 640, h: 480, video: true, file: { nome: 'IMG_1234.jpg' } }).cat, 'indefinido');
 });
+
+test('iCloud: localização (GPS) conta como câmera, depois das regras de lixo', () => {
+  assert.deepEqual(classifyIcloud({ w: 1920, h: 1080, local: true }), { cat: 'pessoal', reasons: ['com localização (GPS)'] });
+  // captura de tela e mensageiro continuam vencendo
+  assert.equal(classifyIcloud({ w: 1920, h: 1080, local: true, subtype: 3 }).cat, 'print');
+  assert.equal(classifyIcloud({ w: 1920, h: 1080, local: true, importedBy: 'net.whatsapp.WhatsApp' }).cat, 'recebida');
+  assert.equal(classifyIcloud({ w: 1920, h: 1080 }).cat, 'indefinido');
+});

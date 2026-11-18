@@ -73,6 +73,7 @@ export function classifyIcloud(a) {
   if (/raw-image/.test(a.fileType || '')) reasons.push('arquivo RAW');
   for (const [re, cat, why] of NAME) if (cat === 'pessoal' && re.test(name)) reasons.push(why);
   if (a.favorite) reasons.push('favorita');
+  if (a.local) reasons.push('com localização (GPS)');
   if (reasons.length) return { cat: 'pessoal', reasons };
 
   if (a.fileType === 'com.compuserve.gif') return { cat: 'internet', reasons: ['GIF'] };

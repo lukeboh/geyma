@@ -2,6 +2,19 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.48 — 18/11/2026
+
+- iCloud: o inventário passa a registrar se a foto tem localização (`local`,
+  pelo campo `locationEnc`), só a presença, nunca qual é o lugar. Na
+  classificação, "com localização (GPS)" conta como sinal de câmera, depois
+  das regras de captura de tela, mensageiro e apps (que continuam vencendo).
+  Vale a partir do próximo percurso do iCloud.
+
+Verificação: 149 testes passando. Uso real: numa amostra das respostas do
+próprio site durante o percurso, quase todas as fotos de câmera e Live Photos
+tinham localização, e nenhuma captura de tela tinha. O campo `people` veio
+sempre vazio.
+
 ## 0.2.47 — 18/11/2026
 
 - Celular: "O que fazer agora" no topo do resumo, com os mesmos passos do

@@ -116,6 +116,8 @@ export function normalizeIcloudPair(asset, master) {
     // visto agora: desfaz uma marca antiga de "fora do percurso"
     foraDoPercurso: false,
     favorite: Number(a('isFavorite')) === 1,
+    // só se a foto tem localização (GPS), nunca qual: câmera grava, captura de tela e imagem da internet não
+    local: Boolean(a('locationEnc')),
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
     ...icloudVersoes(a, m),
     thumbAt: Date.now(),
