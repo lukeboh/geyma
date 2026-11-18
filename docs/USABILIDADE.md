@@ -102,4 +102,5 @@ Pedido do usuário: o painel não era fácil de entender sozinho.
 - Grade de miniaturas grandes para revisar um filtro inteiro de uma vez
   (selecionar as exceções e marcar o resto em lote), com atalhos de teclado.
 - Assistente de início que verifica de verdade: extensão instalada, sessões
-  abertas, janela do iCloud, tamanho das miniaturas.
+  abertas, janela do iCloud, tamanho das miniaturas. (Em parte: o cartão "O
+  que fazer agora", 0.2.46, diz o próximo passo com o número de itens.)

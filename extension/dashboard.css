@@ -442,6 +442,11 @@ th:first-child, td:first-child { text-align: left; }
 .class-card .hint { flex: 1; }
 .class-card button { align-self: flex-start; margin-top: 10px; }
 
+/* o que fazer agora */
+.passos { margin: 8px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.passos li { padding-left: 4px; }
+.passos li > span { margin-right: 10px; }
+.passos li button { vertical-align: middle; }
 .cat-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 10px; }
 .cat-grid article { border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
 .cat-grid .n { font-size: 24px; font-weight: 750; font-stretch: 110%; }

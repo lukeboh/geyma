@@ -2,6 +2,19 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.46 — 18/11/2026
+
+- "O que fazer agora" no topo da aba Proteção (`proximosPassos` em
+  `passos.js`): os próximos passos que dependem do usuário, com quantos
+  itens cada um envolve e um botão que já faz ou leva ao lugar certo —
+  conferir o Google e o iCloud pelas miniaturas, conferir os arquivos do
+  Google, responder os pares incertos (abre o primeiro no visualizador, com
+  os atalhos), percorrer o iCloud de novo (nunca concluído, há mais de 30
+  dias ou com fotos esperando comparação) e revisar os Pendentes.
+
+Verificação: 147 testes passando (`ext-passos`, novo). Uso real: cartão com
+cinco passos na aba Proteção.
+
 ## 0.2.45 — 18/11/2026
 
 - A pergunta central respondida em números (critério da etapa 0.6,

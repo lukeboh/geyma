@@ -13,6 +13,7 @@ import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, te
 import { fichaDoCabecalho } from './src/core/google-file.js';
 import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
 import { resumoProtecao } from './src/core/protecao.js';
+import { proximosPassos } from './src/core/passos.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -355,6 +356,35 @@ async function runIcloudCheck() {
 
 const GB = (bytes) => `${(bytes / 1024 ** 3).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} GB`;
 
+// ---------- o que fazer agora ----------
+const irPara = (filtro) => {
+  $('r-cls').value = filtro.cls || ''; $('r-cat').value = filtro.cat || ''; $('r-dec').value = filtro.dec || '';
+  page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' }));
+};
+const PASSO = {
+  conferirGoogle: { botao: 'Conferir', fazer: () => $('m-phash').click() },
+  conferirIcloud: { botao: 'Conferir', fazer: () => $('m-ic-run').click() },
+  arquivosGoogle: { botao: 'Conferir', fazer: () => $('m-gf-run').click() },
+  responderPares: { botao: 'Começar', fazer: () => { irPara({ cls: 'idIncerta' }); const l = filtered(); for (const r of l) if (verFotos(r, null, l)) break; } },
+  percorrerIcloud: { botao: 'Ir ao Inventário', fazer: () => document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'inv' })) },
+  revisarPendentes: { botao: 'Ver categorias', fazer: () => $('m-cat-box').scrollIntoView({ behavior: 'smooth', block: 'start' }) },
+};
+async function renderPassos() {
+  const [concl, prog] = await Promise.all([getMeta('icloudCompleted'), getMeta('phashProgress')]);
+  const passos = proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' } });
+  $('m-passos-box').hidden = !passos.length;
+  $('m-passos').replaceChildren(...passos.map((p) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span><b>${fmt.format(p.n)}</b> ${escHtml(p.texto)}</span>`;
+    if (p.id === 'percorrerIcloud' && p.n === 1) li.querySelector('b').remove();
+    const b = document.createElement('button');
+    b.textContent = PASSO[p.id].botao;
+    b.addEventListener('click', PASSO[p.id].fazer);
+    li.append(b);
+    return li;
+  }));
+}
+
 /** A pergunta central: fotos pessoais guardadas nos dois lugares, sem perda (muda com as marcações). */
 function renderProtecao() {
   const p = resumoProtecao(data.rows);
@@ -371,6 +401,7 @@ function renderProtecao() {
 export function renderPlan() {
   if (!data) return;
   renderProtecao();
+  renderPassos().catch(() => {});
   const plan = sendPlan(data.rows);
   $('m-plan-box').hidden = !data.rows.length;
   $('m-plan').innerHTML = [
