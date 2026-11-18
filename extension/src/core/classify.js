@@ -50,6 +50,7 @@ const NAME = [
   [/^IMG-\d{8}-WA\d+/i, 'recebida', 'nome do WhatsApp'],
   [/^(received_|FB_IMG|Snapchat-|inbound)/i, 'recebida', 'nome de mensageiro ou rede social'],
   [/^(Screenshot|Screen Shot|Captura de Tela|Captura de ecrã|Simulator Screen)/i, 'print', 'nome de captura de tela'],
+  [/^(ScreenRecording|Screen Recording|RPReplay|Gravação de Tela|Grava[cç][aã]o da Tela)/i, 'print', 'nome de gravação de tela'],
   [/^(IMG_\d{4}|IMG_E\d{4}|DSC[NF_]?\d+|_DSC\d+|P\d{7}|DSCF\d+|GOPR\d+|PXL_\d{8}|IMG_\d{8}_\d{6}|\d{8}_\d{6})/i, 'pessoal', 'nome de câmera'],
   [/(NIKON|Canon|iPhone|SONY|Panasonic|FUJIFILM|OLYMPUS|Galaxy)/i, 'pessoal', 'modelo da câmera no nome'],
   [/^filme-\d{4}/i, 'pessoal', 'filme digitalizado'],
@@ -79,6 +80,8 @@ export function classifyIcloud(a) {
   const name = a.filename || '';
   const from = a.importedBy || '';
   if (sub === 'screenshot') return { cat: 'print', reasons: ['marcada pela Apple como captura de tela'] };
+  // gravação de tela do iPhone (ReplayKit)
+  if (/com.apple.replayd/.test(a.importedBy || '')) return { cat: 'print', reasons: ['gravação de tela do iPhone'] };
   for (const [re, cat, why] of NAME) if (cat === 'print' && re.test(name)) return { cat, reasons: [why] };
   // documento e propaganda antes de "recebida": um comprovante mandado pelo
   // WhatsApp é antes de tudo um comprovante

@@ -67,6 +67,13 @@ test('Google: foto com movimento, vídeo e nome do arquivo (quando a ficha foi l
   assert.equal(classifyGoogle({ w: 640, h: 480, video: true, file: { nome: 'IMG_1234.jpg' } }).cat, 'indefinido');
 });
 
+test('gravações de tela: pelo nome ou pelo gravador do iPhone', () => {
+  const v = { video: true, fileType: 'com.apple.quicktime-movie', w: 1126, h: 2436 };
+  assert.deepEqual(classifyIcloud(a({ ...v, filename: 'ScreenRecording_11-16-2026 14-03-18_1.MP4' })), { cat: 'print', reasons: ['nome de gravação de tela'] });
+  assert.equal(classifyIcloud(a({ ...v, filename: 'RPReplay_Final1690000000.MP4' })).cat, 'print');
+  assert.deepEqual(classifyIcloud(a({ ...v, filename: 'IMG_1.MP4', importedBy: 'com.apple.replayd' })), { cat: 'print', reasons: ['gravação de tela do iPhone'] });
+});
+
 test('documentos: nome ou app de digitalizar, antes de "recebida"', () => {
   assert.equal(classifyIcloud(a({ filename: 'Comprovante_pix.jpg' })).cat, 'documento');
   assert.equal(classifyIcloud(a({ filename: 'CamScanner 01-02-2020.jpg', w: 2480, h: 3508 })).cat, 'documento');

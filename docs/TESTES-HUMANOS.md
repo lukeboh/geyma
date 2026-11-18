@@ -103,6 +103,17 @@ Abra uma foto **Pendente** (por exemplo, uma captura de tela), uma marcada
 **Esperado:** nenhuma delas mostra "Enviar ao…".
 Observado:
 
+### E10 — Envio em lote (só depois de E3 a E7 darem certo) ☐
+1. Revisão → Situação "Só no iCloud" (ou "Só no Google").
+2. A barra "Enviar ao … as próximas N fotos" aparece acima da lista.
+3. Clique **Enviar N** e depois **Confirmar o envio de N fotos**.
+
+**Esperado:** "Enviando 1 de N…", uma foto a cada poucos segundos; o botão
+**Parar** interrompe entre uma foto e outra; ao fim, "N foto(s) entregue(s)".
+Nenhuma foto Pendente, vídeo ou repetida vai. No próximo cruzamento, as que
+chegaram somem da lista.
+Observado:
+
 ---
 
 ## 2. Classificação (0.6)
@@ -116,6 +127,12 @@ Observado (quantos, quantos errados):
 ### C2 — Propaganda ☐
 Revisão → categoria **Propaganda**.
 **Esperado:** a imagem salva da Shopee é um anúncio.
+Observado:
+
+### C4 — Gravações de tela ☐
+Revisão → categoria "Captura de tela", Tipo "Só vídeos".
+**Esperado:** as gravações de tela do iPhone (`ScreenRecording…`,
+`RPReplay…`) estão aqui, e não em "Pessoal (câmera)".
 Observado:
 
 ### C3 — Fotos digitalizadas continuam pessoais ☐
@@ -153,6 +170,28 @@ Abra uma foto editada no iPhone.
 **Esperado:** duas imagens do iCloud, "como está agora (editada)" e
 "original"; a editada carrega grande ao ampliar (pode levar uns 7 s quando
 o link venceu).
+Observado:
+
+### I5 — Placar de identidade ☐
+Abra alguns pares (filtro "Em ambos").
+**Esperado:** sob as fotos, "Placar +N:" com as provas e os pontos de cada
+uma (instante, dimensões, imagem, nome, outras fotos no mesmo segundo). As
+provas batem com o que você vê nas fotos.
+Observado:
+
+### I6 — Pares com poucas provas ☐
+Revisão → filtro **"Mesma foto: poucas provas (placar baixo)"** → responda
+10 pares.
+**Esperado:** são os pares mais duvidosos (fotos em sequência no mesmo
+segundo, imagens só parecidas). Anote quantos eram mesmo a mesma foto: se
+quase todos forem, o placar está pessimista demais.
+Observado (mesma foto em quantos de 10):
+
+### I7 — Fotos em sequência resolvidas pela imagem ☐
+Procure, nos pares, um placar com "a mais parecida entre N fotos do Google
+no mesmo segundo".
+**Esperado:** a foto do Google mostrada é de fato a mesma (não a anterior ou
+a seguinte da sequência). São poucos casos (4 em 18/11).
 Observado:
 
 ---

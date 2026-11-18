@@ -2,6 +2,23 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.10 — 18/11/2026
+
+- Envio em lote (0.7): na revisão, com a situação "Só no iCloud" ou "Só no
+  Google", uma barra oferece enviar as próximas 10 fotos da lista que podem
+  ir. Dois cliques (o segundo confirma), uma foto por vez com 3 s entre
+  elas, botão Parar, parada no primeiro erro. As já enviadas não entram de
+  novo. Para usar depois do piloto de uma foto.
+- Classificação: gravações de tela do iPhone (nome `ScreenRecording…`,
+  `RPReplay…`, ou gravadas pelo `com.apple.replayd`) passam de "Pessoal
+  (câmera)" para captura de tela (Pendente). Achado olhando a lista: 101
+  vídeos na biblioteca.
+- Roteiro de testes: casos do placar (I5, I6), das fotos em sequência (I7),
+  do envio em lote (E10) e das gravações de tela (C4).
+
+Verificação: 176 testes passando. Barra de lote conferida no painel (nada
+enviado).
+
 ## 0.3.9 — 18/11/2026
 
 - Fotos em sequência no mesmo segundo (0.4): quando várias fotos do Google

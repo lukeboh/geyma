@@ -15,7 +15,7 @@ import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
 import { resumoProtecao } from './src/core/protecao.js';
 import { proximosPassos } from './src/core/passos.js';
 import { sugestoesDoGoogle } from './src/core/sugestoes.js';
-import { podeEnviar, DESTINOS } from './src/core/envio.js';
+import { podeEnviar, filaDeEnvio, DESTINOS } from './src/core/envio.js';
 import { placarIdentidade, textoPlacar } from './src/core/placar.js';
 
 const $ = (id) => document.getElementById(id);
@@ -53,6 +53,8 @@ export function initProtection() {
   for (const [k, l] of Object.entries(DECISIONS)) $('r-sel-dec').append(new Option(l, k));
   $('r-sel-dec').value = 'descartar';
   $('r-sel-apply').addEventListener('click', applySelection);
+  $('r-envio-go').addEventListener('click', enviarLote);
+  $('r-envio-stop').addEventListener('click', () => { if (loteJob) loteJob.parar = true; });
   $('r-sel-all').addEventListener('click', () => selectAll(true));
   $('r-sel-none').addEventListener('click', () => selectAll(false));
   $('r-confirm-no').addEventListener('click', cancelBatch);
@@ -603,6 +605,7 @@ function renderList() {
   $('r-next').disabled = page >= pages - 1;
   $('r-batch-n').textContent = fmt.format(rows.length);
   for (const b of document.querySelectorAll('#r-batch button[data-dec]')) b.disabled = !rows.length;
+  renderEnvioLote(rows);
   cancelBatch();
   renderReviewSummary();
   pageRows = rows.slice(page * PAGE, (page + 1) * PAGE);
@@ -857,6 +860,68 @@ function envioNoVisor(r) {
     acoes.push({ rotulo: 'Só baixar e conferir', seguir: false, titulo: 'Ensaio: baixa o arquivo e confere, sem enviar nada', aoClicar: pedir(true) });
   }
   return { pergunta, acoes };
+}
+
+// ---------- envio em lote, a partir da lista filtrada ----------
+const LOTE_MAX = 10;
+let loteJob = null;
+let loteConfirmar = false;
+
+/** Próximas fotos da lista que podem ir ao destino e ainda não foram enviadas. */
+function filaDoLote(rows) {
+  const cls = $('r-cls').value;
+  const destino = cls === 'soIcloud' ? 'google' : cls === 'soGoogle' ? 'icloud' : null;
+  if (!destino) return null;
+  const naoEnviadas = rows.filter((r) => !['enviado', 'chegou'].includes(envioEstado[(destino === 'google' ? r.a : r.g)?.id]?.estado));
+  return { destino, fila: filaDeEnvio(naoEnviadas, destino, { limite: LOTE_MAX }) };
+}
+
+function renderEnvioLote(rows = filtered()) {
+  if (loteJob) return;
+  const l = filaDoLote(rows);
+  $('r-envio').hidden = !l?.fila.length;
+  loteConfirmar = false;
+  if (!l?.fila.length) return;
+  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} as próximas ${l.fila.length} fotos desta lista que podem ir (marcadas Pessoal ou Manter, sem vídeos nem repetidas). Uma por vez; para no primeiro erro. Faça antes o piloto de uma foto (docs/TESTES-HUMANOS.md).`;
+  $('r-envio-go').textContent = `Enviar ${l.fila.length}`;
+  $('r-envio-stop').hidden = true;
+}
+
+async function enviarLote() {
+  if (loteJob) return;
+  const l = filaDoLote(filtered());
+  if (!l?.fila.length) return;
+  // dois cliques: o primeiro só pede a confirmação
+  if (!loteConfirmar) {
+    loteConfirmar = true;
+    $('r-envio-go').textContent = `Confirmar o envio de ${l.fila.length} fotos`;
+    return;
+  }
+  loteJob = { parar: false };
+  $('r-envio-go').disabled = true;
+  $('r-envio-stop').hidden = false;
+  let feitas = 0;
+  let erro = null;
+  for (const r of l.fila) {
+    if (loteJob.parar) break;
+    const id = (l.destino === 'google' ? r.a : r.g).id;
+    $('r-envio-txt').textContent = `Enviando ${feitas + 1} de ${l.fila.length} ao ${DESTINOS[l.destino]}…`;
+    const res = await chrome.runtime.sendMessage({ kind: 'envio', ids: [id], destino: l.destino }).catch((e) => ({ erro: String(e.message || e) }));
+    const x = res?.resultados?.[0];
+    if (!x || x.estado === 'falhou') { erro = x?.erro || res?.erro || 'sem resposta da extensão'; break; }
+    feitas++;
+    // deixa o site começar o envio antes de entregar a próxima
+    await new Promise((ok) => setTimeout(ok, 3000));
+  }
+  await lerEnvio();
+  const parou = loteJob.parar;
+  loteJob = null;
+  $('r-envio-go').disabled = false;
+  renderEnvioLote();
+  $('r-envio').hidden = false;
+  $('r-envio-txt').textContent = erro
+    ? `Parou no erro depois de ${feitas} foto(s): ${erro}`
+    : `${feitas} foto(s) entregue(s) ao site do ${DESTINOS[l.destino]}${parou ? ' (parado por você)' : ''}. Veja lá se os envios terminaram; o próximo cruzamento confere a chegada.`;
 }
 
 /** Junta as perguntas e os botões do veredito e do envio. */
