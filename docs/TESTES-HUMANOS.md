@@ -168,6 +168,15 @@ Observado:
 do notebook depois do cruzamento.
 Observado:
 
+### M2 — Envio pelo celular ☐
+Depois do E3 e do E6 darem certo no notebook.
+1. No celular, abra uma foto "Só no iCloud" marcada Pessoal.
+2. Toque **Só baixar e conferir** e depois **Enviar ao Google Fotos**.
+
+**Esperado:** as mesmas mensagens do notebook; a foto aparece no Google.
+Uma foto Pendente não mostra os botões.
+Observado:
+
 ---
 
 ## 5. Google

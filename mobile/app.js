@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.3.1';
+import { abrirVisor } from './viewer.js?v=0.3.7';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -310,6 +310,29 @@ function vereditoDa(l) {
   return {};
 }
 
+const DESTINO = { google: 'Google Fotos', icloud: 'iCloud' };
+const ESTADO_ENVIO = { ensaio: 'baixada e conferida (nada enviado)', enviado: 'entregue ao site', chegou: 'chegou ao destino', falhou: 'o envio falhou' };
+
+/** Botões "Enviar ao …" e "Só baixar e conferir" (o notebook baixa e entrega ao site do outro serviço). */
+function envioDa(l) {
+  const e = l.envio;
+  if (!e) return { acoes: [] };
+  const nome = DESTINO[e.destino];
+  const pedir = (ensaio) => async () => {
+    const x = await post('/api/enviar', { id: e.id, destino: e.destino, ensaio });
+    if (!x || x.estado === 'falhou' || x.erro) throw new Error(x?.erro || 'sem resposta do notebook');
+    e.estado = x.estado;
+    const arqs = `${(x.arquivos || []).join(' + ')}, ${((x.bytes || 0) / 1048576).toFixed(1)} MB`;
+    if (x.estado === 'ensaio') return `Conferido, nada enviado: ${arqs}.`;
+    return `Entregue ao site do ${nome} no notebook: ${arqs}. Veja lá se o envio terminou.`;
+  };
+  const acoes = [];
+  if (e.estado !== 'enviado' && e.estado !== 'chegou') acoes.push({ rotulo: `Enviar ao ${nome}`, seguir: false, aoClicar: pedir(false) });
+  acoes.push({ rotulo: 'Só baixar e conferir', seguir: false, aoClicar: pedir(true) });
+  const pergunta = e.estado ? `Envio ao ${nome}: ${ESTADO_ENVIO[e.estado] || e.estado}${e.erro ? ` (${e.erro})` : ''}.` : '';
+  return { pergunta, acoes };
+}
+
 /** Fotos da linha em tamanho grande, lado a lado (uma em cima da outra no celular). */
 async function verGrande(l) {
   if (!l.thumbs.length) return;
@@ -323,6 +346,9 @@ async function verGrande(l) {
     aoEscolher: async () => { await post('/api/veredito', { a: l.par.a, g: s.g, tipo: 'mesma' }); return RESPOSTA.mesma; },
   }));
   const ver = vereditoDa(l);
+  const env = envioDa(l);
+  ver.pergunta = [ver.pergunta, env.pergunta].filter(Boolean).join(' ');
+  ver.acoes = [...(ver.acoes || []), ...env.acoes];
   if (sugestoes.length) Object.assign(ver, { pergunta: [ver.pergunta, 'Está no Google com outro horário? Toque na foto, se for uma destas:'].filter(Boolean).join(' '), sugestoes });
   abrirVisor(l.thumbs.map((t) => ({
     src: thumbUrl(t),

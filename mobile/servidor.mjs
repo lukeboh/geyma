@@ -223,6 +223,15 @@ const server = createServer(async (req, res) => {
         if (!/^a:[A-Za-z0-9-]{1,80}$/.test(String(b.a || '')) || (b.g != null && !/^g:[A-Za-z0-9_-]{1,200}$/.test(String(b.g)))) return json(res, 400, { erro: 'itens inválidos' });
         return json(res, 200, await api('veredito', String(b.a), b.g == null ? null : String(b.g), String(b.tipo || '')));
       }
+      if (url.pathname === '/api/enviar') {
+        const b = await readBody(req);
+        const id = String(b.id || '');
+        const destino = b.destino === 'icloud' ? 'icloud' : b.destino === 'google' ? 'google' : null;
+        // a origem é sempre do outro serviço: ao Google vai um item do iCloud, e vice-versa
+        const valido = destino === 'google' ? /^a:[A-Za-z0-9-]{1,80}$/.test(id) : destino === 'icloud' && /^g:[A-Za-z0-9_-]{1,200}$/.test(id);
+        if (!valido) return json(res, 400, { erro: 'envio inválido' });
+        return json(res, 200, await api('enviar', id, destino, Boolean(b.ensaio)));
+      }
       if (url.pathname === '/api/recompute') return json(res, 200, { ok: await api('recompute') });
     }
     return send(res, 404, 'não encontrado');

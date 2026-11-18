@@ -87,13 +87,14 @@ revisada manualmente.
 - [x] Indicador da melhor cópia de cada foto (resolução, formato do arquivo do
   Google, movimento da Live Photo), com filtro na revisão e no plano de
   envio (0.2.38)
-- Redimensionamento pelos metadados
-- Recorte, edição e recompressão pela comparação de miniaturas e, por amostragem,
-  dos originais
-- Indicador da melhor cópia de cada foto, usando a ficha do arquivo do Google
-  (original, convertido, reduzido) e o movimento das Live Photos
-- Live Photos que no Google estão sem o movimento: candidatas a envio a
-  partir do iCloud
+- [x] Redimensionamento pelos metadados: "cópia reduzida" pela proporção das
+  dimensões, conferida pela imagem (0.2.30), e "menor no Google" na melhor
+  cópia (0.2.38)
+- [x] Live Photos que no Google estão sem o movimento: candidatas a reenvio a
+  partir do iCloud, com o botão de envio (0.3.5); a cópia antiga do Google
+  sai depois, na limpeza (0.8)
+- [ ] Recorte, edição e recompressão pela comparação de miniaturas e, por
+  amostragem, dos originais
 
 ### 0.6 — Classificação e painel de proteção
 - [x] Regras baratas sobre metadados, com categoria, motivo e sugestão (0.2.8)

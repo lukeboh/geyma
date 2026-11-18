@@ -2,6 +2,21 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.7 — 18/11/2026
+
+- Envio pelo celular: o visualizador do celular ganha "Enviar ao …" e "Só
+  baixar e conferir", como no notebook. O pedido passa pelo servidor do
+  notebook (`POST /api/enviar`), que confere de novo se a foto pode ir e se
+  o item é mesmo do outro serviço; quem baixa e entrega é a extensão.
+- Os arquivos do app do celular mudaram de versão no endereço (`?v=0.3.7`),
+  para o celular não ficar com o visualizador antigo em cache.
+- Roadmap: a seção 0.5 arrumada (item repetido; redimensionamento pelos
+  metadados e Live Photos sem movimento marcados como feitos).
+
+Verificação: 164 testes passando. Uso real pela API do celular (no painel):
+ensaio de uma foto só do Google baixado e conferido; pedido com o destino
+errado recusado.
+
 ## 0.3.6 — 18/11/2026
 
 - Envio: a cada cruzamento, o Geyma procura no inventário do destino o que

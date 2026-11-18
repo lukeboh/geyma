@@ -11,6 +11,7 @@ import { proximosPassos } from './src/core/passos.js';
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { getMeta, getThumb } from './src/core/db.js';
+import { podeEnviar } from './src/core/envio.js';
 import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 
 const THUMB_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(usercontent\.google\.com|googleusercontent\.com|icloud-content\.com)\//;
@@ -44,7 +45,18 @@ const thumbsOf = (r) => {
   return t;
 };
 
-const compact = (r) => ({
+/** Para onde a linha pode ir, com o estado do último envio (botões "Enviar ao …"). */
+function envioDa(r, estado) {
+  for (const destino of ['google', 'icloud']) {
+    if (!podeEnviar(r, destino).ok) continue;
+    const id = (destino === 'google' ? r.a : r.g).id;
+    const e = estado?.[id];
+    return { destino, id, estado: e?.destino === destino ? e.estado : null, erro: e?.destino === destino ? e.erro || null : null };
+  }
+  return null;
+}
+
+const compact = (r, envio = {}) => ({
   ids: r.ids,
   ts: r.ts,
   cls: r.cls,
@@ -66,6 +78,7 @@ const compact = (r) => ({
   melhor: r.melhor || null,
   // veredito do usuário sobre o par (botões "São a mesma foto / São fotos diferentes")
   par: r.a?.id ? { a: r.a.id, g: r.g?.id || null, ja: vereditoDoPar(r.a, r.g?.id), recusados: r.a.diferenteDe?.length || 0 } : null,
+  envio: envioDa(r, envio),
   thumbs: thumbsOf(r),
 });
 
@@ -120,7 +133,8 @@ window.geymaApi = {
     const all = filterRows(data.rows, f);
     const n = Math.max(1, Math.min(120, Number(size) || 30));
     const p = Math.max(0, Number(page) || 0);
-    return { total: all.length, page: p, size: n, rows: all.slice(p * n, (p + 1) * n).map(compact) };
+    const envio = (await getMeta('envio'))?.value || {};
+    return { total: all.length, page: p, size: n, rows: all.slice(p * n, (p + 1) * n).map((r) => compact(r, envio)) };
   },
 
   /** Fotos só do Google que podem ser a mesma de uma foto só do iCloud (para parear à mão). */
@@ -129,6 +143,22 @@ window.geymaApi = {
     const r = rowIndex(data).get(aId);
     if (!r || r.cls !== 'soIcloud') return [];
     return candidatosDoGoogle(r).map((g) => ({ g: g.id, ts: g.ts, dims: `${g.w}×${g.h}`, url: `${g.thumb}=w320-h320-c` }));
+  },
+
+  /**
+   * Envia (ou só baixa e confere, ensaio) a foto de origem de uma linha ao outro
+   * serviço, pelo site dele. Confere de novo se a linha pode ir.
+   */
+  async enviar(id, destino, ensaio) {
+    const data = await whenComputed();
+    const r = rowIndex(data).get(id);
+    if (!r) throw new Error('foto não encontrada');
+    const pode = podeEnviar(r, destino);
+    if (!pode.ok) throw new Error(pode.motivo);
+    const origem = destino === 'google' ? r.a : r.g;
+    if (origem.id !== id) throw new Error('item de origem errado');
+    const res = await chrome.runtime.sendMessage({ kind: 'envio', ids: [id], destino, ensaio: Boolean(ensaio) });
+    return res?.resultados?.[0] || { estado: 'falhou', erro: res?.erro || 'sem resposta da extensão' };
   },
 
   /** Veredito sobre um par: 'mesma', 'diferente' ou 'desfazer' (gId null desfaz tudo do item). */
