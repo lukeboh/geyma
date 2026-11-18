@@ -2,6 +2,14 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.41 — 18/11/2026
+
+- Documentação: [docs/ENVIO.md](docs/ENVIO.md) com os caminhos para o envio
+  curado (pasta local com os clientes oficiais, Library API do Google, envio
+  pela página, transferências oficiais), prós e contras, a proposta (pasta
+  local nos dois sentidos, com piloto de 10 fotos) e o que o usuário precisa
+  decidir.
+
 ## 0.2.40 — 18/11/2026
 
 - Marcação em lote mostra o espaço que os itens ocupam em cada serviço antes

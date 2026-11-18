@@ -110,6 +110,7 @@ revisada manualmente.
 com qualidade preservada". Marco de validação do uso pessoal.
 
 ### 0.7 — Envio curado nos dois sentidos
+Caminhos e proposta em [docs/ENVIO.md](docs/ENVIO.md) (aguarda decisão).
 - Envia **somente** itens marcados Pessoal ou Manter; Pendente e Descartar nunca
   são copiados; fotos ocultas do iCloud nunca entram (decisão de 16/11)
 - Google Photos Library API (escopo de envio), em lotes, em fluxo, com retomada
