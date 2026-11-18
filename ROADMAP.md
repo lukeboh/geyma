@@ -151,7 +151,9 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - [x] Envio pelo site até 300 MB, nos dois sentidos (0.3.17)
 - [x] Painel "Vídeos" e visualizador com duração, codec e ficha (0.3.17)
 - [ ] Piloto do envio de um vídeo (caso V3) e conferência da chegada
-- [ ] Vídeos acima de 300 MB: envio sem passar o arquivo inteiro pela memória
+- [x] Vídeos do iCloud ao Google de qualquer tamanho: envio direto pela página
+  do Google, com SHA-1 em pedaços (0.3.18)
+- [ ] Vídeos do Google ao iCloud acima de 300 MB
 - [ ] Assistir os dois lados no visualizador
 - [ ] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
 

@@ -158,6 +158,13 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     cruzamento, `tipoCompativel` e `porDuracao`; par com
     `confirmadoPorDuracao`. Envio até `LIMITE_VIDEO_ENVIO` (300 MB).
 
+25. **Envio direto (0.3.18):** vídeo do iCloud ao Google (`envioDireto` em
+    `core/envio.js`): o service worker manda `envio-direto` à aba do Google;
+    `src/page/envio.js` baixa o link do iCloud para um Blob, calcula o SHA-1
+    com `core/sha1.js` (importado pela página: `web_accessible_resources`)
+    e entrega; manda `envio-andamento` a cada 10 s, o que também mantém o
+    service worker acordado.
+
 ## 4. Decisões e motivos
 
 | Decisão | Motivo |
@@ -334,8 +341,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
    serviço, só com confirmação explícita.
 6. **Vídeos (0.9):** casos V1 a V3; a duração do iCloud chega com o próximo
-   percurso completo. Falta: envio acima de 300 MB sem passar pela memória,
-   assistir no visualizador e quadros amostrados.
+   percurso completo. Falta: vídeos do Google ao iCloud acima de 300 MB,
+   assistir no visualizador (em aba de fundo o Chrome não carrega o vídeo;
+   testar com o painel visível) e quadros amostrados.
 
 ### Como retomar (passo a passo)
 1. Chrome de automação aberto (`he chrome-automation`), com as abas do Google

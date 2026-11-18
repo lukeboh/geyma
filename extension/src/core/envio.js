@@ -11,8 +11,8 @@ export const DESTINOS = { google: 'Google Fotos', icloud: 'iCloud' };
 /**
  * Pode enviar esta linha do cruzamento ao destino? Só fotos marcadas Pessoal
  * ou Manter, sem cópia repetida, fora das ocultas e dos itens fora da
- * biblioteca principal. Vídeos até LIMITE_VIDEO_ENVIO (o arquivo inteiro passa
- * pela memória); os maiores ficam para o envio pelo computador.
+ * biblioteca principal. Vídeos do iCloud vão direto ao Google (envioDireto);
+ * do Google ao iCloud, até LIMITE_VIDEO_ENVIO (o arquivo passa pela memória).
  * @returns {{ok: boolean, motivo?: string, origem?: 'icloud'|'google'}}
  */
 export function podeEnviar(r, destino) {
@@ -22,8 +22,10 @@ export function podeEnviar(r, destino) {
   if (!it) return { ok: false, motivo: `a foto não está no ${DESTINOS[origem]}` };
   if (!SENDABLE.has(effectiveDecision(r))) return { ok: false, motivo: 'só vão fotos marcadas Pessoal ou Manter' };
   if (it.hidden || it.foraDoPercurso) return { ok: false, motivo: 'foto oculta ou fora da biblioteca principal' };
-  if (it.video) {
-    const bytes = origem === 'icloud' ? it.size : it.fileV?.bytes;
+  // do iCloud ao Google, o vídeo vai direto (a página do Google baixa o
+  // original para o disco): sem limite. Do Google ao iCloud, passa pela memória.
+  if (it.video && !(origem === 'icloud' && destino === 'google')) {
+    const bytes = it.fileV?.bytes;
     if (bytes > LIMITE_VIDEO_ENVIO) return { ok: false, motivo: `vídeo grande demais para o envio pelo site (mais de ${Math.round(LIMITE_VIDEO_ENVIO / 1048576)} MB): fica para o envio pelo computador` };
   }
   if (r.dup || r.dupIcloud) return { ok: false, motivo: 'cópia repetida: vai só a melhor' };
@@ -33,6 +35,13 @@ export function podeEnviar(r, destino) {
   if (destino === 'google' && r.a && r.g && r.melhor?.icloud?.length) return { ok: true, origem };
   return { ok: false, motivo: `a foto já está no ${DESTINOS[destino]}` };
 }
+
+/**
+ * Vai pelo envio direto? Vídeo do iCloud ao Google: a página do Google baixa
+ * o original do iCloud (link assinado, sem sessão) e o entrega ao próprio
+ * envio do site, sem passar pela memória da extensão.
+ */
+export const envioDireto = (it, destino) => destino === 'google' && it?.source === 'icloud' && ehVideo(it);
 
 /** Linhas que podem ir ao destino, na ordem da lista. */
 export function filaDeEnvio(rows, destino, { limite = Infinity } = {}) {

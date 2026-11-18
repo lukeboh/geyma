@@ -8,7 +8,7 @@ import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cach
 import { sendPlan, effectiveDecision, espacoDasLinhas, bytesPerPixel } from './src/core/plan.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
-import { abrirVisor } from './viewer.js';
+import { abrirVisor, mostrarAndamento } from './viewer.js';
 import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 import { fichaDoCabecalho } from './src/core/google-file.js';
 import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
@@ -310,7 +310,7 @@ function renderVideos() {
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos de vídeo do Google.` : 'Todos os arquivos de vídeo do Google já foram conferidos.');
   if (v.melhorIcloud) partes.push(`<a href="#rev" data-vid="melhorIcloud">Melhor cópia no iCloud em <b>${fmt.format(v.melhorIcloud)}</b> vídeos</a>.`);
   if (v.movimentoLive) partes.push(`${fmt.format(v.movimentoLive)} vídeos curtos só do Google são o movimento de uma Live Photo do iCloud, enviado à parte (ficam Pendentes).`);
-  if (v.grandes) partes.push(`${fmt.format(v.grandes)} vídeos só do iCloud passam de ${Math.round(LIMITE_VIDEO_ENVIO / 1048576)} MB e não vão pelo envio do site (memória do notebook).`);
+  if (v.grandes) partes.push(`${fmt.format(v.grandes)} vídeos só do Google passam de ${Math.round(LIMITE_VIDEO_ENVIO / 1048576)} MB e não vão ao iCloud pelo envio do site (memória do notebook); do iCloud ao Google não há limite.`);
   if (v.misturados) partes.push(`${fmt.format(v.misturados)} pares juntam uma foto e um vídeo (decididos por você ou de leituras antigas do Google).`);
   $('m-vid').innerHTML = partes.join(' ');
   for (const a of $('m-vid').querySelectorAll('a[data-vid]')) {
@@ -1150,6 +1150,16 @@ let envioEstado = {};
 const lerEnvio = () => getMeta('envio').then((m) => { envioEstado = m?.value || {}; }, () => {});
 lerEnvio();
 
+// andamento do envio direto de um vídeo (a página do Google baixa e confere)
+const FASE_ENVIO = { baixando: 'baixando o vídeo do iCloud', conferindo: 'conferindo o arquivo', entregando: 'entregando ao Google' };
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg?.kind !== 'status' || msg.event !== 'envio-andamento') return;
+  const quanto = msg.total ? ` (${msg.fase === 'baixando' ? MB(msg.total) : `${MB(msg.feitos || 0)} de ${MB(msg.total)}`})` : '';
+  const texto = `${FASE_ENVIO[msg.fase] || msg.fase}${quanto}…`;
+  mostrarAndamento(texto);
+  if (loteJob) $('r-envio-txt').textContent = texto;
+});
+
 const ESTADO_ENVIO = { ensaio: 'baixada e conferida (nada enviado)', enviado: 'entregue ao site', chegou: 'chegou ao destino', falhou: 'o envio falhou' };
 
 /** Botões "Enviar ao …" e "Só baixar e conferir" de uma linha, quando ela pode ir. */
@@ -1168,7 +1178,7 @@ function envioNoVisor(r) {
       const x = res?.resultados?.[0];
       if (!x || x.estado === 'falhou') throw new Error(x?.erro || res?.erro || 'sem resposta da extensão');
       const arqs = `${x.arquivos.join(' + ')}, ${MB(x.bytes)}`;
-      if (x.estado === 'ensaio') return `Conferido, nada enviado: ${arqs}.`;
+      if (x.estado === 'ensaio') return `Conferido, nada enviado: ${arqs}${x.direto ? ' (baixado pela página do Google, que é quem enviará)' : ''}.`;
       return `Entregue ao site do ${nome} (${x.estrategia === 'campo' ? 'pelo campo de envio' : 'como arrastar arquivos'}): ${arqs}. Veja na aba do ${nome} se o envio terminou.`;
     };
     if (ja?.estado !== 'enviado' && ja?.estado !== 'chegou') {
@@ -1199,7 +1209,7 @@ function renderEnvioLote(rows = filtered()) {
   $('r-envio').hidden = !l?.fila.length;
   loteConfirmar = false;
   if (!l?.fila.length) return;
-  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} as próximas ${l.fila.length} fotos desta lista que podem ir (marcadas Pessoal ou Manter, sem vídeos nem repetidas). Uma por vez; para no primeiro erro. Faça antes o piloto de uma foto (docs/TESTES-HUMANOS.md).`;
+  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} as próximas ${l.fila.length} fotos desta lista que podem ir (marcadas Pessoal ou Manter, sem repetidas; vídeos do Google acima de 300 MB ficam). Uma por vez; para no primeiro erro. Faça antes o piloto de uma foto (docs/TESTES-HUMANOS.md).`;
   $('r-envio-go').textContent = `Enviar ${l.fila.length}`;
   $('r-envio-stop').hidden = true;
 }

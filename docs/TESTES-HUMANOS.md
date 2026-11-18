@@ -202,8 +202,10 @@ Marque como Pessoal um vídeo só do iCloud com menos de 300 MB. No
 visualizador: **Ensaiar** e depois **Enviar ao Google**.
 **Esperado:** o ensaio mostra o arquivo .MOV ou .MP4 com o tamanho do
 original; o envio aparece no Google Fotos com a data certa e toca; na
-próxima leitura do Google ele aparece como "chegou". Um vídeo acima de
-300 MB não oferece o envio e diz o motivo.
+próxima leitura do Google ele aparece como "chegou". Repita com um vídeo
+grande (mais de 300 MB): o ensaio mostra o andamento ("baixando o vídeo do
+iCloud", "conferindo o arquivo") e o notebook não fica lento. Do Google ao
+iCloud, um vídeo acima de 300 MB não oferece o envio e diz o motivo.
 Observado:
 
 ---

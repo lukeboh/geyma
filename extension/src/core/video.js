@@ -84,9 +84,10 @@ export function copiaVideoNoGoogle(a, g) {
   return 'recomprimida';
 }
 
-// Envio pelo site: o arquivo inteiro passa pela memória da extensão e da
-// página. Acima disto, fica para o envio pelo computador (o notebook tem
-// pouca memória).
+// Envio do Google ao iCloud pelo site: o arquivo inteiro passa pela memória
+// da extensão e da página. Acima disto, fica para o envio pelo computador (o
+// notebook tem pouca memória). Do iCloud ao Google não há limite: a página do
+// Google baixa o original direto para o disco (envio direto, envio.js).
 export const LIMITE_VIDEO_ENVIO = 300 * 1024 * 1024;
 
 /**
@@ -156,10 +157,11 @@ export function resumoVideos(rows) {
       if (r.melhor?.google?.length) out.melhorGoogle++;
     } else if (r.a) {
       somar(out.soIcloud, r.a.durMs, r.a.size);
-      if (r.a.size > LIMITE_VIDEO_ENVIO) out.grandes++;
     } else {
       somar(out.soGoogle, r.g.videoMs, r.g.fileV?.bytes);
       if (r.movimentoDe) out.movimentoLive++;
+      // do Google ao iCloud o vídeo passa pela memória: acima do limite, não vai pelo site
+      if (r.g.fileV?.bytes > LIMITE_VIDEO_ENVIO) out.grandes++;
     }
   }
   return out;

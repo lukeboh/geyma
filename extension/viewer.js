@@ -228,6 +228,14 @@ function ligarGestos(v, i) {
  *   anterior/proxima: andar pela lista sem fechar (‹ ›, Page Up/Down); depois
  *   de uma resposta, o visualizador passa sozinho para a próxima.
  */
+// resposta da ação em andamento (para mostrar o progresso de um envio longo)
+let respostaAtiva = null;
+
+/** Texto de andamento da ação em curso no visualizador (some quando ela termina). */
+export function mostrarAndamento(texto) {
+  if (respostaAtiva) respostaAtiva.textContent = texto;
+}
+
 export function abrirVisor(fotos, titulo = '', opcoes = {}) {
   montar();
   if (estado) fecharVisor();
@@ -330,14 +338,18 @@ function montarAcoes({ pergunta = '', acoes = [], sugestoes = [] }) {
     b.addEventListener('click', async () => {
       for (const x of botoes.querySelectorAll('button')) x.disabled = true;
       resposta.textContent = 'gravando…';
+      respostaAtiva = resposta;
       try {
-        resposta.textContent = (await a.aoClicar()) || 'Anotado.';
+        const texto = await a.aoClicar();
+        respostaAtiva = null;
+        resposta.textContent = texto || 'Anotado.';
         // ação que não responde à pergunta (como enviar): fica na mesma foto, os outros botões voltam
         if (a.seguir === false) { for (const x of botoes.querySelectorAll('button')) if (x !== b) x.disabled = false; return; }
         // respondida: segue para a próxima da lista, se houver
         const seguir = estado?.proxima;
         if (seguir) { resposta.textContent += ' Indo para a próxima…'; const daqui = estado; setTimeout(() => { if (estado === daqui) seguir(); }, 900); }
       } catch (err) {
+        respostaAtiva = null;
         resposta.textContent = `Não foi possível: ${err.message || err}`;
         for (const x of botoes.querySelectorAll('button')) x.disabled = false;
       }
@@ -372,6 +384,7 @@ function montarSugestoes(caixa, sugestoes) {
         const seguir = estado?.proxima;
         if (seguir) { resposta.textContent += ' Indo para a próxima…'; const daqui = estado; setTimeout(() => { if (estado === daqui) seguir(); }, 900); }
       } catch (err) {
+        respostaAtiva = null;
         resposta.textContent = `Não foi possível: ${err.message || err}`;
         for (const x of caixa.querySelectorAll('button')) x.disabled = false;
       }

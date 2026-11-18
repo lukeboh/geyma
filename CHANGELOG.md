@@ -2,6 +2,27 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.18 — 18/11/2026
+
+- Envio direto de vídeos do iCloud ao Google (etapa 0.9), sem limite de
+  tamanho: a própria página do Google baixa o original do iCloud (link
+  assinado da Apple, sem sessão) para um Blob, que o Chrome guarda em
+  disco, calcula o SHA-1 lendo o Blob em pedaços (`core/sha1.js`, novo) e
+  entrega o arquivo ao envio do site. O arquivo não passa pela memória da
+  extensão. O ensaio também roda na página (baixa e confere, sem entregar).
+  O limite de 300 MB fica só para os vídeos do Google ao iCloud.
+- Andamento do envio direto no visualizador e no envio em lote ("baixando o
+  vídeo do iCloud", "conferindo o arquivo", "entregando ao Google").
+- Duplicatas e painel: os vídeos grandes contados são os só do Google (os
+  que não vão ao iCloud pelo site).
+
+Verificação: 221 testes passando (2 novos; o SHA-1 em pedaços confere com
+o do Node em qualquer divisão). Na biblioteca real, ensaios do envio
+direto: um vídeo de 20 MB, com o SHA-1 calculado na página idêntico ao que
+a listagem do Google traz para a cópia dele (o Google guarda o original
+byte a byte), e um de 379 MB em 4 minutos, com o tamanho conferido e a
+memória da página do Google em 35 MB depois.
+
 ## 0.3.17 — 18/11/2026
 
 - Vídeos (início da etapa 0.9), `core/video.js`:

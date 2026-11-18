@@ -17,9 +17,12 @@ test('só vai o que está marcado Pessoal ou Manter, sem repetidas, ocultas nem 
   assert.equal(podeEnviar({ ...soI, decision: 'descartar' }, 'google').ok, false);
   assert.equal(podeEnviar({ ...soI, a: A({ hidden: true }) }, 'google').ok, false);
   assert.equal(podeEnviar({ ...soI, a: A({ foraDoPercurso: 123 }) }, 'google').ok, false);
-  // vídeos: até o limite do envio pelo site (o arquivo passa pela memória)
+  // vídeos: do Google ao iCloud, até o limite (o arquivo passa pela memória)
   assert.equal(podeEnviar({ ...soI, a: A({ video: true, size: 50 * 1048576 }) }, 'google').ok, true);
-  assert.match(podeEnviar({ ...soI, a: A({ video: true, size: 400 * 1048576 }) }, 'google').motivo, /grande demais/);
+  // do iCloud ao Google vai direto (a página baixa para o disco): sem limite
+  assert.equal(podeEnviar({ ...soI, a: A({ video: true, size: 400 * 1048576 }) }, 'google').ok, true);
+  const soGv = { cls: 'soGoogle', cat: 'pessoal', g: G({ video: true, fileV: { bytes: 400 * 1048576 } }) };
+  assert.match(podeEnviar(soGv, 'icloud').motivo, /grande demais/);
   assert.equal(podeEnviar({ ...soI, dupIcloud: true }, 'google').ok, false);
   // só no iCloud não vai "ao iCloud"
   assert.equal(podeEnviar(soI, 'icloud').ok, false);

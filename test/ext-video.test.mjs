@@ -144,6 +144,7 @@ test('resumo dos vídeos para o painel', () => {
     { cls: 'ambos', ident: 'confirmada', duracao: 'igual', copiaGoogle: 'original', a: { video: true, durMs: 10000, size: 5 }, g: { video: true, videoMs: 10000, fileV: { bytes: 5 } } },
     { cls: 'soIcloud', a: { video: true, durMs: 2000, size: LIMITE_VIDEO_ENVIO + 1 } },
     { cls: 'soGoogle', movimentoDe: 'a:9', g: { video: true, videoMs: 1500 } },
+    { cls: 'soGoogle', g: { video: true, videoMs: 9000, fileV: { bytes: LIMITE_VIDEO_ENVIO + 1 } } },
     { cls: 'ambos', a: { video: false }, g: { video: true } },
     { cls: 'ambos', a: { video: false }, g: {} },
   ];
@@ -155,7 +156,7 @@ test('resumo dos vídeos para o painel', () => {
   assert.equal(v.copia.original, 1);
   assert.equal(v.soIcloud.n, 1);
   assert.equal(v.grandes, 1);
-  assert.equal(v.soGoogle.ms, 1500);
+  assert.equal(v.soGoogle.ms, 10500);
   assert.equal(v.movimentoLive, 1);
   assert.equal(v.misturados, 1);
 });
@@ -201,4 +202,27 @@ test('duplicatas: foto e vídeo do mesmo segundo não se misturam; vídeos com a
   assert.equal(d.copies.get('g:v2').evidence, 'duracao');
   // o vídeo de outra duração é outro vídeo, não fica pendente de imagem
   assert.deepEqual(d.pendingIds, []);
+});
+
+test('SHA-1 em pedaços confere com o do Node, em qualquer divisão', async () => {
+  const { createHash } = await import('node:crypto');
+  const { Sha1, base64Url, sha1DoBlob } = await import('../extension/src/core/sha1.js');
+  const dados = new Uint8Array(200003).map((_, i) => (i * 31 + (i >> 7)) % 256);
+  const esperado = createHash('sha1').update(dados).digest('base64url');
+  for (const passo of [1, 63, 64, 65, 4096, 200003]) {
+    const h = new Sha1();
+    for (let i = 0; i < dados.length; i += passo) h.update(dados.subarray(i, i + passo));
+    assert.equal(base64Url(h.digest()), esperado, `pedaços de ${passo}`);
+  }
+  assert.equal(base64Url(new Sha1().digest()), createHash('sha1').update(new Uint8Array(0)).digest('base64url'));
+  assert.equal(await sha1DoBlob(new Blob([dados])), esperado);
+});
+
+test('envio direto: vídeo do iCloud ao Google sem limite de tamanho', async () => {
+  const { envioDireto } = await import('../extension/src/core/envio.js');
+  const grande = { cls: 'soIcloud', cat: 'pessoal', a: A({ size: 3e9 }) };
+  assert.equal(podeEnviar(grande, 'google').ok, true);
+  assert.equal(envioDireto(A(), 'google'), true);
+  assert.equal(envioDireto(A({ video: false, filename: 'IMG_1.HEIC' }), 'google'), false);
+  assert.equal(envioDireto(G(), 'icloud'), false);
 });

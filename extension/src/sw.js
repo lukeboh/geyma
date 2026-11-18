@@ -9,7 +9,7 @@ import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
 import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
-import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, pedacosDeBytes, registrarEnvio } from './core/envio.js';
+import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, pedacosDeBytes, registrarEnvio, envioDireto } from './core/envio.js';
 import { LIMITE_VIDEO_ENVIO } from './core/video.js';
 
 const SITES = {
@@ -201,6 +201,7 @@ async function enviarUm(id, destino, ensaio) {
   }
   const arquivos = arquivosDoItem(it);
   if (!arquivos.length) throw new Error(it.source === 'icloud' ? 'o iCloud não deu o link do original desta foto (passe o percurso por ela)' : 'sem o endereço da foto no Google');
+  if (envioDireto(it, destino)) return enviarDireto(it, destino, arquivos[0], ensaio);
   const baixados = [];
   for (const f of arquivos) {
     const res = await fetch(f.url, { credentials: f.credenciais });
@@ -233,6 +234,21 @@ async function enviarUm(id, destino, ensaio) {
   const r = await chrome.tabs.sendMessage(tab.id, { kind: 'envio-entregar', lote, n: baixados.length }, { frameId });
   if (!r?.ok) throw new Error(r?.erro || 'a página não aceitou os arquivos');
   return { estado: 'enviado', estrategia: r.estrategia, ...info };
+}
+
+/**
+ * Envio direto (vídeos do iCloud ao Google): a página do Google baixa o
+ * original, confere (SHA-1 em pedaços) e entrega ao envio do site. O ensaio
+ * também roda na página (baixa e confere, sem entregar).
+ */
+async function enviarDireto(it, destino, f, ensaio) {
+  const tab = await findOrOpenTab(destino);
+  const { frameId } = await acharCampoDeEnvio(tab.id);
+  const pedido = crypto.randomUUID();
+  const r = await chrome.tabs.sendMessage(tab.id, { kind: 'envio-direto', pedido, url: f.url, nome: f.nome, tipo: tipoDoArquivo(f.nome, null), lastModified: it.ts, ensaio }, { frameId });
+  if (!r?.ok) throw (r?.status ? erroHttp(r.status) : new Error(r?.erro || 'a página não aceitou o arquivo'));
+  const info = { destino, sha1: r.sha1, ts: it.ts, bytes: r.bytes, arquivos: [`${f.nome} (${tipoDoArquivo(f.nome, null)})`], direto: true };
+  return ensaio ? { estado: 'ensaio', ...info } : { estado: 'enviado', estrategia: r.estrategia, ...info };
 }
 
 async function gravarEnvio(id, info) {
@@ -330,6 +346,11 @@ async function findOrOpenTab(site) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'page-event') {
     handlePageEvent(msg.site, msg.type, msg.payload, sender.tab?.id).catch((err) => broadcast({ site: msg.site, event: 'falha', reason: String(err) }));
+    return false;
+  }
+  // andamento do envio direto (a página baixa e confere o vídeo): mostra no painel
+  if (msg?.kind === 'envio-andamento') {
+    broadcast({ event: 'envio-andamento', fase: msg.fase, feitos: msg.feitos, total: msg.total });
     return false;
   }
   if (msg?.kind === 'envio-alvo-resp') {
