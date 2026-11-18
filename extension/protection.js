@@ -17,6 +17,8 @@ import { proximosPassos } from './src/core/passos.js';
 import { sugestoesDoGoogle } from './src/core/sugestoes.js';
 import { podeEnviar, filaDeEnvio, DESTINOS } from './src/core/envio.js';
 import { placarIdentidade, textoPlacar } from './src/core/placar.js';
+import { filaDoClip, classificarEmbed, registroClip, googleParaClip } from './src/core/clip.js';
+import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -63,6 +65,8 @@ export function initProtection() {
   $('r-csv').addEventListener('click', exportCsv);
   $('m-phash').addEventListener('click', startPhash);
   $('m-ic-run').addEventListener('click', runIcloudCheck);
+  $('m-clip-run').addEventListener('click', runClip);
+  $('m-clip-stop').addEventListener('click', () => { if (clipJob) clipJob.stop = true; });
   $('m-ic-stop').addEventListener('click', () => { if (icJob) icJob.stop = true; });
   $('m-gf-run').addEventListener('click', runGoogleFiles);
   $('m-gf-stop').addEventListener('click', () => { if (gfJob) gfJob.stop = true; });
@@ -215,6 +219,7 @@ function renderProtection() {
 
   renderDup();
   renderCategories();
+  renderClip();
   renderPlan();
   renderIcloudCheck();
   renderGoogleFiles();
@@ -298,6 +303,134 @@ async function runGoogleFiles() {
   gfJob = null;
   $('m-gf-stop').hidden = true;
   compute();
+}
+
+// ---------- classificação pela imagem (CLIP) ----------
+let clipJob = null;
+function renderClip() {
+  const fila = filaDoClip(data.rows);
+  const indef = fila.filter((f) => f.prioridade === 0).length;
+  $('m-clip').innerHTML = fila.length
+    ? `<b>${fmt.format(fila.length)}</b> fotos ainda não foram olhadas pelo modelo visual (${fmt.format(indef)} indefinidas, que vão primeiro).`
+    : 'Todas as fotos já foram classificadas pela imagem (os vídeos ficam para a etapa 0.9).';
+  $('m-clip-run').hidden = !fila.length || Boolean(clipJob);
+  $('m-clip-run').textContent = `Classificar pela imagem (${fmt.format(fila.length)} fotos)`;
+}
+
+/** Miniatura para o CLIP: a do Google já recortada, senão a do iCloud guardada ou ainda válida. */
+async function imagemParaClip(f) {
+  if (f.lado === 'g') {
+    const res = await fetch(googleParaClip(f.base), { credentials: 'include' });
+    if (!res.ok) return { status: res.status };
+    if (!(res.headers.get('content-type') || '').startsWith('image/')) return { status: 0 };
+    return { blob: await res.blob() };
+  }
+  const guardada = await getThumb(f.id).catch(() => null);
+  if (guardada) return { blob: guardada };
+  if (f.thumb && Date.now() - f.thumbAt < ICLOUD_URL_VALIDA_MS) {
+    const res = await fetch(f.thumb.replace('${f}', 'thumb.jpg'));
+    return res.ok ? { blob: await res.blob() } : { status: res.status, icloud: true };
+  }
+  return { semImagem: true };
+}
+
+// três modelos em paralelo: medido em 18/11/2026 num notebook de 8 núcleos,
+// 0,54 s por foto com um, 0,24 s com três (cada um ocupa uns 200 MB)
+const CLIP_WORKERS = Math.max(1, Math.min(3, Math.floor((navigator.hardwareConcurrency || 2) / 2)));
+
+/** Um modelo carregado num worker; devolve a função que representa uma imagem. */
+function abrirModelo(show) {
+  const worker = new Worker('src/clip-worker.js', { type: 'module' });
+  const esperando = new Map();
+  const carregado = new Promise((resolve, reject) => {
+    worker.onmessage = (e) => {
+      const m = e.data;
+      if (m.tipo === 'baixando') show(`baixando o modelo visual (só na primeira vez): ${Math.round((100 * m.recebidos) / m.total)}%`);
+      else if (m.tipo === 'pronto') resolve();
+      else if (m.tipo === 'erro') reject(new Error(m.erro));
+      else { esperando.get(m.id)?.(m); esperando.delete(m.id); }
+    };
+    worker.onerror = (e) => reject(new Error(e.message || 'o worker do modelo falhou'));
+  });
+  worker.postMessage({ tipo: 'carregar' });
+  return {
+    carregado,
+    representar: (id, blob) => new Promise((resolve) => { esperando.set(id, resolve); worker.postMessage({ tipo: 'imagem', id, blob }); }),
+    fechar: () => worker.terminate(), // devolve a memória do modelo
+  };
+}
+
+async function runClip() {
+  if (clipJob || !data) return;
+  const fila = filaDoClip(data.rows);
+  if (!fila.length) return;
+  const job = clipJob = { stop: false, done: 0, failed: 0, semImagem: 0, porCat: {}, inicio: 0, motivo: null };
+  $('m-clip-run').hidden = true;
+  $('m-clip-stop').hidden = false;
+  const show = (msg) => { $('m-clip-state').textContent = msg; };
+  let lote = [];
+  const gravar = async () => { if (lote.length) { const b = lote; lote = []; await patchItems(b); } };
+  const modelos = [];
+  let proximo = 0;
+  const acordado = (ativo) => chrome.runtime.sendMessage({ kind: 'acordado', task: 'clip', ativo }).catch(() => {});
+  acordado(true);
+  try {
+    show('carregando o modelo visual…');
+    const frases = (await (await fetch(chrome.runtime.getURL('assets/clip-textos.json'))).json()).frases;
+    // o primeiro baixa e guarda o modelo; os outros já o acham guardado
+    modelos.push(abrirModelo(show));
+    await modelos[0].carregado;
+    for (let k = 1; k < CLIP_WORKERS; k++) modelos.push(abrirModelo(show));
+    await Promise.all(modelos.map((m) => m.carregado));
+    job.inicio = Date.now();
+    // as miniaturas são baixadas adiantadas (até 2 por modelo), enquanto os modelos olham as anteriores
+    const prontas = [];
+    const pegar = () => {
+      while (prontas.length < 2 * modelos.length && proximo < fila.length) {
+        const f = fila[proximo++];
+        prontas.push(imagemParaClip(f).catch(() => ({ status: 0 })).then((img) => ({ f, img })));
+      }
+      return prontas.shift();
+    };
+    await Promise.all(modelos.map(async (modelo) => {
+      for (let vez = pegar(); vez && !job.stop; vez = pegar()) {
+        const { f, img } = await vez;
+        if (img.semImagem) { job.semImagem++; continue; }
+        if (!img.blob) {
+          job.failed++;
+          // o Google recusando (sessão caiu ou limite de pedidos): para, não insiste
+          if (!img.icloud && [401, 403, 429].includes(img.status)) { job.motivo = `parou: o Google recusou as miniaturas (HTTP ${img.status})`; job.stop = true; }
+          continue;
+        }
+        const r = await modelo.representar(f.id, img.blob);
+        if (r.tipo !== 'resultado') { job.failed++; continue; }
+        const c = classificarEmbed(r.emb, frases);
+        lote.push({ id: f.id, clip: registroClip(c) });
+        job.porCat[c.cat] = (job.porCat[c.cat] || 0) + 1;
+        job.done++;
+        if (lote.length >= 50) await gravar();
+        if (job.done % 10 === 0) {
+          const porSeg = job.done / ((Date.now() - job.inicio) / 1000);
+          const faltam = (fila.length - proximo) / porSeg;
+          const resta = faltam > 5400 ? `${Math.round(faltam / 3600)} h` : `${Math.max(1, Math.round(faltam / 60))} min`;
+          show(`olhando as fotos… ${fmt.format(job.done)} de ${fmt.format(fila.length)} (${porSeg.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} por segundo; faltam uns ${resta})`);
+        }
+      }
+    }));
+  } catch (err) {
+    job.motivo = `não foi possível: ${err.message || err}`;
+  } finally {
+    await gravar().catch(() => {});
+    for (const m of modelos) m.fechar();
+    acordado(false);
+  }
+  const motivo = job.motivo || (job.stop ? 'parada por você' : 'concluída');
+  const cats = Object.entries(job.porCat).map(([k, n]) => `${CATEGORIES[k] || k}: ${fmt.format(n)}`).join('; ');
+  show(`${motivo}: ${fmt.format(job.done)} fotos olhadas${job.semImagem ? `, ${fmt.format(job.semImagem)} sem miniatura agora (iCloud: aparecem no próximo percurso)` : ''}${job.failed ? `, ${fmt.format(job.failed)} falhas` : ''}${cats ? `. ${cats}` : ''}.`);
+  clipJob = null;
+  $('m-clip-stop').hidden = true;
+  if (job.done) compute();
+  else renderClip();
 }
 
 // ---------- desempate pelo iCloud ----------

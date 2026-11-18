@@ -108,8 +108,8 @@ revisada manualmente.
 - [x] Resposta em números: fotos pessoais nos dois lugares sem perda, com a
   melhor cópia num lugar só, a confirmar e num lugar só (0.2.45)
 - [x] Categorias documento e propaganda nas regras baratas (0.3.3)
-- [ ] Modelo visual local (CLIP) para o que as regras deixam como indefinido
-  e para achar documentos e propagandas pela imagem
+- [x] Modelo visual local (CLIP) para o que as regras deixam como indefinido
+  e para achar documentos e propagandas pela imagem (0.3.14)
 
 **Critério:** responder com números "quais fotos pessoais estão nos dois lugares
 com qualidade preservada". Marco de validação do uso pessoal.

@@ -337,6 +337,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     job.then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
     return true;
   }
+  // tarefas longas do painel (classificação pela imagem): o notebook não dorme enquanto rodam
+  if (msg?.kind === 'acordado') {
+    updateKeepAwake(String(msg.task), msg.ativo ? 'ocupado' : 'parado');
+    sendResponse({ ok: true });
+    return false;
+  }
   if (msg?.kind === 'icloud-refresh') {
     const job = refreshChain.then(() => refreshIcloud(String(msg.id), { forcar: Boolean(msg.forcar) }));
     refreshChain = job.catch(() => {});

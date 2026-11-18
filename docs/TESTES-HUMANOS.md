@@ -140,6 +140,19 @@ Procure fotos com nome `scan…` ou `SCANS_…` (fotos antigas digitalizadas).
 **Esperado:** nenhuma está em Documento.
 Observado:
 
+### C5 — Classificação pela imagem (CLIP) ☐
+Proteção → "Pessoal ou lixo?" → **Classificar pela imagem**. Na primeira vez
+baixa o modelo (89 MB). Deixe passar as indefinidas (vão primeiro) e pare.
+Depois, na Revisão, filtre cada categoria e procure no motivo "pela imagem".
+**Esperado:**
+- Documento, Captura de tela e Propaganda "pela imagem": de fato papéis,
+  telas e anúncios (anote quantos de 20 estão errados).
+- Pessoal "pela imagem" (eram indefinidas): fotos de câmera.
+- Indefinido "pela imagem: incerta": casos ambíguos de verdade.
+- O botão Parar para em poucos segundos; apertar de novo continua de onde
+  parou.
+Observado:
+
 ---
 
 ## 3. Identidade (0.4)

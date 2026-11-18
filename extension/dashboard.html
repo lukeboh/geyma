@@ -117,6 +117,14 @@
       <h2>Pessoal ou lixo?</h2>
       <p class="muted">Classificação por regras sobre os metadados, contando cada foto uma vez (o par conta como uma).</p>
       <div id="m-cats" class="cat-grid"></div>
+      <h3>Pela imagem</h3>
+      <p id="m-clip"></p>
+      <div class="actions">
+        <button id="m-clip-run" class="primary" hidden>Classificar pela imagem</button>
+        <button id="m-clip-stop" hidden>Parar</button>
+        <span class="muted" id="m-clip-state" role="status"></span>
+      </div>
+      <p class="hint">Um modelo visual (CLIP) olha a miniatura de cada foto, aqui no notebook, e diz se parece foto pessoal, captura de tela, documento, propaganda ou imagem da internet. Decide as indefinidas e tira das pessoais o que é claramente outra coisa, que fica Pendente para você. Na primeira vez baixa o modelo (89 MB, uma vez só); nenhuma foto sai do notebook. Pode parar e continuar depois: o que já foi olhado fica guardado.</p>
     </section>
 
     <section class="panel">

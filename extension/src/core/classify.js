@@ -2,6 +2,7 @@
 // pessoal do que é suspeito de lixo, só com metadados. Não decide nada: gera
 // uma categoria e uma sugestão de marcação. Suspeito e indefinido viram
 // "Pendente" — nada suspeito é copiado sem decisão do usuário.
+import { comImagem } from './clip.js';
 
 export const CATEGORIES = {
   pessoal: 'Pessoal (câmera)',
@@ -140,9 +141,13 @@ export function classifyGoogle(g) {
   return { cat: 'indefinido', reasons: [] };
 }
 
-/** Classifica uma foto do cruzamento: usa o iCloud quando existe (mais metadados). */
+/**
+ * Classifica uma foto do cruzamento: as regras usam o iCloud quando existe
+ * (mais metadados); a classificação pela imagem (CLIP), quando já foi feita,
+ * decide o indefinido e corrige o que é claramente outra coisa.
+ */
 export function classifyRow(a, g) {
-  return a ? classifyIcloud(a) : classifyGoogle(g);
+  return comImagem(a ? classifyIcloud(a) : classifyGoogle(g), g?.clip || a?.clip);
 }
 
 /** Sugestão de marcação: só o que é claramente pessoal vai direto; o resto fica Pendente. */

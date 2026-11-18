@@ -2,6 +2,34 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.14 — 18/11/2026
+
+- Classificação pela imagem com o CLIP (etapa 0.6). Na aba Proteção, em
+  "Pessoal ou lixo?", o botão "Classificar pela imagem" passa cada foto por um
+  modelo visual que roda no notebook (CLIP ViT-B/32 quantizado, no ONNX
+  Runtime embutido na extensão, em três workers). Só os pesos do modelo vêm
+  da internet, uma vez, de uma revisão fixa do Hugging Face conferida pelo
+  SHA-256, e ficam guardados; nenhuma foto sai do notebook.
+- O modelo compara a miniatura com frases de cada categoria (pessoal, captura
+  de tela, documento, propaganda, imagem da internet), calculadas de antemão
+  por `ferramentas/clip-textos.mjs`. Decide as indefinidas com 60% de
+  confiança; tira das pessoais o que é outra coisa só com 70%, e essas ficam
+  Pendentes. Regras fortes (marca da Apple, nome de captura, app de
+  digitalizar) continuam valendo. O motivo aparece como "pela imagem: parece
+  documento (97%)".
+- Indefinidas primeiro; pode parar e continuar depois (o resultado fica em
+  cada item). O notebook não dorme enquanto roda. Para se o Google recusar as
+  miniaturas. Vídeos ficam para a 0.9.
+
+Verificação: 187 testes passando (10 novos do CLIP). Duas amostras de 48
+fotos olhadas uma a uma: na primeira, ajustadas as frases (três cenas sem
+pessoas iam para documento com pouca confiança, e uma foto de notebook para
+captura de tela); na segunda, sem ajuste, nenhuma decisão errada acima dos
+limiares, e as três fotos pessoais apontadas como outra coisa eram de fato
+papéis impressos ou uma página da web. Velocidade no notebook de 8 núcleos:
+0,54 s por foto com um modelo, 0,24 s com três (cerca de 4 fotos por
+segundo, com as miniaturas baixadas adiantadas).
+
 ## 0.3.13 — 18/11/2026
 
 - Documentação e comentários: tirados os números e os padrões de nomes da
