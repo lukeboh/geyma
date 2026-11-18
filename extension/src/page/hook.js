@@ -19,6 +19,10 @@
       if (body.includes('CPLAssetAndMaster')) post('icloud-records', { body: text });
       else if (body.includes('HyperionIndexCountLookup')) post('icloud-counts', { request: body, body: text });
     }
+    // cota do iCloud: a resposta que o próprio site busca ao abrir (nenhuma consulta nossa)
+    if (SITE === 'icloud' && /setup\.icloud\.com\/setup\/ws\/1\/storageUsageInfo/.test(url) && status === 200) {
+      post('icloud-cota', { body: text });
+    }
     if (SITE === 'google' && /\/batchexecute\?.*rpcids=lcxiM/.test(url) && status === 200) {
       post('google-batch', { body: text });
     }
@@ -27,7 +31,7 @@
   const origFetch = window.fetch;
   window.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input?.url || '';
-    const watched = /ckdatabasews|batchexecute/.test(url);
+    const watched = /ckdatabasews|batchexecute|storageUsageInfo/.test(url);
     // o corpo do pedido pode vir em init.body (texto) ou dentro de um Request
     let bodyPromise = Promise.resolve('');
     if (watched) {
@@ -50,7 +54,7 @@
     return origOpen.apply(this, arguments);
   };
   XMLHttpRequest.prototype.send = function (body) {
-    if (/ckdatabasews|batchexecute/.test(this.__geymaUrl || '')) {
+    if (/ckdatabasews|batchexecute|storageUsageInfo/.test(this.__geymaUrl || '')) {
       this.addEventListener('load', () => {
         try {
           const rt = this.responseType;

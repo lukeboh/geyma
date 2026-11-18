@@ -2,10 +2,12 @@
 // visão por ano e lista filtrável para revisar item a item.
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
-import { patchItems, getThumb, getCache, getMeta, registrarDecisoes, getItem } from './src/core/db.js';
+import { patchItems, getThumb, getCache, getMeta, setMeta, registrarDecisoes, getItem } from './src/core/db.js';
 import { patchVeredito, vereditoDoPar } from './src/core/veredito.js';
 import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cache.js';
-import { sendPlan, effectiveDecision, espacoDasLinhas, bytesPerPixel } from './src/core/plan.js';
+import { sendPlan, effectiveDecision, espacoDasLinhas, bytesPerPixel, bytesDoEnvio } from './src/core/plan.js';
+import { cabeNaCota, COTA_VALIDA_MS } from './src/core/cota.js';
+import { TAMANHOS_LOTE, novoLote, proximoDoLote, registrarNoLote, pausarLote, pararLote, retomarLote, loteAberto } from './src/core/lote.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
 import { abrirVisor, mostrarAndamento } from './viewer.js';
@@ -88,7 +90,12 @@ export function initProtection() {
   $('r-sel-dec').value = 'descartar';
   $('r-sel-apply').addEventListener('click', applySelection);
   $('r-envio-go').addEventListener('click', enviarLote);
-  $('r-envio-stop').addEventListener('click', () => { if (loteJob) loteJob.parar = true; });
+  $('r-envio-stop').addEventListener('click', pararOuDescartarLote);
+  $('r-envio-pause').addEventListener('click', () => { lotePausar = true; $('r-envio-pause').disabled = true; });
+  $('r-envio-resume').addEventListener('click', continuarLote);
+  for (const n of TAMANHOS_LOTE) $('r-envio-n').append(new Option(`até ${n}`, n));
+  $('r-envio-n').append(new Option('todos', ''));
+  $('r-envio-n').addEventListener('change', () => renderEnvioLote());
   $('r-sel-all').addEventListener('click', () => selectAll(true));
   $('r-sel-none').addEventListener('click', () => selectAll(false));
   $('r-confirm-no').addEventListener('click', cancelBatch);
@@ -278,7 +285,7 @@ async function fichaGoogle(base, video = false) {
   if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
   return fichaDoCabecalho(res.headers);
 }
-const textoFicha = (f) => (f ? [f.nome, f.formato, f.bytes ? MB(f.bytes) : null].filter(Boolean).join(' · ') : '');
+const textoFicha = (f) => (f?.indisponivel ? 'sem o arquivo do vídeo (o Google guarda só a capa)' : f ? [f.nome, f.formato, f.bytes ? MB(f.bytes) : null].filter(Boolean).join(' · ') : '');
 
 function renderGoogleFiles() {
   const need = data.googleFileNeeded || [];
@@ -337,9 +344,10 @@ function renderVideos() {
   ];
   if (semDur) partes.push('A duração dos vídeos do iCloud chega no próximo percurso da biblioteca (aba Inventário).');
   const c = v.copia;
-  if (c.original + c.recomprimida + c.reduzida + c.aparada) {
-    partes.push(`<br>Arquivos do Google conferidos: ${fmt.format(c.original)} idênticos ao original do iCloud; <b>${fmt.format(c.recomprimida)}</b> recomprimidos (mesmas dimensões, arquivo bem menor), <b>${fmt.format(c.reduzida)}</b> reduzidos e <b>${fmt.format(c.aparada)}</b> mais curtos (cortados).`);
+  if (c.original + c.recomprimida + c.reduzida + c.aparada + (c.indisponivel || 0)) {
+    partes.push(`<br>Arquivos do Google conferidos: ${fmt.format(c.original)} idênticos ao original do iCloud; <b>${fmt.format(c.recomprimida)}</b> recomprimidos (mesmas dimensões, arquivo bem menor), <b>${fmt.format(c.reduzida)}</b> reduzidos e <b>${fmt.format(c.aparada)}</b> mais curtos (cortados)${c.indisponivel ? `; em <b>${fmt.format(c.indisponivel)}</b> o Google não tem mais o arquivo do vídeo, só a capa (o do iCloud é a única cópia)` : ''}.`);
   }
+  if (v.soGoogleIndisponivel) partes.push(`<b>${fmt.format(v.soGoogleIndisponivel)}</b> vídeos só do Google não têm mais o arquivo lá (o Google guarda só a capa): não há o que enviar ao iCloud.`);
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos de vídeo do Google.` : 'Todos os arquivos de vídeo do Google já foram conferidos.');
   if (v.melhorIcloud) partes.push(`<a href="#rev" data-vid="melhorIcloud">Melhor cópia no iCloud em <b>${fmt.format(v.melhorIcloud)}</b> vídeos</a>.`);
   if (v.movimentoLive) partes.push(`${fmt.format(v.movimentoLive)} vídeos curtos só do Google são o movimento de uma Live Photo do iCloud, enviado à parte (ficam Pendentes).`);
@@ -495,6 +503,14 @@ async function runFichas(k) {
         batch.push(it.v ? { id: it.id, fileV: file } : { id: it.id, file });
         gfJob.done++;
       } catch (e) {
+        // vídeo cujo download o Google recusa (400) e que não tem versão para
+        // assistir: o Google guarda só a capa. Fica anotado (não é erro).
+        if (it.v && e.status === 400) {
+          batch.push({ id: it.id, fileV: { indisponivel: true, status: 400 } });
+          gfJob.done++;
+          gfJob.seguidos = 0;
+          continue;
+        }
         gfJob.failed++;
         gfJob.seguidos = (gfJob.seguidos || 0) + 1;
         // 404: saiu do Google; 400 e 500: o Google não serve aquele arquivo (pula).
@@ -1216,7 +1232,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   const quanto = msg.total ? ` (${msg.fase === 'baixando' ? MB(msg.total) : `${MB(msg.feitos || 0)} de ${MB(msg.total)}`})` : '';
   const texto = `${FASE_ENVIO[msg.fase] || msg.fase}${quanto}…`;
   mostrarAndamento(texto);
-  if (loteJob) $('r-envio-txt').textContent = texto;
+  if (loteRodando) $('r-envio-txt').textContent = `Enviando ${fmt.format(lote.feitos + 1)} de ${fmt.format(lote.ids.length)}: ${texto}`;
 });
 
 const ESTADO_ENVIO = { ensaio: 'baixada e conferida (nada enviado)', enviado: 'entregue ao site', chegou: 'chegou ao destino', falhou: 'o envio falhou' };
@@ -1248,66 +1264,134 @@ function envioNoVisor(r) {
   return { pergunta, acoes };
 }
 
-// ---------- envio em lote, a partir da lista filtrada ----------
-const LOTE_MAX = 10;
-let loteJob = null;
+// ---------- envio em lote, a partir da lista filtrada (0.7) ----------
+// Fila guardada (meta 'envioLote', core/lote.js): um por vez, pausa, retoma
+// (também depois de fechar e reabrir o painel) e para no primeiro erro. Antes
+// de pedir a confirmação, confere o espaço livre do destino (core/cota.js).
+let lote = null;
+let loteRodando = false;
+let lotePausar = false;
 let loteConfirmar = false;
+const salvarLote = () => setMeta('envioLote', lote).catch(() => {});
+getMeta('envioLote').then((m) => { lote = m?.value || null; if (data) renderEnvioLote(); }, () => {});
 
-/** Próximas fotos da lista que podem ir ao destino e ainda não foram enviadas. */
+const idDeOrigem = (r, destino) => (destino === 'google' ? r.a : r.g)?.id;
+const itens = (n) => `${fmt.format(n)} ${n === 1 ? 'item' : 'itens'}`;
+
+/** Próximos itens da lista que podem ir ao destino e ainda não foram enviados. */
 function filaDoLote(rows) {
   const cls = $('r-cls').value;
   const destino = cls === 'soIcloud' ? 'google' : cls === 'soGoogle' ? 'icloud' : null;
   if (!destino) return null;
-  const naoEnviadas = rows.filter((r) => !['enviado', 'chegou'].includes(envioEstado[(destino === 'google' ? r.a : r.g)?.id]?.estado));
-  return { destino, fila: filaDeEnvio(naoEnviadas, destino, { limite: LOTE_MAX }) };
+  const naoEnviadas = rows.filter((r) => !['enviado', 'chegou'].includes(envioEstado[idDeOrigem(r, destino)]?.estado));
+  const limite = Number($('r-envio-n').value) || Infinity;
+  return { destino, fila: filaDeEnvio(naoEnviadas, destino, { limite }) };
+}
+
+/** Mostra os botões do lote: modo 'novo' (escolher e enviar), 'rodando' ou 'aberto' (pausado ou interrompido). */
+function botoesLote(modo) {
+  $('r-envio-n').parentElement.hidden = modo !== 'novo';
+  $('r-envio-pause').disabled = false;
+  $('r-envio-go').hidden = modo !== 'novo';
+  $('r-envio-pause').hidden = modo !== 'rodando';
+  $('r-envio-resume').hidden = modo !== 'aberto';
+  $('r-envio-stop').hidden = modo === 'novo';
+  $('r-envio-stop').textContent = modo === 'aberto' ? 'Descartar o lote' : 'Parar';
 }
 
 function renderEnvioLote(rows = filtered()) {
-  if (loteJob) return;
+  if (loteRodando) return;
+  const box = $('r-envio');
+  if (loteAberto(lote)) {
+    box.hidden = false;
+    botoesLote('aberto');
+    const est = lote.estado === 'erro' ? `parou no erro: ${lote.erro}` : lote.estado === 'pausado' ? 'pausado por você' : 'interrompido (o painel foi fechado ou recarregado)';
+    $('r-envio-txt').textContent = `Lote ao ${DESTINOS[lote.destino]}: ${fmt.format(lote.feitos)} de ${itens(lote.ids.length)} enviados; ${est}.${lote.estado === 'erro' ? ' Continuar tenta o mesmo item de novo.' : ''}`;
+    return;
+  }
   const l = filaDoLote(rows);
-  $('r-envio').hidden = !l?.fila.length;
+  box.hidden = !l?.fila.length;
   loteConfirmar = false;
   if (!l?.fila.length) return;
-  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} as próximas ${l.fila.length} fotos desta lista que podem ir (marcadas Pessoal ou Manter, sem repetidas). Uma por vez; para no primeiro erro. Faça antes o piloto de uma foto (docs/TESTES-HUMANOS.md).`;
-  $('r-envio-go').textContent = `Enviar ${l.fila.length}`;
-  $('r-envio-stop').hidden = true;
+  botoesLote('novo');
+  $('r-envio-txt').textContent = `Enviar ao ${DESTINOS[l.destino]} os próximos ${itens(l.fila.length)} desta lista que podem ir (marcados Pessoal ou Manter, sem repetidos). Um por vez; dá para pausar e continuar depois; para no primeiro erro. Faça antes o piloto de um item (docs/TESTES-HUMANOS.md).`;
+  $('r-envio-go').textContent = `Enviar ${fmt.format(l.fila.length)}`;
+  $('r-envio-go').disabled = false;
 }
 
 async function enviarLote() {
-  if (loteJob) return;
+  if (loteRodando) return;
   const l = filaDoLote(filtered());
   if (!l?.fila.length) return;
-  // dois cliques: o primeiro só pede a confirmação
+  const nome = DESTINOS[l.destino];
+  // primeiro clique: confere o espaço e pede a confirmação
   if (!loteConfirmar) {
+    $('r-envio-go').disabled = true;
+    const bytes = bytesDoEnvio(l.fila, l.destino, bytesPerPixel(data.rows));
+    const cotas = await chrome.runtime.sendMessage({ kind: 'cota' }).catch(() => null);
+    let cota = cotas?.[l.destino] || null;
+    if (cota && Date.now() - (cota.at || 0) > COTA_VALIDA_MS) cota = null;
+    const c = cabeNaCota(cota, bytes);
+    $('r-envio-go').disabled = false;
+    if (c.ok === false) {
+      $('r-envio-txt').textContent = `Não cabe: o lote ocupa cerca de ${GB(bytes)} e o ${nome} tem ${GB(c.livre)} livres (descontada uma folga). Escolha um lote menor ou libere espaço no ${nome}.`;
+      return;
+    }
     loteConfirmar = true;
-    $('r-envio-go').textContent = `Confirmar o envio de ${l.fila.length} fotos`;
+    $('r-envio-txt').textContent = `${itens(l.fila.length)}, cerca de ${GB(bytes)}. `
+      + (c.ok ? `Cabe: o ${nome} tem ${GB(c.livre)} livres (descontada uma folga).` : `Não deu para ler o espaço livre do ${nome} (${l.destino === 'icloud' ? 'recarregue a aba do iCloud Fotos' : 'abra a aba do Google Fotos'}); confira lá antes de confirmar.`);
+    $('r-envio-go').textContent = `Confirmar o envio de ${fmt.format(l.fila.length)}`;
     return;
   }
-  loteJob = { parar: false };
-  $('r-envio-go').disabled = true;
-  $('r-envio-stop').hidden = false;
-  let feitas = 0;
-  let erro = null;
-  for (const r of l.fila) {
-    if (loteJob.parar) break;
-    const id = (l.destino === 'google' ? r.a : r.g).id;
-    $('r-envio-txt').textContent = `Enviando ${feitas + 1} de ${l.fila.length} ao ${DESTINOS[l.destino]}…`;
-    const res = await chrome.runtime.sendMessage({ kind: 'envio', ids: [id], destino: l.destino }).catch((e) => ({ erro: String(e.message || e) }));
-    const x = res?.resultados?.[0];
-    if (!x || x.estado === 'falhou') { erro = x?.erro || res?.erro || 'sem resposta da extensão'; break; }
-    feitas++;
-    // deixa o site começar o envio antes de entregar a próxima
-    await new Promise((ok) => setTimeout(ok, 3000));
+  loteConfirmar = false;
+  lote = novoLote(l.destino, l.fila.map((r) => idDeOrigem(r, l.destino)));
+  await salvarLote();
+  rodarLote();
+}
+
+async function rodarLote() {
+  if (loteRodando || !lote) return;
+  loteRodando = true;
+  lotePausar = false;
+  botoesLote('rodando');
+  const nome = DESTINOS[lote.destino];
+  try {
+    while (lote.estado === 'rodando') {
+      if (lotePausar) { lote = pausarLote(lote); break; }
+      const id = proximoDoLote(lote);
+      if (!id) break;
+      // já foi (por exemplo, pelo visualizador): conta e passa
+      if (['enviado', 'chegou'].includes(envioEstado[id]?.estado)) { lote = registrarNoLote(lote, { ok: true, pulado: true }); await salvarLote(); continue; }
+      $('r-envio-txt').textContent = `Enviando ${fmt.format(lote.feitos + 1)} de ${fmt.format(lote.ids.length)} ao ${nome}…`;
+      const res = await chrome.runtime.sendMessage({ kind: 'envio', ids: [id], destino: lote.destino }).catch((e) => ({ erro: String(e.message || e) }));
+      const x = res?.resultados?.[0];
+      lote = registrarNoLote(lote, x && x.estado !== 'falhou' ? { ok: true } : { ok: false, erro: x?.erro || res?.erro || 'sem resposta da extensão' });
+      await salvarLote();
+      await lerEnvio();
+      // deixa o site começar o envio antes de entregar o próximo
+      if (lote.estado === 'rodando') await new Promise((ok) => setTimeout(ok, 3000));
+    }
+    await salvarLote();
+  } finally {
+    loteRodando = false;
   }
-  await lerEnvio();
-  const parou = loteJob.parar;
-  loteJob = null;
-  $('r-envio-go').disabled = false;
+  const fim = lote;
   renderEnvioLote();
-  $('r-envio').hidden = false;
-  $('r-envio-txt').textContent = erro
-    ? `Parou no erro depois de ${feitas} foto(s): ${erro}`
-    : `${feitas} foto(s) entregue(s) ao site do ${DESTINOS[l.destino]}${parou ? ' (parado por você)' : ''}. Veja lá se os envios terminaram; o próximo cruzamento confere a chegada.`;
+  if (!loteAberto(fim)) {
+    $('r-envio').hidden = false;
+    $('r-envio-txt').textContent = `${fmt.format(fim.feitos - fim.pulados)} de ${itens(fim.ids.length)} entregues ao site do ${nome}${fim.pulados ? ` (${fmt.format(fim.pulados)} já tinham ido)` : ''}${fim.estado === 'parado' ? '; parado por você' : ''}. Veja lá se os envios terminaram; o próximo cruzamento confere a chegada.`;
+  }
+}
+
+function pararOuDescartarLote() {
+  if (!lote) return;
+  lote = pararLote(lote);
+  if (!loteRodando) { salvarLote(); renderEnvioLote(); }
+}
+
+function continuarLote() {
+  lote = retomarLote(lote);
+  salvarLote().then(rodarLote);
 }
 
 /** Junta as perguntas e os botões do veredito e do envio. */

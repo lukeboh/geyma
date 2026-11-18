@@ -114,6 +114,18 @@ Nenhuma foto Pendente, vídeo ou repetida vai. No próximo cruzamento, as que
 chegaram somem da lista.
 Observado:
 
+### E11 — Lote com pausa e cota ☐
+1. Revisão → "Só no iCloud" → **Tamanho do lote** "até 50" → **Enviar 50**.
+2. O texto mostra o tamanho do lote e o espaço livre do Google. Confirme.
+3. Depois de uns itens, **Pausar**. Feche o painel e abra de novo.
+4. Revisão → a barra diz "Lote ao Google Fotos: N de 50 enviados; pausado"
+   → **Continuar**.
+
+**Esperado:** o envio retoma de onde parou, sem repetir; **Descartar o
+lote** volta à barra normal. Faça o mesmo no sentido Google → iCloud (recarregue
+a aba do iCloud antes, para o Geyma ver o espaço livre).
+Observado:
+
 ---
 
 ## 2. Classificação (0.6)

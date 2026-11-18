@@ -125,8 +125,8 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - [x] Conferência da chegada pelo inventário do destino (SHA-1 exato no
   Google) (0.3.6)
 - [ ] Piloto do usuário ([docs/TESTES-HUMANOS.md](docs/TESTES-HUMANOS.md), E3–E9)
-- [ ] Envio em lote, com pausa, retomada e parada no primeiro erro
-- [ ] Conferência de cota antes de enviar, nos dois serviços
+- [x] Envio em lote, com pausa, retomada e parada no primeiro erro (0.3.22)
+- [x] Conferência de cota antes de enviar, nos dois serviços (0.3.22)
 - [ ] Envio contínuo do que é novo (substitui o backup automático do celular)
 
 ### 0.8 — Sanitização guiada

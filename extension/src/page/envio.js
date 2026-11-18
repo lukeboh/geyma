@@ -115,6 +115,15 @@
       envioDireto(msg).then(responder, (err) => responder({ ok: false, erro: String(err.message || err) }));
       return true;
     }
+    // texto de armazenamento que a própria página do Google mostra (cota.js lê os números)
+    if (msg?.kind === 'cota-texto') {
+      if (window !== window.top) return false;
+      // o menu tem dois links para a cota: o do texto com os números
+      const el = [...document.querySelectorAll('a[href$="quotamanagement"]')].find((a) => /\d/.test(a.textContent));
+      const t = el?.textContent || (document.body.innerText.match(/[^\n]*(?:Armazenamento usado|used)[^\n]*/i)?.[0] ?? '');
+      responder({ texto: t });
+      return false;
+    }
     if (msg?.kind === 'envio-alvo') {
       const a = alvo();
       if (a) chrome.runtime.sendMessage({ kind: 'envio-alvo-resp', pedido: msg.pedido, tipo: a.tipo }).catch(() => {});

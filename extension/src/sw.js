@@ -10,6 +10,7 @@ import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
 import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, pedacosDeBytes, registrarEnvio, envioDireto } from './core/envio.js';
+import { lerCotaGoogle, lerCotaIcloud } from './core/cota.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -294,6 +295,11 @@ async function handlePageEvent(site, type, payload, tabId) {
     const items = parseIcloudQuery(JSON.parse(payload.body));
     if (items.length) { await putItems(items); await offerIcloudThumbs(items); noteRefreshed(items); }
     broadcast({ site, event: 'items', added: items.length });
+  } else if (type === 'icloud-cota') {
+    // cota do iCloud, da resposta que o próprio site buscou
+    let cota = null;
+    try { cota = lerCotaIcloud(JSON.parse(payload.body)); } catch {}
+    if (cota) await setMeta('cotaIcloud', cota);
   } else if (type === 'icloud-counts') {
     const counts = parseIcloudCounts(payload.request, JSON.parse(payload.body));
     if (counts.length) {
@@ -370,6 +376,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.kind === 'envio-alvo-resp') {
     alvoWaiters.get(msg.pedido)?.({ frameId: sender.frameId, tipo: msg.tipo });
     return false;
+  }
+  // cota dos dois serviços: Google pelo texto da própria página; iCloud pela última resposta observada
+  if (msg?.kind === 'cota') {
+    (async () => {
+      const [tab] = await chrome.tabs.query({ url: SITES.google.match });
+      if (tab) {
+        const r = await chrome.tabs.sendMessage(tab.id, { kind: 'cota-texto' }).catch(() => null);
+        const cota = lerCotaGoogle(r?.texto);
+        if (cota) await setMeta('cotaGoogle', cota);
+      }
+      const [g, a] = await Promise.all([getMeta('cotaGoogle'), getMeta('cotaIcloud')]);
+      return { ok: true, google: g?.value ? { ...g.value, at: g.at } : null, icloud: a?.value ? { ...a.value, at: a.at } : null };
+    })().then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
+    return true;
   }
   if (msg?.kind === 'envio') {
     const ids = (Array.isArray(msg.ids) ? msg.ids : []).map(String);

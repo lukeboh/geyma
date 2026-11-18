@@ -176,6 +176,13 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     painel, `vis()` (protection.js) é a vista da chave; jobs (fichas,
     CLIP, pHash) continuam usando `data` inteiro. Inventário:
     `byYearVideo` em `summarize` e `inv-summary.js`.
+28. **Lote e cota (0.3.22):** `core/lote.js` (estado do lote, meta
+    `envioLote`; o laço roda no painel, `rodarLote` em protection.js) e
+    `core/cota.js`. Cota do Google: mensagem `cota` ao service worker, que
+    pede `cota-texto` à `src/page/envio.js` na aba do Google (texto do
+    link `quotamanagement`). Cota do iCloud: `hook.js` observa a resposta
+    de `storageUsageInfo` (evento `icloud-cota`, meta `cotaIcloud`).
+    Vídeo do Google sem arquivo: `fileV: {indisponivel: true}`.
 
 ## 4. Decisões e motivos
 

@@ -202,7 +202,7 @@
         <button id="m-vf-stop" hidden>Parar</button>
         <span class="muted" id="m-vf-state" role="status"></span>
       </div>
-      <p class="hint">Um vídeo é o mesmo nos dois serviços quando o instante, as dimensões e a duração batem; duração diferente fica a confirmar (outro vídeo, ou um deles foi cortado). Foto e vídeo nunca formam par. A conferência lê só o cabeçalho do download de cada vídeo do Google (formato, tamanho e nome do arquivo; nada é baixado) e diz se o Google guarda o arquivo original ou uma cópia recomprimida, reduzida ou cortada. Até 4 por vez; um erro do Google num arquivo só (400, 404, 500) pula esse arquivo; uma recusa do Google, ou cinco erros seguidos, param a conferência.</p>
+      <p class="hint">Um vídeo é o mesmo nos dois serviços quando o instante, as dimensões e a duração batem; duração diferente fica a confirmar (outro vídeo, ou um deles foi cortado). Foto e vídeo nunca formam par. A conferência lê só o cabeçalho do download de cada vídeo do Google (formato, tamanho e nome do arquivo; nada é baixado) e diz se o Google guarda o arquivo original ou uma cópia recomprimida, reduzida ou cortada. Até 4 por vez; um erro do Google num arquivo só (404, 500) pula esse arquivo, e um vídeo que o Google não serve mais (400: só a capa) fica anotado; uma recusa do Google, ou cinco erros seguidos, param a conferência.</p>
     </section>
   </main>
 
@@ -227,7 +227,10 @@
       </div>
       <div class="batch" id="r-envio" hidden>
         <span id="r-envio-txt"></span>
+        <label>Tamanho do lote <select id="r-envio-n"></select></label>
         <button id="r-envio-go"></button>
+        <button id="r-envio-pause" hidden>Pausar</button>
+        <button id="r-envio-resume" hidden class="primary">Continuar</button>
         <button id="r-envio-stop" hidden>Parar</button>
       </div>
       <div class="confirm" id="r-confirm" hidden>

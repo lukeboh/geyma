@@ -29,12 +29,29 @@ export function espacoDasLinhas(rows, bpp = 0.35) {
   let estimado = false;
   for (const r of rows) {
     if (r.a?.size) icloud += r.a.size;
-    if (r.g) {
-      if (r.g.file?.bytes && !r.g.video) google += r.g.file.bytes;
+    if (r.g?.video) {
+      // vídeo: a ficha do arquivo; sem ela, pela duração (cerca de 16 Mbit/s, o do iPhone em 1080p)
+      if (r.g.fileV?.bytes) google += r.g.fileV.bytes;
+      else if (r.g.videoMs) { google += (r.g.videoMs / 1000) * VIDEO_BYTES_POR_S; estimado = true; }
+      else if (r.g.w && r.g.h) { google += r.g.w * r.g.h * bpp; estimado = true; }
+    } else if (r.g) {
+      if (r.g.file?.bytes) google += r.g.file.bytes;
       else if (r.g.w && r.g.h) { google += r.g.w * r.g.h * bpp; estimado = true; }
     }
   }
   return { icloud, google, googleEstimado: estimado };
+}
+
+/** Bytes por segundo de vídeo, para estimar o tamanho sem a ficha do arquivo. */
+export const VIDEO_BYTES_POR_S = 2e6;
+
+/**
+ * Quanto um envio ocupa no destino: ao Google, o original do iCloud; ao
+ * iCloud, o arquivo do Google (real pela ficha, ou estimado).
+ */
+export function bytesDoEnvio(rows, destino, bpp = 0.35) {
+  if (destino === 'google') return rows.reduce((n, r) => n + (r.a?.size || 0), 0);
+  return espacoDasLinhas(rows.map((r) => ({ g: r.g })), bpp).google;
 }
 
 /**

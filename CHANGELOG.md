@@ -2,6 +2,33 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.22 — 18/11/2026
+
+- Envio em lote (etapa 0.7): o tamanho do lote é escolhido (até 10, 50,
+  200, 1000 ou todos da lista); a fila fica guardada (`envioLote`,
+  `core/lote.js`) e pode ser pausada e continuada depois, mesmo com o
+  painel fechado e reaberto; para no primeiro erro, e Continuar tenta o
+  mesmo item de novo. O que já foi por outro caminho conta e passa.
+- Conferência da cota antes de enviar (`core/cota.js`), sem consultas
+  próprias: no Google, o texto "Armazenamento usado" que a própria página
+  mostra; no iCloud, a resposta de `storageUsageInfo` que o próprio site
+  busca ao abrir (observada pelo hook). O primeiro clique em Enviar diz o
+  tamanho do lote e o espaço livre (descontada uma folga de 1% ou 2 GB e o
+  arredondamento do texto do Google) e não deixa seguir se não couber; cota
+  desconhecida avisa.
+- Tamanho no destino: vídeos sem a ficha do arquivo estimados pela duração
+  (cerca de 16 Mbit/s), não mais como foto.
+- Vídeos que o Google não serve mais (o download responde 400 e não há
+  versão para assistir; só a capa): a conferência anota em vez de parar.
+  Num par, a melhor cópia fica no iCloud ("o Google não tem mais o arquivo
+  do vídeo"); só do Google, o vídeo não vai ao iCloud (não há o que
+  enviar); o bloco Vídeos conta os dois casos.
+
+Verificação: 235 testes passando. Na biblioteca real, as duas cotas lidas
+(a do iCloud ao abrir o site, sem consulta própria), o primeiro clique do
+lote mostra o tamanho e o espaço livre, e a conferência dos vídeos do
+Google passa pelos que só têm a capa.
+
 ## 0.3.21 — 18/11/2026
 
 - Fotos e vídeos separados no painel inteiro: chave **Fotos | Vídeos |

@@ -69,11 +69,13 @@ const mesmasDims = (a, g) => Boolean(a?.w && g?.w) && ((a.w === g.w && a.h === g
  * 'original' (arquivo do mesmo tamanho do original do iCloud),
  * 'recomprimida' (mesmas dimensões, arquivo bem menor, mesma duração),
  * 'reduzida' (dimensões menores: economia de espaço do Google),
- * 'aparada' (mais curto: o vídeo foi cortado) ou null (sem ficha ou sem
- * como dizer).
+ * 'aparada' (mais curto: o vídeo foi cortado), 'indisponivel' (o Google não
+ * serve mais o arquivo do vídeo, só a capa) ou null (sem ficha ou sem como
+ * dizer).
  */
 export function copiaVideoNoGoogle(a, g) {
   const f = g?.fileV;
+  if (f?.indisponivel) return ehVideo(a) ? 'indisponivel' : null;
   if (!f?.bytes || !a?.size || !ehVideo(a)) return null;
   const r = f.bytes / a.size;
   if (Math.abs(r - 1) <= MESMO_ARQUIVO) return 'original';
@@ -134,7 +136,9 @@ export function resumoVideos(rows) {
     pares: lado(), soIcloud: lado(), soGoogle: lado(),
     identidade: { confirmada: 0, provavel: 0, incerta: 0 },
     duracao: { igual: 0, lenta: 0, proxima: 0, diferente: 0, semDuracao: 0 },
-    copia: { original: 0, recomprimida: 0, reduzida: 0, aparada: 0, semFicha: 0 },
+    copia: { original: 0, recomprimida: 0, reduzida: 0, aparada: 0, indisponivel: 0, semFicha: 0 },
+    // vídeos só do Google cujo arquivo o Google não serve mais (só a capa)
+    soGoogleIndisponivel: 0,
     melhorIcloud: 0, melhorGoogle: 0, movimentoLive: 0, misturados: 0,
   };
   const somar = (l, ms, bytes) => { l.n++; if (ms) l.ms += ms; else l.semDuracao++; l.bytes += bytes || 0; };
@@ -156,6 +160,7 @@ export function resumoVideos(rows) {
     } else {
       somar(out.soGoogle, r.g.videoMs, r.g.fileV?.bytes);
       if (r.movimentoDe) out.movimentoLive++;
+      if (r.g.fileV?.indisponivel) out.soGoogleIndisponivel++;
     }
   }
   return out;

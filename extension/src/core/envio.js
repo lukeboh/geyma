@@ -23,6 +23,7 @@ export function podeEnviar(r, destino) {
   if (!SENDABLE.has(effectiveDecision(r))) return { ok: false, motivo: 'só vão fotos marcadas Pessoal ou Manter' };
   if (it.hidden || it.foraDoPercurso) return { ok: false, motivo: 'foto oculta ou fora da biblioteca principal' };
   if (r.dup || r.dupIcloud) return { ok: false, motivo: 'cópia repetida: vai só a melhor' };
+  if (origem === 'google' && it.fileV?.indisponivel) return { ok: false, motivo: 'o Google não tem mais o arquivo deste vídeo (só a capa)' };
   const so = destino === 'google' ? 'soIcloud' : 'soGoogle';
   if (r.cls === so) return { ok: true, origem };
   // nos dois serviços: só reenviar ao Google quando o iCloud guarda a melhor cópia
