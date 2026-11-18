@@ -142,7 +142,18 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - Quarentena pela lixeira do serviço e relatório do que foi feito
 
 ### 0.9 — Vídeos
-- Inventário, identidade (duração, codec, quadros amostrados), qualidade e envio
+- [x] Inventário: duração, codec, quadros por segundo e versão para assistir
+  (iCloud); duração (Google); .m4v "unsupported" reconhecido pelo nome (0.3.17)
+- [x] Identidade pela duração: confirma, desfaz trocas no mesmo segundo,
+  reconhece câmera lenta; foto e vídeo nunca formam par (0.3.17)
+- [x] Qualidade: ficha do arquivo de vídeo do Google (original, recomprimido,
+  reduzido, cortado) e melhor cópia (0.3.17)
+- [x] Envio pelo site até 300 MB, nos dois sentidos (0.3.17)
+- [x] Painel "Vídeos" e visualizador com duração, codec e ficha (0.3.17)
+- [ ] Piloto do envio de um vídeo (caso V3) e conferência da chegada
+- [ ] Vídeos acima de 300 MB: envio sem passar o arquivo inteiro pela memória
+- [ ] Assistir os dois lados no visualizador
+- [ ] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
 
 ### 1.0 — Uso pessoal completo
 - Biblioteca pessoal protegida e sanitizada, rotina de manutenção funcionando

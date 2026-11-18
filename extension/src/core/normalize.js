@@ -71,6 +71,26 @@ function googleExtras(it) {
 }
 
 const VIDEO_TYPES = /movie|mpeg-4|video|avi|3gpp/i;
+// vídeos que a Apple guarda sem tipo reconhecido ("unsupported"), como .m4v
+// exportados por apps: o Google os toca como vídeo, e o nome diz o que são
+export const VIDEO_EXT = /.(mov|mp4|m4v|avi|3gp|3g2|mpe?g|mkv|wmv|webm|mts|m2ts)$/i;
+
+/**
+ * Campos de vídeo do iCloud, lidos de um registro real em 18/11/2026:
+ * CPLAsset.duration (milissegundos), CPLMaster.codec ("HEVC", "H.264"...),
+ * CPLMaster.videoFrameRate (quadros por segundo) e as versões reduzidas que
+ * a Apple gera (resVidSmall/Med/Large: MP4 de 360, 720 e 1080 linhas).
+ */
+export function icloudVideo(a, m) {
+  const n = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null);
+  return {
+    durMs: n(a('duration')),
+    codec: typeof m('codec') === 'string' ? m('codec') : null,
+    fps: n(m('videoFrameRate')),
+    // versão para assistir no visualizador (MP4 de 720 linhas, ou a menor)
+    vidMed: urlDe(m('resVidMedRes')) || urlDe(m('resVidSmallRes')),
+  };
+}
 
 /** Resposta de consulta do iCloud (CPLAssetAndMaster...) → itens, juntando asset e master. */
 export function parseIcloudQuery(json) {
@@ -94,6 +114,8 @@ export function normalizeIcloudPair(asset, master) {
   const ts = Number(a('assetDate'));
   if (!Number.isFinite(ts)) return null;
   const fileType = m('itemType') || null;
+  const filename = decodeEnc(m('filenameEnc'));
+  const video = (fileType ? VIDEO_TYPES.test(fileType) : false) || VIDEO_EXT.test(filename || '');
   return {
     id: `a:${asset.recordName}`,
     source: 'icloud',
@@ -103,8 +125,8 @@ export function normalizeIcloudPair(asset, master) {
     h: Number(m('resOriginalHeight')) || null,
     size: Number(m('resOriginalFileSize')) || null,
     fileType,
-    video: fileType ? VIDEO_TYPES.test(fileType) : false,
-    filename: decodeEnc(m('filenameEnc')),
+    video,
+    filename,
     fingerprint: m('resOriginalFingerprint') || null,
     edited: Number(a('adjustmentRenderType')) > 0,
     subtype: a('assetSubtypeV2') ?? a('assetSubtype') ?? null,
@@ -120,6 +142,7 @@ export function normalizeIcloudPair(asset, master) {
     local: Boolean(a('locationEnc')),
     importedBy: decodeEnc(m('importedByBundleIdentifierEnc')),
     ...icloudVersoes(a, m),
+    ...(video ? icloudVideo(a, m) : {}),
     thumbAt: Date.now(),
   };
 }

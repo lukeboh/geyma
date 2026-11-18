@@ -17,6 +17,7 @@
 
 import { hamming, SAME_MAX, DIFFERENT_MIN } from './phash.js';
 import { mesmoNome, copiaNoGoogle } from './google-file.js';
+import { ehVideo, relacaoDuracao, duracaoBate } from './video.js';
 
 export const TOLERANCE_MS = 1000;
 
@@ -54,8 +55,16 @@ export function rajadaResolvida(pick, c, rivais = []) {
   return margem >= RAJADA_MARGEM ? { n: c.length, margem } : null;
 }
 
-// ficha do arquivo do Google só vale para fotos (em vídeos é a da capa)
-const fichaFoto = (g) => (g.video ? null : g.file);
+// ficha do arquivo do Google: a da foto (`=d`) ou, num vídeo, a do vídeo
+// (`=dv`; o `=d` de um vídeo é a capa)
+const fichaDe = (g) => (g.video ? g.fileV : g.file);
+
+/**
+ * Foto e vídeo nunca são o mesmo item (o vídeo curto no instante de uma Live
+ * Photo é o movimento dela enviado à parte). O tipo do Google só é conhecido
+ * quando a listagem trouxe os dados extras.
+ */
+export const tipoCompativel = (a, g) => !(g.extrasLidos || g.video) || ehVideo(a) === Boolean(g.video);
 
 /** Live Photo no iCloud (campo live do registro; nos itens antigos, assetSubtypeV2 = 2). */
 export const isLive = (a) => Boolean(a?.live ?? a?.subtype === 2);
@@ -153,7 +162,7 @@ export function matchLibraries(google, icloud, opts = {}) {
     for (const k of [s - 1, s, s + 1]) {
       for (const g of bySec.get(k) || []) {
         const dt = Math.abs(g.ts - a.ts);
-        if (dt > TOLERANCE_MS || recusadas?.has(g.id)) continue;
+        if (dt > TOLERANCE_MS || recusadas?.has(g.id) || !tipoCompativel(a, g)) continue;
         const { rel, dimsA } = relacaoDims(a, g);
         if (rel) out.push({ g, rel, dt, dimsA });
       }
@@ -167,7 +176,7 @@ export function matchLibraries(google, icloud, opts = {}) {
   // diferentes saem, e os mais parecidos vêm primeiro.
   const byImage = (a, c) => {
     if ((!a.phash && !a.phashOrig) || c[0]?.peloUsuario || c[0]?.porRecorte) return c;
-    const scored = c.map((x) => ({ ...x, d: distImagem(a, x.g), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaFoto(x.g)) }));
+    const scored = c.map((x) => ({ ...x, d: distImagem(a, x.g), clique: mesmoClique(a, x.g, c.length) || mesmoNome(a, fichaDe(x.g)) }));
     return scored
       // imagem diferente sai, a não ser que seja outro quadro do mesmo clique de
       // uma Live Photo ou o mesmo arquivo de origem (nome igual, no mesmo instante)
@@ -175,11 +184,21 @@ export function matchLibraries(google, icloud, opts = {}) {
       .sort((x, y) => (x.d ?? 99) - (y.d ?? 99) || (x.rel === y.rel ? x.dt - y.dt : x.rel === 'igual' ? -1 : 1));
   };
 
+  // Vídeos: a duração decide. Candidatos com a duração que bate vêm primeiro e,
+  // se houver algum, os de duração claramente diferente saem.
+  const porDuracao = (a, c) => {
+    if (!ehVideo(a) || !a.durMs || c[0]?.peloUsuario) return c;
+    const com = c.map((x) => ({ ...x, dur: relacaoDuracao(a, x.g) }));
+    const bate = com.filter((x) => duracaoBate(x.dur));
+    if (!bate.length) return com;
+    return [...bate, ...com.filter((x) => !duracaoBate(x.dur) && x.dur !== 'diferente')];
+  };
+
   const cands = new Map(); // id do iCloud -> candidatos
   const demand = new Map(); // id do Google -> quantos itens do iCloud o querem
   const distPorG = new Map(); // id do Google -> [{aId, d}] (rajadas)
   for (const a of A) {
-    const c = byImage(a, candidatesOf(a));
+    const c = porDuracao(a, byImage(a, candidatesOf(a)));
     cands.set(a.id, c);
     for (const x of c) {
       demand.set(x.g.id, (demand.get(x.g.id) || 0) + 1);
@@ -217,9 +236,12 @@ export function matchLibraries(google, icloud, opts = {}) {
     const peloUsuario = Boolean(pick.peloUsuario);
     // recorte: a imagem já provou (uma é pedaço da outra); o pHash não serve
     const imageConfirmed = peloUsuario || Boolean(pick.porRecorte) || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
+    // vídeo: mesma duração, e nenhum outro candidato com a duração que bate
+    const duracaoConfirma = !imageConfirmed && duracaoBate(pick.dur) && c.filter((x) => duracaoBate(x.dur)).length === 1;
+    const duracaoDiferente = pick.dur === 'diferente';
     // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
     const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
-    let disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
+    let disputed = !imageConfirmed && !duracaoConfirma && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
     // fotos em sequência: a imagem mais parecida, com folga, resolve a disputa
     const rajada = disputed ? rajadaResolvida(pick, c, distPorG.get(pick.g.id).filter((x) => x.aId !== a.id).map((x) => ({ d: x.d, melhor: melhorDist(x.aId) }))) : null;
     if (rajada) disputed = false;
@@ -228,11 +250,15 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (pick.porRecorte) { pair.recorte = a.recorte.cortada; pair.recorteNcc = a.recorte.ncc; }
     if (peloUsuario) pair.confirmadoPeloUsuario = true;
     else if (imageConfirmed) pair.confirmadoPorImagem = true;
+    else if (duracaoConfirma) pair.confirmadoPorDuracao = true;
+    if (pick.dur) pair.duracao = pick.dur;
+    // outro vídeo, ou o mesmo cortado: só a imagem ou você confirmam
+    if (duracaoDiferente) pair.duracaoDiferente = true;
     if (reused) pair.duplicataNoIcloud = true;
     // imagens comparadas e só parecidas (nem iguais, nem claramente diferentes):
     // por exemplo dois quadros de uma Live Photo, ou fotos de rajada
     const comparada = !imageConfirmed && pick.d !== undefined && pick.d !== null;
-    const nome = mesmoNome(a, fichaFoto(pick.g));
+    const nome = mesmoNome(a, fichaDe(pick.g));
     const quadro = comparada && (mesmoClique(a, pick.g, c.length) || (nome && isLive(a)));
     // mesmo arquivo de origem com a imagem mudada: versão editada (corte, filtro);
     // ou a mesma imagem com outro tom, pela comparação das miniaturas (recorte.js)
@@ -248,9 +274,9 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (pick.rel === 'reduzida') {
       pair.menor = pick.dimsA.w * pick.dimsA.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
       // só é "cópia reduzida" se não houver dúvida de que é a mesma imagem
-      pair.cls = (parecida && !rajada) || disputed ? 'confirmar' : 'reduzida';
+      pair.cls = (parecida && !rajada) || disputed || (duracaoDiferente && !imageConfirmed) ? 'confirmar' : 'reduzida';
     } else {
-      pair.cls = disputed ? 'confirmar' : 'ambos';
+      pair.cls = disputed || (duracaoDiferente && !imageConfirmed) ? 'confirmar' : 'ambos';
     }
     if (disputed) { pair.disputado = true; pair.candidatos = c.map(({ g }) => g.id); }
     if (sameImage) pair.duplicatasNoGoogle = c.length - 1;
@@ -312,7 +338,7 @@ export function parearPorFuso(icloud, google) {
           const lg = local(g);
           const bate = (t === la && (Math.abs(g.ts - la) <= TOLERANCE_MS || (lg != null && Math.abs(lg - la) <= TOLERANCE_MS)))
             || (t === a.ts && lg != null && Math.abs(lg - a.ts) <= TOLERANCE_MS);
-          if (bate && deslocamentoDeFuso(g.ts - a.ts) && dimRelation(a, g) === 'igual') achados.set(g.id, g);
+          if (bate && deslocamentoDeFuso(g.ts - a.ts) && dimRelation(a, g) === 'igual' && tipoCompativel(a, g) && relacaoDuracao(a, g) !== 'diferente') achados.set(g.id, g);
         }
       }
     }
@@ -322,7 +348,10 @@ export function parearPorFuso(icloud, google) {
     if (d !== null && d >= DIFFERENT_MIN) { restantes.push(a); continue; }
     usados.add(g.id);
     const pair = { a, g, dt: Math.abs(g.ts - a.ts), fuso: true, deslocamentoMs: g.ts - a.ts, rel: 'igual', dist: d };
+    const dur = relacaoDuracao(a, g);
+    if (dur) pair.duracao = dur;
     if (d !== null && d <= SAME_MAX) { pair.cls = 'ambos'; pair.confirmadoPorImagem = true; }
+    else if (duracaoBate(dur)) { pair.cls = 'ambos'; pair.confirmadoPorDuracao = true; }
     else { pair.cls = 'confirmar'; if (d !== null) pair.parecida = true; }
     pairs.push(pair);
   }
@@ -341,10 +370,10 @@ export function parearPorFuso(icloud, google) {
  *   sequência resolvida pela imagem).
  */
 export function estadoIdentidade(p) {
-  if (p.confirmadoPeloUsuario || p.confirmadoPorImagem || (p.mesmoNome && p.a.ts === p.g.ts)) return 'confirmada';
+  if (p.confirmadoPeloUsuario || p.confirmadoPorImagem || p.confirmadoPorDuracao || (p.mesmoNome && p.a.ts === p.g.ts)) return 'confirmada';
   // rajada resolvida pela imagem: a mais parecida, com folga sobre as outras
   if (p.rajada && !p.disputado) return 'provavel';
-  if (p.cls === 'confirmar' || p.parecida || p.disputado || (p.cls === 'reduzida' && !p.confirmadoPorImagem)) return 'incerta';
+  if (p.cls === 'confirmar' || p.parecida || p.disputado || (p.cls === 'reduzida' && !p.confirmadoPorImagem && !p.confirmadoPorDuracao)) return 'incerta';
   return 'provavel';
 }
 
@@ -457,7 +486,7 @@ export function googlePhashNeeded(pendingIds, pairs, hasHash) {
   const need = new Set(pendingIds);
   for (const p of pairs) {
     for (const id of p.candidatos || []) if (!hasHash.has(id)) need.add(id);
-    if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !p.confirmadoPeloUsuario && !hasHash.has(p.g.id)) need.add(p.g.id);
+    if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !p.confirmadoPeloUsuario && !p.confirmadoPorDuracao && !hasHash.has(p.g.id)) need.add(p.g.id);
     // par por fuso horário: a imagem decide
     if (p.fuso && !p.confirmadoPorImagem && !hasHash.has(p.g.id)) need.add(p.g.id);
   }

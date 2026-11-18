@@ -5,18 +5,28 @@
 // - mesma impressão digital do arquivo original (iCloud: resOriginalFingerprint;
 //   Google: SHA-1 do original) = arquivo idêntico;
 // - mesmo pHash (distância ≤ 10) = mesma imagem, mesmo com bytes diferentes;
+// - vídeos: mesma duração (até 250 ms ou 1%) no mesmo segundo e dimensões;
 // - mesmo segundo de captura e mesmas dimensões = só candidata (rajadas e
 //   sequências também caem aqui), precisa de uma das duas anteriores.
 import { hamming, SAME_MAX, DIFFERENT_MIN } from './phash.js';
+import { ehVideo, DURACAO_TOL_MS, DURACAO_TOL_FRAC } from './video.js';
+
+// duração de um vídeo: a do iCloud (durMs) ou a da listagem do Google (videoMs)
+const durDe = (it) => (ehVideo(it) ? it.durMs || it.videoMs || null : null);
+const mesmaDuracao = (x, y) => {
+  const dx = durDe(x);
+  const dy = durDe(y);
+  return Boolean(dx && dy) && Math.abs(dx - dy) <= Math.max(DURACAO_TOL_MS, DURACAO_TOL_FRAC * Math.max(dx, dy));
+};
 
 const exactKey = (it) => it.fingerprint || it.sha1 || null;
 
-/** Candidatas: itens do mesmo serviço com o mesmo segundo e as mesmas dimensões (em qualquer orientação). */
+/** Candidatas: itens do mesmo serviço com o mesmo segundo, as mesmas dimensões (em qualquer orientação) e o mesmo tipo (foto ou vídeo). */
 export function candidateGroups(items) {
   const groups = new Map();
   for (const it of items) {
     if (!it.w || !it.h) continue;
-    const k = `${Math.floor(it.ts / 1000)}|${Math.min(it.w, it.h)}x${Math.max(it.w, it.h)}`;
+    const k = `${Math.floor(it.ts / 1000)}|${Math.min(it.w, it.h)}x${Math.max(it.w, it.h)}|${ehVideo(it) ? 'v' : 'f'}`;
     let l = groups.get(k);
     if (!l) groups.set(k, (l = []));
     l.push(it);
@@ -50,6 +60,7 @@ const same = (x, y) => {
   if (exactKey(x) && exactKey(x) === exactKey(y)) return 'identico';
   const d = hamming(x.phash, y.phash);
   if (d !== null && d <= SAME_MAX) return 'imagem';
+  if (mesmaDuracao(x, y)) return 'duracao';
   return null;
 };
 
@@ -97,14 +108,15 @@ export function analyzeDuplicates(items) {
       const home = clusters.find((cl) => cl.items.some((o) => same(o, it)));
       if (home) { home.items.push(it); continue; }
 
-      if (!it.phash) out.pendingIds.push(it.id);
+      // vídeo com duração: a duração já decidiu (diferente = outro vídeo)
+      if (!it.phash && !durDe(it)) out.pendingIds.push(it.id);
       if (clusters.some((cl) => { const d = hamming(cl.items[0].phash, it.phash); return d !== null && d < DIFFERENT_MIN; })) uncertain = true;
       clusters.push({ items: [it], evidence: 'imagem' });
     }
     const before = out.copias;
     addClusters(clusters);
     if (out.copias > before || l.every((it) => out.copies.has(it.id) || clusters.some((cl) => cl.items.length > 1 && cl.items.includes(it)))) continue;
-    if (l.some((it) => !it.phash)) out.pendentes++;
+    if (l.some((it) => !it.phash && !durDe(it))) out.pendentes++;
     else if (uncertain) out.incertos++;
     else out.diferentes++;
   }
@@ -115,6 +127,6 @@ export function analyzeDuplicates(items) {
 /** Espaço que as cópias ocupam (bytes conhecidos; o Google não informa tamanho). */
 export function copiesBytes(items, copies) {
   let n = 0;
-  for (const it of items) if (copies.has(it.id)) n += it.size || 0;
+  for (const it of items) if (copies.has(it.id)) n += it.size || it.fileV?.bytes || 0;
   return n;
 }

@@ -176,6 +176,36 @@ cópia é a inteira. Na edição, a mesma cena com outro tom ou cor, e não outr
 foto do mesmo segundo.
 Observado:
 
+## 2c. Vídeos (0.9)
+
+### V1 — Painel de vídeos e mesmo vídeo ☐
+Proteção → bloco **Vídeos**. Abra "a confirmar" (vai à Revisão filtrada por
+vídeos) e abra três pares no visualizador.
+**Esperado:** os números fazem sentido para a sua biblioteca; nos pares, a
+legenda mostra a duração dos dois lados e o placar diz "mesma duração" ou
+"durações diferentes". Num par de durações diferentes, um vídeo é outro ou
+foi cortado.
+Observado:
+
+### V2 — Arquivos de vídeo do Google ☐
+Bloco **Vídeos** → **Conferir os arquivos de vídeo do Google** (só
+cabeçalhos; uns minutos). Depois abra, pelo link "Melhor cópia no iCloud",
+dois vídeos.
+**Esperado:** a legenda do Google mostra o nome, o formato e o tamanho do
+arquivo; nos vídeos com a melhor cópia no iCloud, o do Google é menor
+(recomprimido ou reduzido) ou mais curto. Assista no próprio Google Fotos
+(link do visualizador) para conferir.
+Observado:
+
+### V3 — Envio de um vídeo pequeno ☐
+Marque como Pessoal um vídeo só do iCloud com menos de 300 MB. No
+visualizador: **Ensaiar** e depois **Enviar ao Google**.
+**Esperado:** o ensaio mostra o arquivo .MOV ou .MP4 com o tamanho do
+original; o envio aparece no Google Fotos com a data certa e toca; na
+próxima leitura do Google ele aparece como "chegou". Um vídeo acima de
+300 MB não oferece o envio e diz o motivo.
+Observado:
+
 ---
 
 ## 3. Identidade (0.4)

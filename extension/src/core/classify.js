@@ -48,11 +48,11 @@ const SCREENS = new Set([
 const isScreen = (w, h) => Boolean(w && h) && SCREENS.has(`${Math.min(w, h)}x${Math.max(w, h)}`);
 
 const NAME = [
-  [/^IMG-\d{8}-WA\d+/i, 'recebida', 'nome do WhatsApp'],
+  [/^(IMG|VID)-\d{8}-WA\d+/i, 'recebida', 'nome do WhatsApp'],
   [/^(received_|FB_IMG|Snapchat-|inbound)/i, 'recebida', 'nome de mensageiro ou rede social'],
   [/^(Screenshot|Screen Shot|Captura de Tela|Captura de ecrã|Simulator Screen)/i, 'print', 'nome de captura de tela'],
   [/^(ScreenRecording|Screen Recording|RPReplay|Gravação de Tela|Grava[cç][aã]o da Tela)/i, 'print', 'nome de gravação de tela'],
-  [/^(IMG_\d{4}|IMG_E\d{4}|DSC[NF_]?\d+|_DSC\d+|P\d{7}|DSCF\d+|GOPR\d+|PXL_\d{8}|IMG_\d{8}_\d{6}|\d{8}_\d{6})/i, 'pessoal', 'nome de câmera'],
+  [/^(IMG_\d{4}|IMG_E\d{4}|DSC[NF_]?\d+|_DSC\d+|P\d{7}|DSCF\d+|GOPR\d+|PXL_\d{8}|IMG_\d{8}_\d{6}|\d{8}_\d{6}|VID_\d{8}_\d{6}|MVI_\d{4}|MAH\d{5})/i, 'pessoal', 'nome de câmera'],
   [/(NIKON|Canon|iPhone|SONY|Panasonic|FUJIFILM|OLYMPUS|Galaxy)/i, 'pessoal', 'modelo da câmera no nome'],
   [/^filme-\d{4}/i, 'pessoal', 'filme digitalizado'],
   [/^(\d{4}-\d{2}-\d{2} \d{2}\.\d{2}\.\d{2}|\d{8}-\d{6}-)/, 'pessoal', 'nome com data e hora da captura'],
@@ -118,7 +118,8 @@ export function classifyIcloud(a) {
  * arquivo foi lida, o nome do arquivo.
  */
 export function classifyGoogle(g) {
-  const nome = (!g.video && g.file?.nome) || '';
+  // num vídeo, o nome vem da ficha do vídeo (`=dv`); o `=d` é o da capa
+  const nome = (g.video ? g.fileV?.nome : g.file?.nome) || '';
   for (const [re, cat, why] of NAME) if (cat === 'print' && re.test(nome)) return { cat, reasons: [why] };
   const doc = nome && documentoOuPropaganda(nome);
   if (doc) return doc;

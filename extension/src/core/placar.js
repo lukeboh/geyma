@@ -4,6 +4,8 @@
 // e dá um número para ordenar e conferir os pares mais fracos primeiro.
 // Módulo puro: roda no navegador e no Node (testes).
 
+import { textoDuracao } from './video.js';
+
 const SAME_MAX = 10;
 const DIFFERENT_MIN = 22;
 
@@ -48,6 +50,14 @@ export function placarIdentidade(r) {
   } else add('imagem', -4, `imagens diferentes (distância ${p.dist})`);
 
   if (p.nome) add('nome', 2, 'mesmo nome de arquivo');
+
+  // duração (vídeos; video.js)
+  const durA = textoDuracao(p.durA);
+  const durG = textoDuracao(p.durG);
+  if (p.dur === 'igual') add('duracao', 3, `mesma duração (${durA})`);
+  else if (p.dur === 'lenta') add('duracao', 2, `mesma gravação em câmera lenta (${durA} gravados, ${durG} em câmera lenta no Google)`);
+  else if (p.dur === 'proxima') add('duracao', 0, `durações próximas (${durA} no iCloud, ${durG} no Google)`);
+  else if (p.dur === 'diferente') add('duracao', -2, `durações diferentes (${durA} no iCloud, ${durG} no Google): outro vídeo, ou um deles foi cortado`);
   if (p.cand > 1) add('disputa', -2, `${p.cand} fotos do Google no mesmo segundo`);
   if (p.rajada) add('rajada', 1, `a mais parecida entre ${p.rajada.n} fotos do Google no mesmo segundo (folga de ${p.rajada.margem})`);
 

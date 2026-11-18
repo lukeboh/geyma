@@ -18,6 +18,7 @@ export const MOTIVOS = {
   googleRecortada: 'o Google guarda a foto recortada (o iCloud tem a imagem inteira)',
   icloudRecortada: 'o iCloud guarda a foto recortada (o Google tem a imagem inteira)',
   icloudSemMovimento: 'só o Google tem o movimento',
+  googleAparado: 'o Google guarda o vídeo mais curto (cortado)',
 };
 
 /**
@@ -33,6 +34,9 @@ export function melhorCopia(r) {
   if (r.cls === 'reduzida' && r.menor === 'icloud') google.push('icloudMenor');
   if (r.copiaGoogle === 'convertida') icloud.push('googleConvertida');
   if (r.copiaGoogle === 'recomprimida') icloud.push('googleRecomprimida');
+  // vídeos (video.js): ficha do arquivo de vídeo do Google
+  if (r.copiaGoogle === 'reduzida' && r.cls !== 'reduzida') icloud.push('googleMenor');
+  if (r.copiaGoogle === 'aparada') icloud.push('googleAparado');
   if (r.recorte === 'google') icloud.push('googleRecortada');
   if (r.recorte === 'icloud') google.push('icloudRecortada');
   if (!r.a.video && r.g.extrasLidos) {

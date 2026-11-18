@@ -2,6 +2,47 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.17 — 18/11/2026
+
+- Vídeos (início da etapa 0.9), `core/video.js`:
+  - Inventário: o percurso do iCloud passa a guardar a duração
+    (`CPLAsset.duration`, em ms), o codec, os quadros por segundo e o link
+    da versão de 720 linhas de cada vídeo. Vídeos que a Apple marca como
+    "unsupported" (.m4v de apps) são reconhecidos pelo nome.
+  - Identidade: foto e vídeo nunca formam par (o vídeo curto no instante de
+    uma Live Photo é o movimento dela, enviado à parte ao Google: fica
+    Pendente, com o motivo). A duração é prova: mesma duração confirma o
+    par (também a cópia reduzida), desfaz pares trocados no mesmo segundo e
+    reconhece a câmera lenta (o Google conta o tempo de reprodução);
+    duração diferente deixa o par a confirmar. Placar: "mesma duração",
+    "durações diferentes: outro vídeo, ou um deles foi cortado".
+  - Qualidade: ficha do arquivo de vídeo do Google (`=dv`, só o
+    cabeçalho; nova permissão para video-downloads.googleusercontent.com):
+    idêntico ao original, recomprimido, reduzido ou mais curto (cortado),
+    com a melhor cópia no iCloud nesses casos. O nome do arquivo do vídeo
+    entra na identidade e na classificação.
+  - Duplicatas: foto e vídeo do mesmo segundo nunca são o mesmo grupo;
+    vídeos com a mesma duração no mesmo segundo e dimensões são cópias, sem
+    precisar da imagem.
+  - Classificação: nomes de vídeo do WhatsApp (VID-…-WA…) e de câmeras
+    (VID_…, MVI_…, MAH…).
+  - Envio: vídeos marcados Pessoal ou Manter vão pelo site, nos dois
+    sentidos, até 300 MB (o arquivo inteiro passa pela memória); o arquivo
+    vai em pedaços de base64 feitos direto dos bytes, sem um texto único do
+    tamanho do vídeo.
+  - Painel: bloco "Vídeos" em Proteção (nos dois serviços, só em um, mesmo
+    vídeo, duração, arquivos do Google, melhor cópia, vídeos grandes) com o
+    botão "Conferir os arquivos de vídeo do Google"; no visualizador, a
+    duração, o codec, os quadros por segundo e a ficha do vídeo.
+
+Verificação: 219 testes passando (15 novos). Na biblioteca real: em 339
+pares de vídeo com as duas durações, a maioria bate com até 50 ms e o
+resto dos clipes curtos com até 200 ms; os vídeos em câmera lenta (240 e
+211 quadros por segundo) aparecem no Google com 4,5 e 4 vezes a duração;
+dois vídeos do mesmo segundo estavam com os pares trocados, e a duração os
+desfaz. Ficha do Google numa amostra de 24 pares: 22 idênticos ao original
+byte a byte, 2 bem menores. A conferência dos arquivos de vídeo do Google da biblioteca inteira ficou rodando depois desta versão.
+
 ## 0.3.16 — 18/11/2026
 
 - Recortes pelas miniaturas (etapa 0.5): uma foto só do iCloud e uma só do

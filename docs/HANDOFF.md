@@ -150,6 +150,14 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     `versaoEditada`. Limiares medidos na biblioteca: `RECORTE_MIN` 0,85,
     `EDICAO_MIN` 0,95, `CONTRASTE_MIN` 12.
 
+24. **Vídeos (0.3.17):** `core/video.js`. iCloud: `durMs`, `codec`, `fps`,
+    `vidMed` (só nos vídeos; chegam pelo percurso). Google: `videoMs` da
+    listagem e `fileV` (ficha do `=dv`; o `=d` de um vídeo é a capa).
+    `relacaoDuracao` (igual até 250 ms ou 1%; diferente acima de 500 ms ou
+    5%; câmera lenta a partir de 100 qps com razão de 2 a 10). No
+    cruzamento, `tipoCompativel` e `porDuracao`; par com
+    `confirmadoPorDuracao`. Envio até `LIMITE_VIDEO_ENVIO` (300 MB).
+
 ## 4. Decisões e motivos
 
 | Decisão | Motivo |
@@ -325,6 +333,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
    faltam (a recompressão depende da ficha) e o caso Q2.
 5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
    serviço, só com confirmação explícita.
+6. **Vídeos (0.9):** casos V1 a V3; a duração do iCloud chega com o próximo
+   percurso completo. Falta: envio acima de 300 MB sem passar pela memória,
+   assistir no visualizador e quadros amostrados.
 
 ### Como retomar (passo a passo)
 1. Chrome de automação aberto (`he chrome-automation`), com as abas do Google

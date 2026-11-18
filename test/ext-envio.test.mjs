@@ -9,7 +9,7 @@ import { parseIcloudQuery } from '../extension/src/core/normalize.js';
 const A = (o = {}) => ({ id: 'a:1', source: 'icloud', ts: 1700000000000, filename: 'IMG_0001.HEIC', fileType: 'public.heic', orig: 'https://x.icloud-content.com/o', ...o });
 const G = (o = {}) => ({ id: 'g:1', source: 'google', ts: 1700000000000, thumb: 'https://lh3.googleusercontent.com/k', sha1: 'S'.repeat(27), ...o });
 
-test('só vai o que está marcado Pessoal ou Manter, sem repetidas, ocultas nem vídeos', () => {
+test('só vai o que está marcado Pessoal ou Manter, sem repetidas, ocultas nem vídeos grandes', () => {
   const soI = { cls: 'soIcloud', cat: 'pessoal', a: A() };
   assert.deepEqual(podeEnviar(soI, 'google'), { ok: true, origem: 'icloud' });
   assert.equal(podeEnviar({ ...soI, cat: 'print' }, 'google').ok, false); // sugestão Pendente
@@ -17,7 +17,9 @@ test('só vai o que está marcado Pessoal ou Manter, sem repetidas, ocultas nem 
   assert.equal(podeEnviar({ ...soI, decision: 'descartar' }, 'google').ok, false);
   assert.equal(podeEnviar({ ...soI, a: A({ hidden: true }) }, 'google').ok, false);
   assert.equal(podeEnviar({ ...soI, a: A({ foraDoPercurso: 123 }) }, 'google').ok, false);
-  assert.equal(podeEnviar({ ...soI, a: A({ video: true }) }, 'google').ok, false);
+  // vídeos: até o limite do envio pelo site (o arquivo passa pela memória)
+  assert.equal(podeEnviar({ ...soI, a: A({ video: true, size: 50 * 1048576 }) }, 'google').ok, true);
+  assert.match(podeEnviar({ ...soI, a: A({ video: true, size: 400 * 1048576 }) }, 'google').motivo, /grande demais/);
   assert.equal(podeEnviar({ ...soI, dupIcloud: true }, 'google').ok, false);
   // só no iCloud não vai "ao iCloud"
   assert.equal(podeEnviar(soI, 'icloud').ok, false);

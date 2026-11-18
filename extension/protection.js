@@ -21,6 +21,7 @@ import { filaDoClip, classificarEmbed, registroClip, googleParaClip } from './sr
 import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
 import { compararCodificacao } from './src/core/jpeg.js';
 import { cinza, tamanhoPara, recorteEntre, edicaoEntre } from './src/core/recorte.js';
+import { textoDuracao, LIMITE_VIDEO_ENVIO } from './src/core/video.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -70,12 +71,14 @@ export function initProtection() {
   $('m-clip-run').addEventListener('click', runClip);
   $('m-clip-stop').addEventListener('click', () => { if (clipJob) clipJob.stop = true; });
   $('m-ic-stop').addEventListener('click', () => { if (icJob) icJob.stop = true; });
-  $('m-gf-run').addEventListener('click', runGoogleFiles);
+  $('m-gf-run').addEventListener('click', () => runFichas('gf'));
+  $('m-vf-run').addEventListener('click', () => runFichas('vf'));
+  $('m-vf-stop').addEventListener('click', () => { if (fichaJobs.vf) fichaJobs.vf.stop = true; });
   $('m-rc-run').addEventListener('click', runProvaRecompressao);
   $('m-mc-run').addEventListener('click', runMiniaturas);
   $('m-mc-stop').addEventListener('click', () => { if (mcJob) mcJob.stop = true; });
   $('m-rc-stop').addEventListener('click', () => { if (rcJob) rcJob.stop = true; });
-  $('m-gf-stop').addEventListener('click', () => { if (gfJob) gfJob.stop = true; });
+  $('m-gf-stop').addEventListener('click', () => { if (fichaJobs.gf) fichaJobs.gf.stop = true; });
   $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
   const cls = $('r-cls');
   cls.append(new Option('Todas', ''));
@@ -229,15 +232,17 @@ function renderProtection() {
   renderPlan();
   renderIcloudCheck();
   renderGoogleFiles();
+  renderVideos();
 }
 
 // ---------- arquivos do Google (formato, nome; só cabeçalhos) ----------
-let gfJob = null;
+// conferência das fichas: gf = fotos (`=d`), vf = vídeos (`=dv`)
+const fichaJobs = { gf: null, vf: null };
 const MB = (b) => `${(b / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
 
-/** Ficha do arquivo do Google: HEAD no download do original (nada é baixado). */
-async function fichaGoogle(base) {
-  const res = await fetch(`${base}=d`, { method: 'HEAD', credentials: 'include' });
+/** Ficha do arquivo do Google: HEAD no download do original (nada é baixado); num vídeo, `=dv` (o `=d` é a capa). */
+async function fichaGoogle(base, video = false) {
+  const res = await fetch(`${base}=${video ? 'dv' : 'd'}`, { method: 'HEAD', credentials: 'include' });
   if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
   return fichaDoCabecalho(res.headers);
 }
@@ -273,13 +278,45 @@ function renderGoogleFiles() {
   for (const a of $('m-gf').querySelectorAll('a[data-cls]')) {
     a.addEventListener('click', (e) => { e.preventDefault(); $('r-cls').value = a.dataset.cls; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
   }
-  if (!gfJob) { $('m-gf-run').hidden = !need.length; $('m-gf-run').textContent = `Conferir os arquivos do Google (${fmt.format(need.length)})`; }
+  if (!fichaJobs.gf) { $('m-gf-run').hidden = !need.length; $('m-gf-run').textContent = `Conferir os arquivos do Google (${fmt.format(need.length)})`; }
   if (!rcJob) $('m-rc-run').hidden = !paraProvar().length;
   if (!mcJob) {
     const n = (data.recorteNeeded?.length || 0) + (data.edicaoNeeded?.length || 0);
     $('m-mc-run').hidden = !n;
     $('m-mc-run').textContent = `Comparar recortes e edições pelas miniaturas (${fmt.format(n)})`;
   }
+}
+
+// ---------- vídeos (0.9) ----------
+// tempo total de um lado; com a duração ainda desconhecida em parte deles, diz de quantos
+const horas = (l) => (l.semDuracao >= l.n ? 'duração ainda desconhecida' : `${textoDuracao(l.ms) || '0 s'}${l.semDuracao ? ` em ${fmt.format(l.n - l.semDuracao)} com a duração conhecida` : ''}`);
+function renderVideos() {
+  const v = data.videos;
+  const need = data.videoFileNeeded || [];
+  const box = $('m-vid-box');
+  box.hidden = !v || !(v.pares.n + v.soIcloud.n + v.soGoogle.n);
+  if (box.hidden) return;
+  const semDur = v.pares.semDuracao + v.soIcloud.semDuracao;
+  const partes = [
+    `<b>${fmt.format(v.pares.n)}</b> vídeos estão nos dois serviços (${horas(v.pares)}, ${GB(v.pares.bytes)} no iCloud); <b>${fmt.format(v.soIcloud.n)}</b> só no iCloud (${horas(v.soIcloud)}, ${GB(v.soIcloud.bytes)}) e <b>${fmt.format(v.soGoogle.n)}</b> só no Google (${horas(v.soGoogle)}).`,
+    `Mesmo vídeo: ${fmt.format(v.identidade.confirmada)} confirmados, ${fmt.format(v.identidade.provavel)} prováveis e <a href="#rev" data-vid="confirmar"><b>${fmt.format(v.identidade.incerta)}</b> a confirmar</a>.`,
+    `Pela duração: ${fmt.format(v.duracao.igual)} iguais, ${fmt.format(v.duracao.lenta)} em câmera lenta (o Google conta o tempo em câmera lenta), ${fmt.format(v.duracao.proxima)} próximas e <b>${fmt.format(v.duracao.diferente)}</b> diferentes${v.duracao.semDuracao ? `; ${fmt.format(v.duracao.semDuracao)} pares ainda sem a duração do iCloud` : ''}.`,
+  ];
+  if (semDur) partes.push('A duração dos vídeos do iCloud chega no próximo percurso da biblioteca (aba Inventário).');
+  const c = v.copia;
+  if (c.original + c.recomprimida + c.reduzida + c.aparada) {
+    partes.push(`<br>Arquivos do Google conferidos: ${fmt.format(c.original)} idênticos ao original do iCloud; <b>${fmt.format(c.recomprimida)}</b> recomprimidos (mesmas dimensões, arquivo bem menor), <b>${fmt.format(c.reduzida)}</b> reduzidos e <b>${fmt.format(c.aparada)}</b> mais curtos (cortados).`);
+  }
+  partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos de vídeo do Google.` : 'Todos os arquivos de vídeo do Google já foram conferidos.');
+  if (v.melhorIcloud) partes.push(`<a href="#rev" data-vid="melhorIcloud">Melhor cópia no iCloud em <b>${fmt.format(v.melhorIcloud)}</b> vídeos</a>.`);
+  if (v.movimentoLive) partes.push(`${fmt.format(v.movimentoLive)} vídeos curtos só do Google são o movimento de uma Live Photo do iCloud, enviado à parte (ficam Pendentes).`);
+  if (v.grandes) partes.push(`${fmt.format(v.grandes)} vídeos só do iCloud passam de ${Math.round(LIMITE_VIDEO_ENVIO / 1048576)} MB e não vão pelo envio do site (memória do notebook).`);
+  if (v.misturados) partes.push(`${fmt.format(v.misturados)} pares juntam uma foto e um vídeo (decididos por você ou de leituras antigas do Google).`);
+  $('m-vid').innerHTML = partes.join(' ');
+  for (const a of $('m-vid').querySelectorAll('a[data-vid]')) {
+    a.addEventListener('click', (e) => { e.preventDefault(); $('r-cls').value = a.dataset.vid; $('r-kind').value = 'video'; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
+  }
+  if (!fichaJobs.vf) { $('m-vf-run').hidden = !need.length; $('m-vf-run').textContent = `Conferir os arquivos de vídeo do Google (${fmt.format(need.length)})`; }
 }
 
 // ---------- recortes e edições pelas miniaturas ----------
@@ -408,22 +445,22 @@ async function runProvaRecompressao() {
   else renderGoogleFiles();
 }
 
-async function runGoogleFiles() {
-  const need = data?.googleFileNeeded || [];
-  if (!need.length || gfJob) return;
-  gfJob = { stop: false, done: 0, failed: 0, status: null };
-  $('m-gf-run').hidden = true;
-  $('m-gf-stop').hidden = false;
+async function runFichas(k) {
+  const need = (k === 'vf' ? data?.videoFileNeeded : data?.googleFileNeeded) || [];
+  if (!need.length || fichaJobs[k]) return;
+  const gfJob = fichaJobs[k] = { stop: false, done: 0, failed: 0, status: null };
+  $(`m-${k}-run`).hidden = true;
+  $(`m-${k}-stop`).hidden = false;
   const queue = [...need];
   let batch = [];
   const flush = async () => { if (batch.length) { const b = batch; batch = []; await patchItems(b); } };
-  const show = (msg) => { $('m-gf-state').textContent = msg || `conferindo… ${fmt.format(gfJob.done)} de ${fmt.format(need.length)}`; };
+  const show = (msg) => { $(`m-${k}-state`).textContent = msg || `conferindo… ${fmt.format(gfJob.done)} de ${fmt.format(need.length)}`; };
   const worker = async () => {
     while (queue.length && !gfJob.stop) {
       const it = queue.shift();
       try {
-        const file = await fichaGoogle(it.url);
-        batch.push({ id: it.id, file });
+        const file = await fichaGoogle(it.url, Boolean(it.v));
+        batch.push(it.v ? { id: it.id, fileV: file } : { id: it.id, file });
         gfJob.done++;
       } catch (e) {
         gfJob.failed++;
@@ -439,8 +476,8 @@ async function runGoogleFiles() {
   await flush();
   const why = gfJob.stop === 'erro' ? `parou por erro do Google (${gfJob.status})` : gfJob.stop ? 'parada por você' : 'concluída';
   show(`${why}: ${fmt.format(gfJob.done)} de ${fmt.format(need.length)} conferidos.`);
-  gfJob = null;
-  $('m-gf-stop').hidden = true;
+  fichaJobs[k] = null;
+  $(`m-${k}-stop`).hidden = true;
   compute();
 }
 
@@ -451,7 +488,7 @@ function renderClip() {
   const indef = fila.filter((f) => f.prioridade === 0).length;
   $('m-clip').innerHTML = fila.length
     ? `<b>${fmt.format(fila.length)}</b> fotos ainda não foram olhadas pelo modelo visual (${fmt.format(indef)} indefinidas, que vão primeiro).`
-    : 'Todas as fotos já foram classificadas pela imagem (os vídeos ficam para a etapa 0.9).';
+    : 'Todas as fotos já foram classificadas pela imagem (os vídeos não passam pelo modelo visual).';
   $('m-clip-run').hidden = !fila.length || Boolean(clipJob);
   $('m-clip-run').textContent = `Classificar pela imagem (${fmt.format(fila.length)} fotos)`;
 }
@@ -1020,13 +1057,20 @@ const thumbInicial = (it, side) => {
 /** Dimensões e, quando houver, a ficha do arquivo do Google (busca e guarda se faltar). */
 function infoGoogle(g, video = false) {
   const dims = dimsTxt(g);
-  // vídeo: o download sem sufixo de vídeo devolve a capa (JPEG); a ficha enganaria
-  if (video || g.video) return [dims, 'vídeo'].join(' · ');
+  // vídeo: a ficha é a do arquivo de vídeo (`=dv`); a do `=d` é a da capa
+  if (video || g.video) {
+    const juntaV = (f) => [dims, 'vídeo', textoDuracao(g.videoMs), textoFicha(f)].filter(Boolean).join(' · ');
+    if (g.fileV || !g.thumb || !g.id || !g.video) return juntaV(g.fileV);
+    return fichaGoogle(g.thumb, true).then((fileV) => { g.fileV = fileV; patchItems([{ id: g.id, fileV }]).catch(() => {}); return juntaV(fileV); }, () => juntaV(null));
+  }
   const mov = g.extrasLidos ? (g.motionMs ? 'com movimento' : '') : '';
   const junta = (f) => [dims, textoFicha(f), mov].filter(Boolean).join(' · ');
   if (g.file || !g.thumb || !g.id) return junta(g.file);
   return fichaGoogle(g.thumb).then((file) => { g.file = file; patchItems([{ id: g.id, file }]).catch(() => {}); return junta(file); }, () => junta(null));
 }
+
+/** Duração, codec, quadros por segundo e tamanho de um vídeo do iCloud. */
+const infoVideoIcloud = (a) => (a.video ? [textoDuracao(a.durMs), [a.codec, a.fps ? `${Math.round(a.fps)} qps` : null].filter(Boolean).join(' '), a.size ? MB(a.size) : null] : []);
 
 /** Link que abre esta linha no painel (para copiar e mandar). */
 export const linkDaFoto = (r) => `${location.origin}${location.pathname}#rev?foto=${encodeURIComponent(r.ids[0])}`;
@@ -1046,7 +1090,7 @@ function verFotos(r, td, lista = null) {
     // dimensões da editada só quando mudaram (um corte); trocadas = só girada
     const mesmas = (r.a.editW === r.a.w && r.a.editH === r.a.h) || (r.a.editW === r.a.h && r.a.editH === r.a.w);
     const dimsEd = editada && r.a.editW && !mesmas ? `cortada: ${r.a.editW}×${r.a.editH} (original ${dimsTxt(r.a)})` : '';
-    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), reserva: icloudGrande(r.a) ? icloudRenova(r.a, { forcar: true }) : null, carregando: icloudGrande(r.a) ? null : RENOVANDO });
+    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name, ...infoVideoIcloud(r.a)].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), reserva: icloudGrande(r.a) ? icloudRenova(r.a, { forcar: true }) : null, carregando: icloudGrande(r.a) ? null : RENOVANDO });
     if (editada) {
       // o original fica ao lado: o Google pode ter guardado qualquer uma das duas
       fotos.push({ src: icloudOriginal(r.a) || (r.a.thumbOrig || '').replace('${f}', 'thumb.jpg'), rotulo: 'iCloud · original, antes da edição', semImagem: SEM_ICLOUD, info: dimsTxt(r.a), grande: icloudGrandeOuRenova(r.a, { original: true }), reserva: icloudOriginal(r.a) ? icloudRenova(r.a, { original: true, forcar: true }) : null, carregando: icloudOriginal(r.a) ? null : RENOVANDO });
@@ -1068,7 +1112,7 @@ function verFotos(r, td, lista = null) {
   const link = linkDaFoto(r);
   const antes = location.hash;
   try { history.replaceState(null, '', link); } catch {}
-  const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais' };
+  const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais', duracao: 'vídeos com a mesma duração' };
   const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
   abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.peloUsuario ? ' · mesma foto, por você' : ''}${r.fuso ? ` · instante deslocado por fuso horário (${textoFuso(r.fuso)})` : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,

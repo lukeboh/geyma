@@ -11,6 +11,7 @@ import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 import { conferirChegadas, marcarChegadas } from './core/envio.js';
 import { candidatosRecorte, candidatosEdicao } from './core/recorte.js';
+import { ehVideo, copiaVideoNoGoogle, videoFileNeeded, movimentosDeLive, resumoVideos } from './core/video.js';
 
 const row = (cls, a, g, extra = {}) => {
   const { cat, reasons } = classifyRow(a, g);
@@ -22,9 +23,9 @@ const row = (cls, a, g, extra = {}) => {
     why: reasons.join('; '),
     decision: a?.decision || g?.decision || null,
     clipV: (g?.clip || a?.clip)?.v || 0,
-    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null, ...versoesIcloud(a), ...(a.mesmaQue ? { mesmaQue: a.mesmaQue } : {}), ...(a.diferenteDe?.length ? { diferenteDe: a.diferenteDe } : {}) },
-    g: g && { id: g.id, w: g.w, h: g.h, ...(g.video ? { video: true } : {}), thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos) },
-    ...(a && g ? { copiaGoogle: copiaNoGoogle(a, g) } : {}),
+    a: a && { id: a.id, name: a.filename, w: a.w, h: a.h, size: a.size, type: a.fileType, video: a.video, live: isLive(a), thumb: a.thumb || null, thumbAt: a.thumbAt || null, med: a.med || null, ...versoesIcloud(a), ...(a.mesmaQue ? { mesmaQue: a.mesmaQue } : {}), ...(a.diferenteDe?.length ? { diferenteDe: a.diferenteDe } : {}), ...(a.video ? { durMs: a.durMs || null, codec: a.codec || null, fps: a.fps || null, vidMed: a.vidMed || null } : {}) },
+    g: g && { id: g.id, w: g.w, h: g.h, ...(g.video ? { video: true } : {}), thumb: g.thumb || null, key: g.id.slice(2), file: (!g.video && !a?.video && g.file) || null, motionMs: g.motionMs || null, extrasLidos: Boolean(g.extrasLidos), ...(g.video ? { videoMs: g.videoMs || null, fileV: g.fileV || null } : {}) },
+    ...(a && g ? { copiaGoogle: a.video && g.video ? copiaVideoNoGoogle(a, g) : copiaNoGoogle(a, g) } : {}),
     ...extra,
   };
 };
@@ -140,6 +141,8 @@ self.onmessage = async (e) => {
     }
     // fotos ocultas no iPhone, e as que o último percurso completo não achou,
     // ficam fora do cruzamento (e de qualquer envio). Continuam no inventário.
+    // vídeos que a Apple guarda sem tipo reconhecido (.m4v "unsupported"): pelo nome
+    for (const x of icloudTodo) if (!x.video && ehVideo(x)) x.video = true;
     const icloud = paraCruzar(icloudTodo);
     const ocultas = icloudTodo.length - icloud.length;
     // percurso concluído alguma vez, ou inventário do tamanho do total oficial da Apple
@@ -167,28 +170,32 @@ self.onmessage = async (e) => {
       return extra;
     };
     etapa('lista');
+    // vídeo curto do Google no instante de uma Live Photo do iCloud: o movimento dela, enviado à parte
+    const movimentos = movimentosDeLive(result.soGoogle, icloud);
     const rows = [
       ...result.pairs.map((p) => row(p.cls, p.a, p.g, {
         ...(p.menor ? { menor: p.menor } : {}),
         // reduzida sem a imagem conferida: só instante e proporção dizem que é a mesma foto
-        ...(p.cls === 'reduzida' && !p.confirmadoPorImagem ? { semConferencia: true } : {}),
+        ...(p.cls === 'reduzida' && !p.confirmadoPorImagem && !p.confirmadoPorDuracao ? { semConferencia: true } : {}),
         ...(p.parecida ? { parecida: true } : {}),
         ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
         ident: estadoIdentidade(p),
         // provas brutas, para o placar no visualizador (placar.js)
-        prova: { dt: p.dt, dist: p.dist ?? null, rel: p.rel || null, ...(p.recorte ? { recorte: p.recorteNcc } : {}), ...(p.edicaoNcc ? { edicao: p.edicaoNcc } : {}), ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}), ...(p.rajada ? { rajada: p.rajada } : {}) },
+        prova: { dt: p.dt, dist: p.dist ?? null, rel: p.rel || null, ...(p.recorte ? { recorte: p.recorteNcc } : {}), ...(p.edicaoNcc ? { edicao: p.edicaoNcc } : {}), ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}), ...(p.rajada ? { rajada: p.rajada } : {}), ...(p.duracao ? { dur: p.duracao, durA: p.a.durMs, durG: p.g.videoMs } : {}) },
+        ...(p.duracao ? { duracao: p.duracao } : {}),
         ...(p.fuso ? { fuso: p.deslocamentoMs } : {}),
         ...(p.recorte ? { recorte: p.recorte } : {}),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...(p.versaoEditada ? { versaoEditada: true } : {}),
         ...dupInfo(p.a, p.g),
       })),
-      ...result.soGoogle.map((g) => row('soGoogle', null, g, dupInfo(null, g))),
+      ...result.soGoogle.map((g) => row('soGoogle', null, g, { ...dupInfo(null, g), ...(movimentos.has(g.id) ? { movimentoDe: movimentos.get(g.id), cat: 'indefinido', why: 'parece o movimento de uma Live Photo do iCloud (mesmo instante), enviado à parte como vídeo' } : {}) })),
       ...result.soIcloud.map((x) => row('soIcloud', x, null, dupInfo(x, null))),
     ];
     // melhor cópia de cada par (só guarda quando um lado é melhor)
     for (const r of rows) { const m = melhorCopia(r); if (m && m.lado !== 'iguais') r.melhor = m; }
     const qualidade = resumoQualidade(rows);
+    const videos = resumoVideos(rows);
     const wanted = icloudPhashWanted(result.pairs, dupA.pendingIds, icloudById);
     await setMeta('icloudPhashWanted', wanted);
     const keep = icloudThumbKeep(result.soIcloud, dupA, result.pairs);
@@ -200,10 +207,12 @@ self.onmessage = async (e) => {
       until,
       summary,
       qualidade,
+      videos,
       dup: { google: dupSummary(scopeG, dupG), icloud: dupSummary(scopeA, dupA) },
       phashNeeded: googlePhashNeeded(dupG.pendingIds, result.pairs, new Set(google.filter((g) => g.phash).map((g) => g.id))),
       icloudPhashNeeded: icloudPhashNeeded(result.pairs, dupA.pendingIds, icloudById),
       googleFileNeeded: googleFileNeeded(result.pairs),
+      videoFileNeeded: videoFileNeeded(result.pairs),
       recorteNeeded: candidatosRecorte(result.soIcloud, result.soGoogle),
       edicaoNeeded: candidatosEdicao(result.pairs),
       icloudPhashWanted: wanted.length,

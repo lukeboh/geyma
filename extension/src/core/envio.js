@@ -4,13 +4,15 @@
 // próprio site; o Geyma não escreve em nenhuma API. Módulo puro: roda no
 // navegador e no Node (testes).
 import { SENDABLE, effectiveDecision } from './plan.js';
+import { LIMITE_VIDEO_ENVIO, ehVideo } from './video.js';
 
 export const DESTINOS = { google: 'Google Fotos', icloud: 'iCloud' };
 
 /**
  * Pode enviar esta linha do cruzamento ao destino? Só fotos marcadas Pessoal
  * ou Manter, sem cópia repetida, fora das ocultas e dos itens fora da
- * biblioteca principal. Vídeos ficam para a etapa 0.9.
+ * biblioteca principal. Vídeos até LIMITE_VIDEO_ENVIO (o arquivo inteiro passa
+ * pela memória); os maiores ficam para o envio pelo computador.
  * @returns {{ok: boolean, motivo?: string, origem?: 'icloud'|'google'}}
  */
 export function podeEnviar(r, destino) {
@@ -20,7 +22,10 @@ export function podeEnviar(r, destino) {
   if (!it) return { ok: false, motivo: `a foto não está no ${DESTINOS[origem]}` };
   if (!SENDABLE.has(effectiveDecision(r))) return { ok: false, motivo: 'só vão fotos marcadas Pessoal ou Manter' };
   if (it.hidden || it.foraDoPercurso) return { ok: false, motivo: 'foto oculta ou fora da biblioteca principal' };
-  if (it.video) return { ok: false, motivo: 'vídeos ficam para depois (etapa 0.9)' };
+  if (it.video) {
+    const bytes = origem === 'icloud' ? it.size : it.fileV?.bytes;
+    if (bytes > LIMITE_VIDEO_ENVIO) return { ok: false, motivo: `vídeo grande demais para o envio pelo site (mais de ${Math.round(LIMITE_VIDEO_ENVIO / 1048576)} MB): fica para o envio pelo computador` };
+  }
   if (r.dup || r.dupIcloud) return { ok: false, motivo: 'cópia repetida: vai só a melhor' };
   const so = destino === 'google' ? 'soIcloud' : 'soGoogle';
   if (r.cls === so) return { ok: true, origem };
@@ -61,11 +66,19 @@ export function arquivosDoItem(it) {
   if (!it) return [];
   if (it.source === 'google') {
     if (!it.thumb) return [];
+    // vídeo: o arquivo do vídeo (`=dv`); o `=d` de um vídeo é a capa
+    if (it.video) return [{ url: `${it.thumb}=dv`, nome: it.fileV?.nome || nomePelaData(it.ts, 'MP4'), papel: 'video', credenciais: 'include', sha1: it.sha1 || null }];
     const nome = it.file?.nome || nomePelaData(it.ts, it.file?.formato === 'HEIC' ? 'HEIC' : 'JPG');
     // sha1: o da listagem, só anotado (o download reescreve metadados e não confere)
     return [{ url: `${it.thumb}=d`, nome, papel: 'foto', credenciais: 'include', sha1: it.sha1 || null }];
   }
   const base = it.filename ? semExtensao(it.filename) : semExtensao(nomePelaData(it.ts, 'X'));
+  // vídeo: sempre o original (o `full` de um vídeo editado é uma imagem JPEG)
+  if (ehVideo(it)) {
+    if (!it.orig) return [];
+    const extV = (it.filename && extensaoDe(it.filename)) || (/mpeg-4/.test(it.fileType || '') ? 'MP4' : 'MOV');
+    return [{ url: it.orig, nome: `${base}.${extV}`, papel: 'video', credenciais: 'omit' }];
+  }
   if (it.edited && it.full) return [{ url: it.full, nome: `${base}.JPG`, papel: 'foto', credenciais: 'omit' }];
   if (!it.orig) return [];
   const ext = (it.filename && extensaoDe(it.filename)) || EXT[it.fileType] || 'JPG';
@@ -74,7 +87,7 @@ export function arquivosDoItem(it) {
   return out;
 }
 
-const MIME = { HEIC: 'image/heic', HEIF: 'image/heif', JPG: 'image/jpeg', JPEG: 'image/jpeg', PNG: 'image/png', GIF: 'image/gif', TIF: 'image/tiff', TIFF: 'image/tiff', WEBP: 'image/webp', DNG: 'image/x-adobe-dng', MOV: 'video/quicktime', MP4: 'video/mp4' };
+const MIME = { HEIC: 'image/heic', HEIF: 'image/heif', JPG: 'image/jpeg', JPEG: 'image/jpeg', PNG: 'image/png', GIF: 'image/gif', TIF: 'image/tiff', TIFF: 'image/tiff', WEBP: 'image/webp', DNG: 'image/x-adobe-dng', MOV: 'video/quicktime', MP4: 'video/mp4', M4V: 'video/x-m4v', AVI: 'video/x-msvideo', '3GP': 'video/3gpp' };
 /**
  * Tipo do arquivo para entregar ao site: o da resposta, ou pela extensão do
  * nome quando a resposta é genérica (a Apple manda application/octet-stream).
@@ -116,6 +129,18 @@ export function pedacos(b64, tamanho = 8 * 1024 * 1024) {
   const out = [];
   for (let i = 0; i < b64.length; i += t) out.push(b64.slice(i, i + t));
   return out.length ? out : [''];
+}
+
+/**
+ * Pedaços em base64 direto dos bytes, um de cada vez: um vídeo grande não
+ * vira um texto único (a memória dobraria, e o V8 limita o tamanho de um
+ * texto a uns 500 milhões de caracteres). O tamanho é múltiplo de 3 para
+ * cada pedaço ser base64 válido sozinho.
+ */
+export function* pedacosDeBytes(bytes, tamanho = 6 * 1024 * 1024) {
+  const t = Math.max(3, tamanho - (tamanho % 3));
+  if (!bytes.length) { yield ''; return; }
+  for (let i = 0; i < bytes.length; i += t) yield base64DeBytes(bytes.subarray(i, i + t));
 }
 
 /**

@@ -9,7 +9,8 @@ import { phashFromBase64, phashFromBlob } from './core/phash-image.js';
 import { ThumbQueue } from './core/thumb-queue.js';
 import { shouldKeepAwake } from './core/keep-awake.js';
 import { mergeProgress } from './core/progress.js';
-import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, base64DeBytes, pedacos, registrarEnvio } from './core/envio.js';
+import { arquivosDoItem, tipoDoArquivo, sha1Base64Url, pedacosDeBytes, registrarEnvio } from './core/envio.js';
+import { LIMITE_VIDEO_ENVIO } from './core/video.js';
 
 const SITES = {
   google: { url: 'https://photos.google.com/', match: 'https://photos.google.com/*' },
@@ -194,7 +195,7 @@ async function enviarUm(id, destino, ensaio) {
   if (it.source === 'icloud') {
     // links da Apple vencem em minutos: renova pela grade do site, se preciso
     // itens lidos antes da 0.3.4 não têm o link do original: pede outro mesmo com a miniatura válida
-    const r = await refreshIcloud(id, { forcar: !it.orig && !(it.edited && it.full) });
+    const r = await refreshIcloud(id, { forcar: !it.orig && !(it.edited && it.full && !it.video) });
     if (!r.ok) throw new Error(r.erro);
     it = await getItem(id);
   }
@@ -204,6 +205,9 @@ async function enviarUm(id, destino, ensaio) {
   for (const f of arquivos) {
     const res = await fetch(f.url, { credentials: f.credenciais });
     if (!res.ok) throw erroHttp(res.status);
+    // vídeo grande demais para passar pela memória: para antes de baixar
+    const tamanho = Number(res.headers.get('content-length')) || 0;
+    if (f.papel === 'video' && tamanho > LIMITE_VIDEO_ENVIO) { res.body?.cancel().catch(() => {}); throw new Error(`vídeo grande demais para o envio pelo site (${Math.round(tamanho / 1048576)} MB)`); }
     const tipo = tipoDoArquivo(f.nome, res.headers.get('content-type'));
     const bytes = new Uint8Array(await res.arrayBuffer());
     const sha1 = await sha1Base64Url(bytes);
@@ -212,16 +216,18 @@ async function enviarUm(id, destino, ensaio) {
     // medido em 18/11): o SHA-1 da listagem não confere, só fica anotado
     baixados.push({ ...f, tipo, bytes, sha1, confere: f.sha1 ? f.sha1 === sha1 : null });
   }
-  const foto = baixados.find((b) => b.papel === 'foto') || baixados[0];
+  const foto = baixados.find((b) => b.papel === 'foto' || b.papel === 'video') || baixados[0];
   const info = { destino, sha1: foto.sha1, ts: it.ts, bytes: baixados.reduce((s, b) => s + b.bytes.length, 0), arquivos: baixados.map((b) => `${b.nome} (${b.tipo})`) };
   if (ensaio) return { estado: 'ensaio', ...info };
   const tab = await findOrOpenTab(destino);
   const { frameId } = await acharCampoDeEnvio(tab.id);
   const lote = crypto.randomUUID();
   for (const [i, b] of baixados.entries()) {
-    const partes = pedacos(base64DeBytes(b.bytes));
-    for (const [j, b64] of partes.entries()) {
-      await chrome.tabs.sendMessage(tab.id, { kind: 'envio-parte', lote, arquivo: i, nome: b.nome, tipo: b.tipo, lastModified: it.ts, parte: j, total: partes.length, b64 }, { frameId });
+    const PEDACO = 6 * 1024 * 1024;
+    const total = Math.max(1, Math.ceil(b.bytes.length / PEDACO));
+    let j = 0;
+    for (const b64 of pedacosDeBytes(b.bytes, PEDACO)) {
+      await chrome.tabs.sendMessage(tab.id, { kind: 'envio-parte', lote, arquivo: i, nome: b.nome, tipo: b.tipo, lastModified: it.ts, parte: j++, total, b64 }, { frameId });
     }
   }
   const r = await chrome.tabs.sendMessage(tab.id, { kind: 'envio-entregar', lote, n: baixados.length }, { frameId });
