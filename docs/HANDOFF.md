@@ -170,6 +170,12 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     de uso único (`ponteSenhas` no service worker, 60 s) e uma porta de
     MessageChannel, pede o endereço com `ponte-url` (só aceito vindo da
     própria ponte), baixa com a sessão e devolve o Blob pela porta.
+27. **Fotos e vídeos separados (0.3.21):** `core/tipo.js`. O cruzamento
+    grava `porTipo.{foto,video}` com `summary`, `qualidade`, `dup` e
+    `counts`; `vistaPorTipo` troca esses resumos e filtra as linhas. No
+    painel, `vis()` (protection.js) é a vista da chave; jobs (fichas,
+    CLIP, pHash) continuam usando `data` inteiro. Inventário:
+    `byYearVideo` em `summarize` e `inv-summary.js`.
 
 ## 4. Decisões e motivos
 

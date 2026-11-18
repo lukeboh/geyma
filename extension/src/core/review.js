@@ -1,6 +1,7 @@
 // Filtro da revisão, usado pelo painel e pela versão para celular.
 import { suggestDecision } from './classify.js';
 import { placarIdentidade } from './placar.js';
+import { tipoDaLinha } from './tipo.js';
 
 /**
  * @param rows linhas do cruzamento
@@ -31,7 +32,7 @@ export function filterRows(rows, f = {}) {
     && (!cat || r.cat === cat)
     && (!dec || (dec === 'sugestao' ? !r.decision : r.decision === dec))
     && (!year || new Date(r.ts).getUTCFullYear() === Number(year))
-    && (!kind || (kind === 'video') === Boolean(r.a?.video)))
+    && (!kind || tipoDaLinha(r) === kind))
     .sort((x, y) => y.ts - x.ts);
 }
 

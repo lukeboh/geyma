@@ -14,10 +14,9 @@
 // arquivo idêntico ao original do iCloud, byte a byte; nos outros 2, bem
 // menor com as mesmas dimensões.
 
-import { VIDEO_EXT } from './normalize.js';
+import { ehVideo } from './normalize.js';
 
-/** Vídeo pelo tipo ou, quando a Apple não reconhece o tipo ("unsupported"), pelo nome. */
-export const ehVideo = (x) => Boolean(x?.video) || VIDEO_EXT.test(x?.filename || '');
+export { ehVideo };
 
 // diferença aceita como "mesma duração": 250 ms ou 1%, o que for maior
 export const DURACAO_TOL_MS = 250;

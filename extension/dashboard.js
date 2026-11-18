@@ -1,5 +1,6 @@
 import { getItemsBySource, getMeta } from './src/core/db.js';
-import { initProtection, ensureComputed, compute, hasData, showPhashProgress, abrirFotoDoLink } from './protection.js';
+import { initProtection, ensureComputed, compute, hasData, showPhashProgress, abrirFotoDoLink, setTipo } from './protection.js';
+import { inventarioPorTipo, nomeDoTipo, TIPOS } from './src/core/tipo.js';
 import { startTour, maybeTour } from './tour.js';
 import { visorAberto } from './viewer.js';
 
@@ -53,6 +54,20 @@ function contarUmaVez() {
   return contagem;
 }
 
+// chave Fotos | Vídeos | Tudo (lembrada neste navegador)
+let tipo = 'foto';
+try { const t = localStorage.getItem('geyma-tipo'); if (t !== null && t in TIPOS) tipo = t; } catch {}
+function escolherTipo(t) {
+  if (!(t in TIPOS)) return;
+  tipo = t;
+  try { localStorage.setItem('geyma-tipo', t); } catch {}
+  for (const b of document.querySelectorAll('#tipo-chave button')) b.setAttribute('aria-checked', String(b.dataset.tipo === t));
+  setTipo(t);
+  if (current === 'inv') render();
+}
+for (const b of document.querySelectorAll('#tipo-chave button')) b.addEventListener('click', () => escolherTipo(b.dataset.tipo));
+document.addEventListener('geyma-tipo', (e) => escolherTipo(e.detail));
+
 let rendering = false;
 let pending = false;
 async function render() {
@@ -67,23 +82,32 @@ async function render() {
       getMeta('icloudCompleted'),
     ]);
     // contagem mantida a cada gravação; sem ela (primeira vez), conta uma vez no worker
-    const resumo = inv?.value?.resumo || await contarUmaVez();
-    const vazio = { total: 0, videos: 0, from: null, to: null, byYear: {} };
-    const gs = resumo?.google || vazio;
-    const as = resumo?.icloud || vazio;
+    // contagem guardada antes da separação por tipo (sem vídeos por ano): conta de novo uma vez
+    let resumo = inv?.value?.resumo;
+    if (!resumo || (resumo.icloud?.total && !resumo.icloud.byYearVideo)) resumo = await contarUmaVez() || resumo;
+    const vazio = { total: 0, videos: 0, from: null, to: null, byYear: {}, byYearVideo: {} };
+    const gTodo = resumo?.google || vazio;
+    const aTodo = resumo?.icloud || vazio;
+    const gs = inventarioPorTipo(gTodo, tipo);
+    const as = inventarioPorTipo(aTodo, tipo);
+    const N = nomeDoTipo(tipo);
+    const tipos = (s) => (s.total ? `${fmt.format(s.total - (s.videos || 0))} fotos · ${fmt.format(s.videos || 0)} vídeos` : '—');
     $('g-total').textContent = fmt.format(gs.total);
-    $('g-range').textContent = gs.total ? `${day(gs.from)} a ${day(gs.to)}` : '—';
+    $('g-coverage').textContent = `${N} no inventário`;
+    $('g-tipos').textContent = tipos(gTodo);
+    $('g-range').textContent = gTodo.total ? `${day(gTodo.from)} a ${day(gTodo.to)}` : '—';
     setState($('g-state'), gp);
     $('a-total').textContent = fmt.format(as.total);
-    $('a-range').textContent = as.total ? `${day(as.from)} a ${day(as.to)}` : '—';
-    $('a-videos').textContent = as.total ? fmt.format(as.videos) : '—';
+    $('a-tipos').textContent = tipos(aTodo);
+    $('a-range').textContent = aTodo.total ? `${day(aTodo.from)} a ${day(aTodo.to)}` : '—';
     setState($('a-state'), ap, done);
 
     const c = counts?.value || {};
     const appleTotal = c.CPLAssetByAssetDateWithoutHiddenOrDeleted;
+    // o total da Apple é de fotos e vídeos juntos: a cobertura compara com o inventário inteiro
     $('a-coverage').textContent = appleTotal
-      ? `de ${fmt.format(appleTotal)} informados pela Apple (${Math.min(100, Math.round((100 * as.total) / appleTotal))}%)`
-      : 'itens no inventário';
+      ? `${N} no inventário · ${Math.min(100, Math.round((100 * aTodo.total) / appleTotal))}% dos ${fmt.format(appleTotal)} itens informados pela Apple`
+      : `${N} no inventário`;
     const extras = Object.entries(c).filter(([k]) => k !== 'CPLAssetByAssetDateWithoutHiddenOrDeleted');
     $('a-counts-box').hidden = !extras.length;
     $('a-counts').innerHTML = '';
@@ -234,6 +258,7 @@ $('ajuda').addEventListener('click', () => startTour(current));
 for (const k of Object.keys(TABS)) $(`tab-${k}`).addEventListener('click', () => showTab(k));
 document.addEventListener('geyma-tab', (e) => showTab(e.detail));
 initProtection();
+escolherTipo(tipo);
 
 // ---------- tema ----------
 $('tema').addEventListener('click', () => {

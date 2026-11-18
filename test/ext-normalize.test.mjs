@@ -143,7 +143,8 @@ test('summarize conta por ano e vídeos', () => {
   assert.equal(s.videos, 1);
   assert.deepEqual(s.byYear, { 2023: 2, 2024: 1 });
   assert.equal(s.from, Date.UTC(2023, 0, 1));
-  assert.deepEqual(summarize([]), { total: 0, videos: 0, from: null, to: null, byYear: {} });
+  assert.deepEqual(s.byYearVideo, { 2023: 1 });
+  assert.deepEqual(summarize([]), { total: 0, videos: 0, byYearVideo: {}, from: null, to: null, byYear: {} });
 });
 
 test('miniatura do iCloud vem do master, com o instante em que foi vista', () => {

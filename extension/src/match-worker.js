@@ -12,6 +12,7 @@ import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js
 import { conferirChegadas, marcarChegadas } from './core/envio.js';
 import { candidatosRecorte, candidatosEdicao } from './core/recorte.js';
 import { ehVideo, copiaVideoNoGoogle, videoFileNeeded, movimentosDeLive, resumoVideos } from './core/video.js';
+import { separarPorTipo, itensPorTipo, juntarDuplicatas, tipoDaLinha } from './core/tipo.js';
 
 const row = (cls, a, g, extra = {}) => {
   const { cat, reasons } = classifyRow(a, g);
@@ -154,10 +155,15 @@ self.onmessage = async (e) => {
     const summary = summarizeMatch(result);
     const scopeG = until ? google.filter((g) => g.ts <= until) : google;
     const scopeA = until ? icloud.filter((x) => x.ts <= until) : icloud;
+    // duplicatas por tipo (os grupos nunca misturam foto e vídeo) e juntas
+    const scopeGT = itensPorTipo(scopeG);
+    const scopeAT = itensPorTipo(scopeA);
     etapa('dupG');
-    const dupG = analyzeDuplicates(scopeG);
+    const dupGT = { foto: analyzeDuplicates(scopeGT.foto), video: analyzeDuplicates(scopeGT.video) };
+    const dupG = juntarDuplicatas(dupGT.foto, dupGT.video);
     etapa('dupA');
-    const dupA = analyzeDuplicates(scopeA);
+    const dupAT = { foto: analyzeDuplicates(scopeAT.foto), video: analyzeDuplicates(scopeAT.video) };
+    const dupA = juntarDuplicatas(dupAT.foto, dupAT.video);
     const googleById = new Map(google.map((g) => [g.id, g]));
     const icloudById = new Map(icloud.map((x) => [x.id, x]));
     // marca a linha como cópia (de um lado ou dos dois) e traz a cópia a manter
@@ -200,8 +206,24 @@ self.onmessage = async (e) => {
     await setMeta('icloudPhashWanted', wanted);
     const keep = icloudThumbKeep(result.soIcloud, dupA, result.pairs);
     await setMeta('icloudThumbKeep', keep);
+    // os mesmos números, separados entre fotos e vídeos (a chave Fotos | Vídeos do painel)
+    const resT = separarPorTipo(result);
+    const googleT = itensPorTipo(google);
+    const icloudT = itensPorTipo(icloud);
+    const todoT = itensPorTipo(icloudTodo);
+    const porTipo = {};
+    for (const t of ['foto', 'video']) {
+      const rowsT = rows.filter((r) => tipoDaLinha(r) === t);
+      porTipo[t] = {
+        summary: summarizeMatch(resT[t]),
+        qualidade: resumoQualidade(rowsT),
+        dup: { google: dupSummary(scopeGT[t], dupGT[t]), icloud: dupSummary(scopeAT[t], dupAT[t]) },
+        counts: { google: googleT[t].length, icloud: icloudT[t].length, ocultas: todoT[t].length - icloudT[t].length, marcadasOcultas: todoT[t].filter((x) => x.hidden).length },
+      };
+    }
     etapa('guardar');
     const out = {
+      porTipo,
       ok: true,
       complete,
       until,

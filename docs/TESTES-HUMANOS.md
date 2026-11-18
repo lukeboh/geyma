@@ -178,6 +178,16 @@ Observado:
 
 ## 2c. Vídeos (0.9)
 
+### V0 — Chave Fotos | Vídeos | Tudo ☐
+No topo do painel, troque entre **Fotos**, **Vídeos** e **Tudo** nas três
+abas.
+**Esperado:** no Inventário, o número grande e o gráfico por ano mudam (os
+cartões mostram sempre "N fotos · M vídeos"); na Proteção, as classes, a
+identidade, os passos e as duplicatas mudam, o bloco Vídeos só aparece em
+Vídeos e Tudo, e os blocos só de fotos somem em Vídeos; na Revisão, a lista
+mostra só o tipo escolhido. A escolha fica ao reabrir o painel.
+Observado:
+
 ### V1 — Painel de vídeos e mesmo vídeo ☐
 Proteção → bloco **Vídeos**. Abra "a confirmar" (vai à Revisão filtrada por
 vídeos) e abra três pares no visualizador.

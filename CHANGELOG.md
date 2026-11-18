@@ -2,6 +2,30 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.21 — 18/11/2026
+
+- Fotos e vídeos separados no painel inteiro: chave **Fotos | Vídeos |
+  Tudo** no topo (lembrada neste navegador), que vale para o Inventário, a
+  Proteção e a Revisão. O cruzamento calcula os números de cada tipo
+  (`porTipo`: classes, identidade, qualidade, duplicatas, contagens), e a
+  vista troca os números e as linhas; os blocos de um tipo só (fichas das
+  fotos, desempate pelas miniaturas, modelo visual; bloco Vídeos) somem na
+  vista do outro. Textos, próximos passos e o veredito do visualizador
+  falam de fotos ou de vídeos ("É o mesmo vídeo?").
+- Inventário: cada serviço mostra fotos e vídeos, e o gráfico por ano segue
+  a chave (vídeos por ano mantidos a cada gravação).
+- Duplicatas analisadas por tipo e juntas (os grupos nunca misturam foto e
+  vídeo).
+- Revisão: o filtro de tipo agora pega também os vídeos só do Google (antes
+  olhava só o lado do iCloud); o seletor "Tipo" da Revisão deu lugar à
+  chave.
+- Conferência das fichas do Google: erro 400 num arquivo também pula esse
+  arquivo (o Google não serve o download de alguns vídeos).
+
+Verificação: 228 testes passando. Na biblioteca real, as três vistas
+somam o total do cruzamento, e a vista Vídeos mostra só os passos, as
+duplicatas e o bloco dos vídeos.
+
 ## 0.3.20 — 18/11/2026
 
 - Assistir os vídeos no visualizador (etapa 0.9): botão "▶ assistir" em

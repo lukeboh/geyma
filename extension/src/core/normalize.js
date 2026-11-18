@@ -75,6 +75,9 @@ const VIDEO_TYPES = /movie|mpeg-4|video|avi|3gpp/i;
 // exportados por apps: o Google os toca como vídeo, e o nome diz o que são
 export const VIDEO_EXT = /.(mov|mp4|m4v|avi|3gp|3g2|mpe?g|mkv|wmv|webm|mts|m2ts)$/i;
 
+/** Vídeo pelo tipo ou, quando a Apple não reconhece o tipo ("unsupported"), pelo nome. */
+export const ehVideo = (x) => Boolean(x?.video) || VIDEO_EXT.test(x?.filename || '');
+
 /**
  * Campos de vídeo do iCloud, lidos de um registro real em 18/11/2026:
  * CPLAsset.duration (milissegundos), CPLMaster.codec ("HEVC", "H.264"...),
@@ -205,17 +208,19 @@ export function summarize(items) {
   const byYear = {};
   let min = Infinity;
   let max = -Infinity;
+  const byYearVideo = {};
   let videos = 0;
   for (const it of items) {
     const y = new Date(it.ts).getUTCFullYear();
     byYear[y] = (byYear[y] || 0) + 1;
     if (it.ts < min) min = it.ts;
     if (it.ts > max) max = it.ts;
-    if (it.video) videos++;
+    if (ehVideo(it)) { videos++; byYearVideo[y] = (byYearVideo[y] || 0) + 1; }
   }
   return {
     total: items.length,
     videos,
+    byYearVideo,
     from: items.length ? min : null,
     to: items.length ? max : null,
     byYear,

@@ -22,6 +22,7 @@ import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
 import { compararCodificacao } from './src/core/jpeg.js';
 import { cinza, tamanhoPara, recorteEntre, edicaoEntre } from './src/core/recorte.js';
 import { textoDuracao } from './src/core/video.js';
+import { vistaPorTipo, nomeDoTipo, tipoDaLinha } from './src/core/tipo.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -40,6 +41,34 @@ const EXPLAIN = {
   soGoogle: 'Só existem no Google Fotos. Candidatas a enviar para o iCloud, depois da sua revisão.',
   soIcloud: 'Só existem no iCloud. Candidatas a enviar para o Google, depois da sua revisão.',
 };
+const EXPLAIN_VIDEO = {
+  ambos: 'Mesmo instante, mesmas dimensões e, quando conhecida, a mesma duração nos dois serviços. Protegidos em dois lugares.',
+  confirmar: 'Batem pelo instante, mas há outro vídeo no mesmo segundo ou a duração é diferente (outro vídeo, ou um deles foi cortado). Falta a sua confirmação.',
+  reduzida: 'Mesmo vídeo, mas um dos lados guarda uma versão em resolução menor.',
+  soGoogle: 'Só existem no Google Fotos. Candidatos a enviar para o iCloud, depois da sua revisão.',
+  soIcloud: 'Só existem no iCloud. Candidatos a enviar para o Google, depois da sua revisão.',
+};
+
+// chave Fotos | Vídeos | Tudo: o painel mostra os números e as linhas de um tipo
+let tipo = '';
+let vistaCache = null;
+/** O cruzamento visto pela chave de tipo (as linhas e os resumos daquele tipo). */
+const vis = () => {
+  if (!data) return null;
+  if (vistaCache?.data !== data || vistaCache.tipo !== tipo) vistaCache = { data, tipo, v: vistaPorTipo(data, tipo) };
+  return vistaCache.v;
+};
+/** Troca o tipo em vista ('foto' | 'video' | '' = tudo) e redesenha a Proteção e a Revisão. */
+export function setTipo(t) {
+  if (t === tipo) return;
+  tipo = t;
+  if (!data) return;
+  renderProtection();
+  fillYears();
+  page = 0;
+  renderList();
+}
+const pedirTipo = (t) => document.dispatchEvent(new CustomEvent('geyma-tipo', { detail: t }));
 
 let data = null;
 let worker = null;
@@ -48,7 +77,7 @@ let busy = false;
 export function initProtection() {
   document.body.append($('tooltip'));
   $('m-refresh').addEventListener('click', () => compute());
-  for (const id of ['r-cls', 'r-cat', 'r-dec', 'r-year', 'r-kind']) $(id).addEventListener('change', () => { page = 0; renderList(); });
+  for (const id of ['r-cls', 'r-cat', 'r-dec', 'r-year']) $(id).addEventListener('change', () => { page = 0; renderList(); });
   for (const [k, l] of Object.entries(CATEGORIES)) $('r-cat').append(new Option(l, k));
   for (const [k, l] of Object.entries(DECISIONS)) $('r-dec').append(new Option(l, k));
   for (const b of document.querySelectorAll('#r-batch button[data-dec]')) b.addEventListener('click', () => askBatch(b.dataset.dec));
@@ -171,7 +200,10 @@ export function compute({ motivo = '' } = {}) {
 }
 
 function renderProtection() {
-  const { summary: s, until, complete, counts, dup } = data;
+  const { summary: s, until, complete, counts } = vis();
+  const N = nomeDoTipo(tipo);
+  const video = tipo === 'video';
+  const expl = video ? EXPLAIN_VIDEO : EXPLAIN;
   const t = s.totals;
   const both = t.ambos + t.confirmar + t.reduzida;
   const icloudScope = both + t.soIcloud;
@@ -180,21 +212,21 @@ function renderProtection() {
   const banner = $('m-partial');
   banner.hidden = complete || !until;
   if (!complete && until) {
-    banner.textContent = `Cruzamento parcial: o iCloud ainda está sendo lido. Por enquanto só entram as fotos até ${day(until)}, dos dois lados. Quando o percurso terminar, clique em Recalcular.`;
+    banner.textContent = `Cruzamento parcial: o iCloud ainda está sendo lido. Por enquanto só entram os itens até ${day(until)}, dos dois lados. Quando o percurso terminar, clique em Recalcular.`;
   }
-  if (!counts.google || !counts.icloud) {
+  if (!data.counts.google || !data.counts.icloud) {
     $('m-headline').textContent = 'Leia os dois serviços na aba Inventário para ver o cruzamento.';
     $('m-sub').textContent = '';
     return;
   }
-  $('m-headline').innerHTML = `<b>${pct(both, icloudScope)}</b> das fotos do iCloud também estão no Google, e <b>${pct(both, googleScope)}</b> das fotos do Google também estão no iCloud.`;
-  $('m-sub').textContent = `${fmt.format(both)} fotos em ambos · ${fmt.format(t.soGoogle)} só no Google · ${fmt.format(t.soIcloud)} só no iCloud`
+  $('m-headline').innerHTML = `<b>${pct(both, icloudScope)}</b> d${video ? 'os' : tipo ? 'as' : 'os'} ${N} do iCloud também estão no Google, e <b>${pct(both, googleScope)}</b> d${video ? 'os' : tipo ? 'as' : 'os'} ${N} do Google também estão no iCloud.`;
+  $('m-sub').textContent = `${fmt.format(both)} ${N} em ambos · ${fmt.format(t.soGoogle)} só no Google · ${fmt.format(t.soIcloud)} só no iCloud`
     + (counts.ocultas ? ` · ${fmt.format(counts.ocultas)} do iCloud ficam de fora, sem entrar em nenhum envio (ocultas, ou não encontradas no último percurso completo: ocultas ou apagadas)` : '');
 
   const id = s.identidade;
   $('m-ident').hidden = !id || !both;
   if (id && both) {
-    $('m-ident').innerHTML = `Certeza de que é a mesma foto, nas ${fmt.format(both)} em ambos: `
+    $('m-ident').innerHTML = `Certeza de que é ${video ? 'o mesmo vídeo' : 'a mesma foto'}, n${video ? 'os' : 'as'} ${fmt.format(both)} em ambos: `
       + `<a href="#rev" data-cls="idConfirmada" title="Imagens conferidas e iguais, mesmo arquivo de origem no mesmo instante, ou você confirmou">confirmada em ${fmt.format(id.confirmada)}</a> · `
       + `<a href="#rev" data-cls="idProvavel" title="Instante e dimensões batem e não há outra candidata; as imagens ainda não foram comparadas (ou são outro quadro da mesma Live Photo, ou a versão editada)">provável em ${fmt.format(id.provavel)}</a> · `
       + `<a href="#rev" data-cls="idIncerta" title="Há outra foto no mesmo segundo, as imagens são só parecidas, ou é uma cópia reduzida sem a imagem conferida: abra e responda São a mesma foto?">incerta em ${fmt.format(id.incerta)}</a>`;
@@ -214,7 +246,7 @@ function renderProtection() {
     const extra = extraLive + (k === 'reduzida' && t.reduzida
       ? `<p class="hint">menor no Google: ${fmt.format(s.reduzidaMenor.google)} · menor no iCloud: ${fmt.format(s.reduzidaMenor.icloud)}</p>`
       : '');
-    card.innerHTML = `<h3><i class="swatch c-${k}"></i>${CLASSES[k]}</h3><p class="big">${fmt.format(t[k])}</p><p class="hint">${EXPLAIN[k]}</p>${extra}`;
+    card.innerHTML = `<h3><i class="swatch c-${k}"></i>${CLASSES[k]}</h3><p class="big">${fmt.format(t[k])}</p><p class="hint">${expl[k]}</p>${extra}`;
     const btn = document.createElement('button');
     btn.textContent = 'Ver lista';
     btn.disabled = !t[k];
@@ -250,9 +282,9 @@ const textoFicha = (f) => (f ? [f.nome, f.formato, f.bytes ? MB(f.bytes) : null]
 
 function renderGoogleFiles() {
   const need = data.googleFileNeeded || [];
-  const { live, copia } = data.summary;
+  const { live, copia } = vis().summary;
   const box = $('m-gf-box');
-  box.hidden = !live?.total && !need.length && !(copia?.original + copia?.convertida + (copia?.recomprimida || 0)) && !data.qualidade?.pares;
+  box.hidden = tipo === 'video' || (!live?.total && !need.length && !(copia?.original + copia?.convertida + (copia?.recomprimida || 0)) && !vis().qualidade?.pares);
   if (box.hidden) return;
   const partes = [];
   if (live?.total) {
@@ -266,11 +298,11 @@ function renderGoogleFiles() {
     partes.push(`Arquivos conferidos: ${fmt.format(copia.original)} iguais ao original do iCloud; <b>${fmt.format(recomp)}</b> recomprimidos (mesmo formato e tamanho, arquivo bem menor que o original); e <b>${fmt.format(copia.convertida)}</b> em outro formato (em geral JPEG no lugar do HEIC), dos quais ${fmt.format(copia.convertidaCheia || 0)} no tamanho cheio e ${fmt.format(copia.convertida - (copia.convertidaCheia || 0))} também reduzidos.`);
   }
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos do Google.` : 'Todos os arquivos que importam já foram conferidos.');
-  const q = data.qualidade;
+  const q = vis().qualidade;
   if (q?.pares) {
     const m = q.motivos;
     const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleRecomprimida && `${fmt.format(m.googleRecomprimida)} recomprimidas`, m.googleRecortada && `${fmt.format(m.googleRecortada)} recortadas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
-    partes.push(`<br><b>Melhor cópia</b> das ${fmt.format(q.pares)} fotos que estão nos dois: equivalentes em ${fmt.format(q.iguais)}; `
+    partes.push(`<br><b>Melhor cópia</b> dos ${fmt.format(q.pares)} itens que estão nos dois: equivalentes em ${fmt.format(q.iguais)}; `
       + `<a href="#rev" data-cls="melhorIcloud">no iCloud em <b>${fmt.format(q.icloud + q.misto)}</b></a>${det ? ` (no Google: ${det})` : ''}; `
       + `<a href="#rev" data-cls="melhorGoogle">no Google em ${fmt.format(q.google + q.misto)}</a>${q.misto ? ` (${fmt.format(q.misto)} com vantagem dos dois lados)` : ''}.`);
   }
@@ -294,7 +326,8 @@ function renderVideos() {
   const v = data.videos;
   const need = data.videoFileNeeded || [];
   const box = $('m-vid-box');
-  box.hidden = !v || !(v.pares.n + v.soIcloud.n + v.soGoogle.n);
+  // painel dos vídeos: fora da vista só de fotos
+  box.hidden = tipo === 'foto' || !v || !(v.pares.n + v.soIcloud.n + v.soGoogle.n);
   if (box.hidden) return;
   const semDur = v.pares.semDuracao + v.soIcloud.semDuracao;
   const partes = [
@@ -313,7 +346,7 @@ function renderVideos() {
   if (v.misturados) partes.push(`${fmt.format(v.misturados)} pares juntam uma foto e um vídeo (decididos por você ou de leituras antigas do Google).`);
   $('m-vid').innerHTML = partes.join(' ');
   for (const a of $('m-vid').querySelectorAll('a[data-vid]')) {
-    a.addEventListener('click', (e) => { e.preventDefault(); $('r-cls').value = a.dataset.vid; $('r-kind').value = 'video'; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
+    a.addEventListener('click', (e) => { e.preventDefault(); pedirTipo('video'); $('r-cls').value = a.dataset.vid; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
   }
   if (!fichaJobs.vf) { $('m-vf-run').hidden = !need.length; $('m-vf-run').textContent = `Conferir os arquivos de vídeo do Google (${fmt.format(need.length)})`; }
 }
@@ -464,9 +497,9 @@ async function runFichas(k) {
       } catch (e) {
         gfJob.failed++;
         gfJob.seguidos = (gfJob.seguidos || 0) + 1;
-        // 404: saiu do Google; 500: erro do servidor naquele arquivo (pula).
+        // 404: saiu do Google; 400 e 500: o Google não serve aquele arquivo (pula).
         // Recusa (401, 403, 429), outro erro, ou 5 erros seguidos: para tudo.
-        if (![404, 500].includes(e.status) || gfJob.seguidos >= 5) { gfJob.stop = 'erro'; gfJob.status = e.status || e.message; }
+        if (![400, 404, 500].includes(e.status) || gfJob.seguidos >= 5) { gfJob.stop = 'erro'; gfJob.status = e.status || e.message; }
         continue;
       }
       gfJob.seguidos = 0;
@@ -488,6 +521,8 @@ async function runFichas(k) {
 let clipJob = null;
 function renderClip() {
   const fila = filaDoClip(data.rows);
+  // o modelo visual só olha fotos
+  $('m-clip').parentElement.hidden = tipo === 'video';
   const indef = fila.filter((f) => f.prioridade === 0).length;
   $('m-clip').innerHTML = fila.length
     ? `<b>${fmt.format(fila.length)}</b> fotos ainda não foram olhadas pelo modelo visual (${fmt.format(indef)} indefinidas, que vão primeiro).`
@@ -617,7 +652,8 @@ let icJob = null;
 function renderIcloudCheck() {
   const need = data.icloudPhashNeeded || [];
   const disputed = data.summary.totals.confirmar + data.summary.totals.reduzida;
-  $('m-ic-box').hidden = !disputed;
+  // desempate pelas miniaturas do iCloud: só fotos
+  $('m-ic-box').hidden = !disputed || tipo === 'video';
   $('m-ic').innerHTML = need.length
     ? `<b>${fmt.format(need.length)}</b> itens do iCloud podem desempatar pares pela miniatura (o link vem do último percurso e vale algumas horas; se tiver expirado, a conferência avisa).`
     : data.icloudPhashWanted
@@ -683,14 +719,15 @@ const PASSO = {
   conferirGoogle: { botao: 'Conferir', fazer: () => $('m-phash').click() },
   conferirIcloud: { botao: 'Conferir', fazer: () => $('m-ic-run').click() },
   arquivosGoogle: { botao: 'Conferir', fazer: () => $('m-gf-run').click() },
+  arquivosVideo: { botao: 'Conferir', fazer: () => $('m-vf-run').click() },
   responderPares: { botao: 'Começar', fazer: () => { irPara({ cls: 'idIncerta' }); const l = filtered(); for (const r of l) if (verFotos(r, null, l)) break; } },
   percorrerIcloud: { botao: 'Ir ao Inventário', fazer: () => document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'inv' })) },
-  enviar: { botao: 'Ver fotos', fazer: () => irPara({ cls: 'soIcloud' }) },
+  enviar: { botao: 'Ver a lista', fazer: () => irPara({ cls: 'soIcloud' }) },
   revisarPendentes: { botao: 'Ver categorias', fazer: () => $('m-cat-box').scrollIntoView({ behavior: 'smooth', block: 'start' }) },
 };
 async function renderPassos() {
   const [concl, prog] = await Promise.all([getMeta('icloudCompleted'), getMeta('phashProgress')]);
-  const passos = proximosPassos(data, { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' }, envio: envioEstado });
+  const passos = proximosPassos(vis(), { icloudConcluidoEm: concl?.value?.at || null, ocupado: { google: prog?.value?.state === 'lendo' }, envio: envioEstado });
   $('m-passos-box').hidden = !passos.length;
   $('m-passos').replaceChildren(...passos.map((p) => {
     const li = document.createElement('li');
@@ -706,13 +743,13 @@ async function renderPassos() {
 
 /** A pergunta central: fotos pessoais guardadas nos dois lugares, sem perda (muda com as marcações). */
 function renderProtecao() {
-  const p = resumoProtecao(data.rows);
+  const p = resumoProtecao(vis().rows);
   const el = $('m-protecao');
   el.hidden = !p.total;
   if (!p.total) return;
-  el.innerHTML = `Das <b>${fmt.format(p.total)}</b> fotos pessoais (Pessoal ou Manter, pela sua marcação ou pela sugestão), `
-    + `<b>${pct(p.protegidas, p.total)}</b> estão guardadas nos dois lugares sem perda (${fmt.format(p.protegidas)}). `
-    + `Faltam: ${fmt.format(p.comPerda)} nos dois, mas com a melhor cópia num lugar só; ${fmt.format(p.incertas)} a confirmar se são a mesma foto; `
+  el.innerHTML = `D${tipo === 'foto' ? 'as' : 'os'} <b>${fmt.format(p.total)}</b> ${nomeDoTipo(tipo)} pessoais (Pessoal ou Manter, pela sua marcação ou pela sugestão), `
+    + `<b>${pct(p.protegidas, p.total)}</b> estão guardad${tipo === 'foto' ? 'as' : 'os'} nos dois lugares sem perda (${fmt.format(p.protegidas)}). `
+    + `Faltam: ${fmt.format(p.comPerda)} nos dois, mas com a melhor cópia num lugar só; ${fmt.format(p.incertas)} a confirmar se são ${tipo === 'video' ? 'o mesmo vídeo' : 'a mesma foto'}; `
     + `${fmt.format(p.soIcloud)} só no iCloud e ${fmt.format(p.soGoogle)} só no Google.`;
 }
 
@@ -721,8 +758,8 @@ export function renderPlan() {
   if (!data) return;
   renderProtecao();
   renderPassos().catch(() => {});
-  const plan = sendPlan(data.rows);
-  $('m-plan-box').hidden = !data.rows.length;
+  const plan = sendPlan(vis().rows);
+  $('m-plan-box').hidden = !vis().rows.length;
   $('m-plan').innerHTML = [
     ['iCloud → Google', plan.toGoogle.n, `${GB(plan.toGoogle.bytes)}, dos quais ${fmt.format(plan.toGoogle.videos)} vídeos somam ${GB(plan.toGoogle.videoBytes)} · ${fmt.format(plan.toGoogle.held)} retidos (Pendente ou Descartar)`],
     ['Google → iCloud', plan.toIcloud.n, `${GB(plan.toIcloud.bytes)} estimados · ${fmt.format(plan.toIcloud.held)} retidos`],
@@ -733,8 +770,8 @@ export function renderPlan() {
 
 function renderCategories() {
   const counts = {};
-  for (const r of data.rows) counts[r.cat] = (counts[r.cat] || 0) + 1;
-  $('m-cat-box').hidden = !data.rows.length;
+  for (const r of vis().rows) counts[r.cat] = (counts[r.cat] || 0) + 1;
+  $('m-cat-box').hidden = !vis().rows.length;
   const box = $('m-cats');
   box.innerHTML = '';
   for (const [k, label] of Object.entries(CATEGORIES)) {
@@ -754,12 +791,13 @@ function renderCategories() {
 }
 
 function renderDup() {
-  const { dup, phashNeeded, icloudPhashNeeded } = data;
+  const { phashNeeded, icloudPhashNeeded } = data;
+  const { dup } = vis();
   const side = (el, title, d, filter, pend) => {
     const mb = d.bytes ? ` · ${GB(d.bytes)}` : '';
     el.innerHTML = `<span>${title}</span><span class="n">${fmt.format(d.copias)}</span>`
       + `<span class="hint">cópias a mais em ${fmt.format(d.grupos)} grupos${mb}${d.identicos ? ` · ${fmt.format(d.identicos)} são arquivos idênticos` : ''}</span>`
-      + `<span class="hint">fotos diferentes no mesmo segundo: ${fmt.format(d.diferentes)} · incertos: ${fmt.format(d.incertos)} · ainda sem conferir: ${fmt.format(d.pendentes)}${pend}</span>`;
+      + `<span class="hint">${tipo === 'video' ? 'vídeos diferentes' : tipo === 'foto' ? 'fotos diferentes' : 'itens diferentes'} no mesmo segundo: ${fmt.format(d.diferentes)} · incertos: ${fmt.format(d.incertos)} · ainda sem conferir: ${fmt.format(d.pendentes)}${pend}</span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Ver cópias';
     btn.disabled = !d.copias;
@@ -774,7 +812,7 @@ function renderDup() {
   const icPend = dup.icloud.pendentes && !(icloudPhashNeeded || []).length ? ' (precisam das miniaturas do próximo percurso do iCloud)' : '';
   side($('m-dup-a'), 'iCloud Fotos', dup.icloud, 'dupIcloud', icPend);
   const btn = $('m-phash');
-  btn.hidden = !phashNeeded.length;
+  btn.hidden = !phashNeeded.length || tipo === 'video';
   btn.textContent = `Conferir o Google pelas miniaturas (${fmt.format(phashNeeded.length)} itens)`;
   showPhashProgress(data.phashProgress);
 }
@@ -883,7 +921,7 @@ let pageRows = [];
 function fillYears() {
   const sel = $('r-year');
   const keep = sel.value;
-  const years = Object.keys(data.summary.byYear).sort().reverse();
+  const years = Object.keys(vis().summary.byYear).sort().reverse();
   sel.length = 1;
   for (const y of years) sel.append(new Option(y, y));
   sel.value = years.includes(keep) ? keep : '';
@@ -894,7 +932,7 @@ const effective = effectiveDecision;
 
 function filtered() {
   if (!data) return [];
-  return filterRows(data.rows, { cls: $('r-cls').value, cat: $('r-cat').value, dec: $('r-dec').value, year: $('r-year').value, kind: $('r-kind').value });
+  return filterRows(vis().rows, { cls: $('r-cls').value, cat: $('r-cat').value, dec: $('r-dec').value, year: $('r-year').value });
 }
 
 const dims = (o) => (o?.w ? `${o.w}×${o.h}` : '—');
@@ -902,8 +940,9 @@ const mb = (n) => (n ? `${(n / 1048576).toFixed(1)} MB` : '');
 
 function renderReviewSummary() {
   if (!data) return;
-  const { counts, decided } = decisionCounts(data.rows);
-  $('r-summary').innerHTML = `Marcadas por você: <b>${fmt.format(decided)}</b> de ${fmt.format(data.rows.length)} fotos. `
+  const rows = vis().rows;
+  const { counts, decided } = decisionCounts(rows);
+  $('r-summary').innerHTML = `Marcados por você: <b>${fmt.format(decided)}</b> de ${fmt.format(rows.length)} ${nomeDoTipo(tipo)}. `
     + `Em vigor (sua marcação ou a sugestão): ${Object.entries(DECISIONS).map(([k, l]) => `${l} ${fmt.format(counts[k])}`).join(' · ')}.`;
 }
 
@@ -1284,9 +1323,19 @@ function acoesDoVisor(r) {
 function vereditoNoVisor(r) {
   if (!r.a?.id) return {};
   const age = (tipo, gId = r.g?.id) => async () => { await registrarVeredito(r.a.id, gId, tipo); return RESPOSTA[tipo]; };
+  const video = tipoDaLinha(r) === 'video';
   if (r.g?.id) {
     const ja = vereditoDoPar(r.a, r.g.id);
-    if (ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', tecla: 'z', aoClicar: age('desfazer') }] };
+    if (ja === 'mesma') return { pergunta: `Você disse que ${video ? 'é o mesmo vídeo' : 'são a mesma foto'}.`, acoes: [{ rotulo: 'Desfazer', titulo: 'Voltar para a decisão automática', tecla: 'z', aoClicar: age('desfazer') }] };
+    if (video) {
+      return {
+        pergunta: 'É o mesmo vídeo?',
+        acoes: [
+          { rotulo: 'É o mesmo vídeo', tecla: 'm', titulo: 'Conta como guardado nos dois serviços (por exemplo, um deles foi cortado)', aoClicar: age('mesma') },
+          { rotulo: 'São vídeos diferentes', tecla: 'd', titulo: 'Desfaz o par: cada vídeo passa a contar só no seu serviço, se não houver outro igual', aoClicar: age('diferente') },
+        ],
+      };
+    }
     return {
       pergunta: 'Estas fotos são a mesma?',
       acoes: [

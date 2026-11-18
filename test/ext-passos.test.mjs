@@ -41,5 +41,5 @@ test('envio: conta as fotos que podem ir e muda o texto depois do primeiro envio
   assert.match(sem.texto, /piloto de uma foto/);
   const com = proximosPassos({ rows }, { icloudConcluidoEm: 1, agora: 2, envio: { 'a:1': { estado: 'enviado' } } }).find((x) => x.id === 'enviar');
   assert.equal(com.n, 2);
-  assert.match(com.texto, /lotes de 10/);
+  assert.match(com.texto, /em lotes/);
 });

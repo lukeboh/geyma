@@ -156,6 +156,8 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - [x] Vídeos do Google ao iCloud de qualquer tamanho, pela ponte embutida na
   página do iCloud, com senha de uso único (0.3.19)
 - [x] Assistir os dois lados no visualizador (0.3.20)
+- [x] Fotos e vídeos separados em todas as etapas, pela chave Fotos | Vídeos |
+  Tudo (0.3.21)
 - [ ] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
 
 ### 1.0 — Uso pessoal completo
@@ -166,8 +168,6 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - Início automático do servidor do celular (opcional, aguarda decisão).
 - Reler o álbum Ocultas para marcar as ocultas diretamente (hoje o percurso
   completo já as deixa de fora).
-- Ficha do arquivo do Google para vídeos (`=dv`), se os vídeos entrarem no
-  envio.
 - Avaliar tornar o repositório privado antes da trilha de produto.
 
 ## Trilha de produto (paralela, a partir da 0.6)
