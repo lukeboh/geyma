@@ -1,4 +1,4 @@
-# Handoff do Geyma — 16/11/2026
+# Handoff do Geyma — 18/11/2026
 
 Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 [ESTRATEGIA.md](ESTRATEGIA.md), [../ROADMAP.md](../ROADMAP.md) e
@@ -10,7 +10,7 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 |---|---|
 | Versão | ver `VERSION` e o topo do [CHANGELOG](../CHANGELOG.md); tag `v0.2.0` marca o fim da prova de acesso |
 | Branch | `claude/icloud-google-photos-sync-y42lpa` (é também a principal) |
-| Etapas | 0.3 (inventário) pronta; falta só exercitar "Continuar de onde parou" para marcar 0.3.0. 0.4 (identidade), 0.6 (classificação e marcação) e 0.8 (duplicatas) com primeira versão; ver [ROADMAP](../ROADMAP.md) |
+| Etapas | 0.3 (inventário) concluída: "Continuar de onde parou" exercitado em 18/11. 0.4 (identidade), 0.5 (qualidade), 0.6 (classificação, marcação e a resposta em números) e 0.8 (duplicatas) com primeira versão; 0.7 (envio) aguarda a decisão do caminho em [ENVIO.md](ENVIO.md); ver [ROADMAP](../ROADMAP.md) |
 | Testes | `node --test test/*.test.mjs`, todos passando |
 | Extensão | Carregada sem compactação no Chrome de automação e usada nos dois serviços |
 | Celular | Servidor local (`mobile/servidor.mjs`) pelo Tailscale; ver [mobile/README](../mobile/README.md) |
@@ -96,6 +96,23 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     biblioteca principal** (0.2.34): o que um percurso completo do iCloud não
     encontra (oculta sem a marca, ou apagada) sai do cruzamento. Validado no
     percurso de 16/11 (cerca de 1 h; a trava de 2% não precisou agir).
+19. **Noite de 17 para 18/11** (0.2.36 a 0.3.0), trabalho autônomo pedido
+    pelo usuário:
+    - **Foto atual do iCloud** (0.2.36): nas editadas no iPhone, a miniatura,
+      a média e a cheia da versão atual vêm do CPLAsset; o Geyma lia só as do
+      original (CPLMaster). Era a queixa do usuário ("não consigo ver a foto
+      do iCloud atual para comparar"). Visualizador mostra a atual ao lado
+      do original; cruzamento compara pelas duas.
+    - **"São a mesma foto / São fotos diferentes"** (0.2.37), com o veredito
+      valendo como evidência; navegação ‹ › e atalhos M/D/Z (0.2.43).
+    - **Melhor cópia** de cada par (0.2.38), **certeza da identidade**
+      (0.2.39), **fuso horário** (0.2.42), regras melhores para o Google
+      (0.2.44), **fotos pessoais protegidas** em números (0.2.45) e **"O que
+      fazer agora"** (0.2.46, 0.2.47).
+    - **Envio**: caminhos e proposta em [ENVIO.md](ENVIO.md) (0.2.41).
+    - **0.3.0**: percurso iniciado do zero, parado em cerca de 22%, extensão
+      recarregada, retomado por "Continuar de onde parou" exatamente na
+      posição salva e concluído.
 
 ## 4. Decisões e motivos
 
@@ -117,6 +134,10 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 | Cruzamento guardado e refeito só quando o inventário muda | Recalcular levava de 25 a 58 s a cada abertura |
 | Live Photo com quadro diferente conta como a mesma foto | Uso frequente do usuário; mesmo clique = mesmo instante ao milissegundo |
 | Fotos ocultas nunca entram no envio | Decisão do usuário (16/11) |
+| Foto editada: as duas versões contam na comparação | O Google pode ter guardado o original ou a editada |
+| Veredito do usuário vence a máquina | "São a mesma foto" força o par; "diferentes" tira o candidato; dá para desfazer |
+| Par por fuso horário só "a confirmar" | Deslocamento de hora cheia acontece também por acaso; a imagem decide |
+| Envio pelos clientes oficiais (proposta) | Evita escrita por protocolo não documentado; ver [ENVIO.md](ENVIO.md) |
 
 ## 5. Conhecimento técnico essencial
 
@@ -162,6 +183,13 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
   vídeo complementar no original (`resOriginalVidComplRes`). Trocar o quadro
   principal no iPhone marca a foto como editada e muda a imagem, mas não o
   instante.
+- **Foto editada** (`adjustmentRenderType` > 0): o **CPLAsset** traz a versão
+  atual — `resJPEGThumbRes`, `resJPEGMedRes` (nem sempre) e `resJPEGFullRes`
+  (JPEG cheio já editado), com `resJPEGFullWidth/Height` (um corte muda as
+  dimensões) —, e o CPLMaster continua com as do original. Conferido em
+  18/11 numa página do site: todas as editadas tinham a miniatura no
+  CPLAsset; a distância de pHash entre a atual e o original vai de 0 a 38.
+  Sem edição, o CPLAsset não traz essas imagens.
 
 ### Aprendizados do inventário completo
 - O Google guarda o instante quase sempre **sem milissegundos**; o iCloud
@@ -184,6 +212,22 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
   com permissão de host; o pHash usa a aba do Google.
 - Em aba oculta o Chrome atrasa `setTimeout` encadeados; código que roda com a
   aba oculta deve ser ritmado por requisições, não por timers.
+- **Fuso horário:** parte das fotos que sobram dos dois lados tem a **mesma
+  hora local** (instante + fuso guardado) e o instante diferente, ou a hora
+  local de um lado guardada como UTC no outro; os deslocamentos são de 1 a
+  3 h (Brasília, com e sem horário de verão). Fotos antigas às vezes trazem
+  fusos estranhos (minutos quebrados), que não servem para parear.
+- O Google marca como "foto com movimento" fotos que no iCloud são JPEG sem a
+  Live Photo (anos antigos, sem app de origem): ali o Google tem a melhor
+  cópia.
+- **Vídeo do Google:** `=dv` com HEAD redireciona para outro domínio do Google,
+  fora das permissões da extensão; a ficha de vídeo exigiria ampliar as
+  permissões de host.
+- **Localização:** `locationEnc` existe em quase todas as fotos de câmera e
+  Live Photos e em nenhuma captura de tela; o Geyma guarda só a presença
+  (`local`). O campo `people` vem sempre vazio pela web.
+- **Rajadas** são raras na biblioteca (só uma dúzia de itens com
+  `burstFlags`); o caminho comum (a confirmar + pHash) basta.
 
 ### Identidade (teste com 60 pares)
 - Mesmo milissegundo + mesmas dimensões: 29/29 confirmados por pHash (mediana 2).
@@ -226,22 +270,18 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 ## 7. Próximos passos
 
-1. **Fechar a etapa 0.3:** exercitar "Continuar de onde parou" no iCloud
-   (parar um percurso no meio e retomar) e, se der certo, marcar 0.3.0 (MINOR
-   e tag anotada `v0.3.0`).
-2. **Botões "São a mesma foto" / "São fotos diferentes"** nos pares "a
-   confirmar" (oferecido ao usuário em 15/11, sem resposta ainda): a decisão
-   vira evidência do cruzamento.
+1. **Seguir o cartão "O que fazer agora"** (aba Proteção): conferências pelas
+   miniaturas, arquivos do Google e os pares incertos para o usuário
+   responder (atalhos M/D, passa sozinho para o próximo).
+2. **Envio curado (0.7):** o usuário decide o caminho em [ENVIO.md](ENVIO.md)
+   (proposta: pasta local + Drive para computador e iCloud para Windows,
+   com piloto de 10 fotos). Ocultas e itens fora da biblioteca principal
+   nunca entram.
 3. Revisar as categorias com as miniaturas e ajustar as regras com o que o
-   usuário corrigir.
-4. **Qualidade (0.5):** indicar a melhor cópia, agora com formato e tamanho do
-   arquivo do Google (original, convertido, reduzido) e o movimento da Live
-   Photo; Live Photos que no Google estão sem movimento são candidatas a envio
-   a partir do iCloud.
-5. **Envio curado (0.7):** decidir o caminho (ver pendências), começando pelas
-   fotos e tratando os vídeos à parte. Ocultas e itens fora da biblioteca
-   principal nunca entram.
-6. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
+   usuário corrigir; modelo visual local para os indefinidos (0.6).
+4. **Qualidade (0.5):** recorte, edição e recompressão pela comparação de
+   miniaturas e, por amostragem, dos originais.
+5. **Sanitização (0.8):** remoção das cópias aprovadas para a lixeira de cada
    serviço, só com confirmação explícita.
 
 ### Como retomar (passo a passo)
@@ -272,11 +312,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 ## 9. Pendências de decisão do usuário
 
-- Caminho do envio Google → iCloud (etapa 0.7).
+- Caminho do envio nos dois sentidos (etapa 0.7): ver [ENVIO.md](ENVIO.md).
 - Vídeos: concentram quase todo o volume do que falta no Google; decidir se
   entram no envio, e com qual prioridade.
-- Botões "São a mesma foto / São fotos diferentes" nos pares a confirmar
-  (proposto, aguardando resposta).
 - Quando começar a remover duplicatas (0.8), sempre com confirmação explícita.
 - Início automático do servidor do celular (opcional).
 - Plano de armazenamento do Google e do iCloud, se o volume curado não couber.
@@ -286,4 +324,7 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 ### Já decidido
 - Fotos ocultas do iCloud ficam fora de qualquer envio (16/11).
 - Itens que o percurso completo não encontra também ficam fora (16/11).
+- Botões "São a mesma foto / São fotos diferentes": feitos na noite de 18/11,
+  com a autorização do usuário para decidir sozinho; o veredito pode ser
+  desfeito a qualquer momento.
 - Miniaturas do iCloud guardadas no notebook; renovação de link só passiva.

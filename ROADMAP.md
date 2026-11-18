@@ -10,6 +10,7 @@ concluir e validar uma etapa. Os números futuros são alvos.
 | Versão | Entrega |
 |---|---|
 | 0.1.0 | Protótipo client-side: Picker do Google, pasta local da Apple, comparação por nome e data, painel com estimativas (registro retroativo, sem tag) |
+| 0.3.0 | Extensão e inventário: os dois serviços lidos inteiros, retomáveis, sem queda de sessão (tag `v0.3.0`) |
 
 ## Etapas
 
@@ -25,7 +26,7 @@ concluir e validar uma etapa. Os números futuros são alvos.
 **Critério:** pares confirmados por instante, dimensão e hash perceptual numa
 amostra, com a taxa de falso positivo medida contra um controle.
 
-### 0.3 — Extensão e inventário *(em andamento)*
+### 0.3 — Extensão e inventário *(concluída em 0.3.0)*
 - [x] Esqueleto da extensão (Chrome/Edge, MV3) e painel com cobertura por ano (0.2.1)
 - [x] Conectores Google (leitura ativa) e iCloud (percurso passivo, parada no
   primeiro erro, retomada pela posição) (0.2.1)
@@ -46,8 +47,8 @@ amostra, com a taxa de falso positivo medida contra um controle.
   cada gravação (0.2.29)
 - [x] Fotos ocultas e itens que o percurso completo não encontra ficam fora
   do cruzamento e de qualquer envio (0.2.33, 0.2.34; validado em 16/11)
-- [ ] Exercitar "Continuar de onde parou" depois da correção da posição salva
-  (0.2.22): último item para marcar 0.3.0
+- [x] "Continuar de onde parou" exercitado: parado em 22%, extensão
+  recarregada, retomado na posição salva e concluído (0.3.0)
 
 **Critério:** inventário completo dos dois lados, retomável, sem queda de sessão.
 

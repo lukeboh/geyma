@@ -2,6 +2,24 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.0 — 18/11/2026
+
+Etapa 0.3 (extensão e inventário) concluída.
+
+- "Continuar de onde parou" exercitado em uso real: percurso do iCloud
+  iniciado do zero, parado em cerca de 22%, extensão e abas recarregadas,
+  retomado exatamente na posição salva (as fotos lidas no primeiro minuto
+  estavam entre 21,6% e 23,4% da biblioteca, em ordem de data) e concluído.
+  O início do percurso foi mantido, e a marcação do fim (itens fora da
+  biblioteca principal) rodou com o mesmo resultado do percurso de 16/11.
+- Handoff atualizado com o trabalho da noite de 17 para 18/11 e o
+  conhecimento novo (foto editada no CPLAsset, fuso horário, localização,
+  vídeo do Google, rajadas).
+
+Verificação: 150 testes passando. Uso real: percurso completo com retomada;
+todas as fotos do iCloud vistas; editadas com a versão atual e o original
+registrados; miniaturas guardadas de editadas trocadas pela versão atual.
+
 ## 0.2.51 — 18/11/2026
 
 - Documentação: README da extensão com a aba Proteção nova (certeza, fotos
