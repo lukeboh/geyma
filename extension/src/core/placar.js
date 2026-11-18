@@ -46,6 +46,7 @@ export function placarIdentidade(r) {
 
   if (p.nome) add('nome', 2, 'mesmo nome de arquivo');
   if (p.cand > 1) add('disputa', -2, `${p.cand} fotos do Google no mesmo segundo`);
+  if (p.rajada) add('rajada', 1, `a mais parecida entre ${p.rajada.n} fotos do Google no mesmo segundo (folga de ${p.rajada.margem})`);
 
   return { pontos: provas.reduce((s, x) => s + x.pontos, 0), provas };
 }

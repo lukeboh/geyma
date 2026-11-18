@@ -76,7 +76,8 @@ amostra, com a taxa de falso positivo medida contra um controle.
   pontos de cada prova no visualizador e o filtro "poucas provas" (0.3.8)
 - [x] Fusos horários: segunda passada pela hora local, a confirmar pela
   imagem (0.2.42)
-- Tratamento de rajadas
+- [x] Tratamento de rajadas: a foto mais parecida resolve a disputa no mesmo
+  segundo quando ganha com folga; as ambíguas ficam para o usuário (0.3.9)
 - [x] Estado "confirmada / provável / incerta", com resumo e filtro (0.2.39)
 - [x] Sugestões do Google para parear à mão uma foto só do iCloud (0.2.49)
 

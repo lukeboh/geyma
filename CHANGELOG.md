@@ -2,6 +2,26 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.9 — 18/11/2026
+
+- Fotos em sequência no mesmo segundo (0.4): quando várias fotos do Google
+  disputam uma do iCloud, a mais parecida resolve a disputa se estiver perto
+  (distância até 16) e ganhar das outras candidatas por 8 ou mais. Também
+  precisa ganhar das outras fotos do iCloud que querem a mesma, a não ser que
+  essas tenham uma opção claramente melhor (rajada dos dois lados). O par
+  passa a "provável", e o placar mostra "a mais parecida entre N fotos do
+  Google no mesmo segundo (folga de M)".
+- A marca de rajada da Apple quase não aparece na biblioteca (12 fotos); o
+  que existe de fato são fotos em sequência no mesmo segundo.
+
+Verificação: 175 testes passando. Uso real: a regra resolve só 4 das cerca
+de 200 disputas (uma primeira medição, que contava candidatas já descartadas
+pelo cruzamento, tinha sugerido umas 56). Nas restantes, a foto escolhida
+ainda não tem a imagem comparada (78; a conferência pelas miniaturas do
+Google resolve parte), outra candidata está quase à mesma distância (84;
+quadros quase iguais, ambíguos de verdade) ou a melhor está longe (40).
+Essas ficam para "São a mesma foto?".
+
 ## 0.3.8 — 18/11/2026
 
 - Placar de identidade (0.4): cada par do cruzamento guarda as provas brutas

@@ -20,6 +20,40 @@ import { mesmoNome, copiaNoGoogle } from './google-file.js';
 
 export const TOLERANCE_MS = 1000;
 
+// Fotos em sequência no mesmo segundo (rajadas): a candidata mais parecida
+// resolve a disputa quando está perto (até RAJADA_MAX) e ganha das outras
+// candidatas, e das outras fotos do iCloud que a querem, por RAJADA_MARGEM.
+// Medido em 18/11: resolve poucas (4 de ~200 disputas); nas outras, a
+// escolhida não tem imagem comparada (78), outra candidata está quase à mesma
+// distância (84) ou a melhor está longe (40). Essas ficam para o usuário.
+export const RAJADA_MAX = 16;
+export const RAJADA_MARGEM = 8;
+
+/**
+ * A disputa no mesmo segundo se resolve pela imagem?
+ * @param pick candidata escolhida ({g, d}); c todas as candidatas do item
+ * @param rivais outros itens do iCloud que também querem a mesma foto do
+ *   Google: {d: distância até ela, melhor: menor distância deles até
+ *   qualquer candidata}. Numa rajada dos dois lados, cada quadro do iCloud
+ *   tem o seu par; a rival que tem uma opção claramente melhor (por
+ *   RAJADA_MARGEM) não disputa esta. null = sem imagem para comparar.
+ * @returns {{n: number, margem: number} | null}
+ */
+export function rajadaResolvida(pick, c, rivais = []) {
+  const nada = (d) => d === undefined || d === null;
+  if (nada(pick?.d) || pick.d > RAJADA_MAX) return null;
+  const outras = c.filter((x) => x !== pick);
+  if (outras.some((x) => nada(x.d))) return null;
+  const disputam = [];
+  for (const r of rivais) {
+    if (nada(r.d)) return null;
+    if (!nada(r.melhor) && r.d - r.melhor >= RAJADA_MARGEM) continue;
+    disputam.push(r.d);
+  }
+  const margem = Math.min(...outras.map((x) => x.d), ...disputam, 64) - pick.d;
+  return margem >= RAJADA_MARGEM ? { n: c.length, margem } : null;
+}
+
 // ficha do arquivo do Google só vale para fotos (em vídeos é a da capa)
 const fichaFoto = (g) => (g.video ? null : g.file);
 
@@ -140,11 +174,23 @@ export function matchLibraries(google, icloud, opts = {}) {
 
   const cands = new Map(); // id do iCloud -> candidatos
   const demand = new Map(); // id do Google -> quantos itens do iCloud o querem
+  const distPorG = new Map(); // id do Google -> [{aId, d}] (rajadas)
   for (const a of A) {
     const c = byImage(a, candidatesOf(a));
     cands.set(a.id, c);
-    for (const { g } of c) demand.set(g.id, (demand.get(g.id) || 0) + 1);
+    for (const x of c) {
+      demand.set(x.g.id, (demand.get(x.g.id) || 0) + 1);
+      let l = distPorG.get(x.g.id);
+      if (!l) distPorG.set(x.g.id, (l = []));
+      l.push({ aId: a.id, d: x.d ?? null });
+    }
   }
+
+  // menor distância de um item do iCloud até qualquer candidata (rajadas)
+  const melhorDist = (aId) => {
+    const ds = cands.get(aId).map((x) => x.d).filter((d) => d !== undefined && d !== null);
+    return ds.length ? Math.min(...ds) : null;
+  };
 
   // atribuição um-para-um: primeiro os casos sem disputa, depois os demais
   // (os pares que o usuário confirmou vêm antes de todos)
@@ -169,7 +215,10 @@ export function matchLibraries(google, icloud, opts = {}) {
     const imageConfirmed = peloUsuario || (pick.d !== undefined && pick.d !== null && pick.d <= SAME_MAX);
     // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
     const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
-    const disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
+    let disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
+    // fotos em sequência: a imagem mais parecida, com folga, resolve a disputa
+    const rajada = disputed ? rajadaResolvida(pick, c, distPorG.get(pick.g.id).filter((x) => x.aId !== a.id).map((x) => ({ d: x.d, melhor: melhorDist(x.aId) }))) : null;
+    if (rajada) disputed = false;
     // provas guardadas para o placar de identidade (placar.js)
     const pair = { a, g: pick.g, dt: pick.dt, rel: pick.rel, dist: pick.d ?? distImagem(a, pick.g) };
     if (peloUsuario) pair.confirmadoPeloUsuario = true;
@@ -184,13 +233,14 @@ export function matchLibraries(google, icloud, opts = {}) {
     const editada = comparada && !quadro && nome;
     const parecida = comparada && !quadro && !editada;
     if (parecida) pair.parecida = true;
+    if (rajada) pair.rajada = rajada;
     if (quadro) pair.quadroDiferente = true;
     if (editada) pair.versaoEditada = true;
     if (nome) pair.mesmoNome = true;
     if (pick.rel === 'reduzida') {
       pair.menor = pick.dimsA.w * pick.dimsA.h < pick.g.w * pick.g.h ? 'icloud' : 'google';
       // só é "cópia reduzida" se não houver dúvida de que é a mesma imagem
-      pair.cls = parecida || disputed ? 'confirmar' : 'reduzida';
+      pair.cls = (parecida && !rajada) || disputed ? 'confirmar' : 'reduzida';
     } else {
       pair.cls = disputed ? 'confirmar' : 'ambos';
     }
@@ -279,10 +329,13 @@ export function parearPorFuso(icloud, google) {
  * - 'incerta': a confirmar (outra candidata no mesmo segundo, imagens só
  *   parecidas) ou cópia reduzida sem a imagem conferida;
  * - 'provavel': o resto — instante e dimensões batem, sem outra candidata
- *   (inclui o outro quadro de uma Live Photo e a versão editada).
+ *   (inclui o outro quadro de uma Live Photo, a versão editada e a foto em
+ *   sequência resolvida pela imagem).
  */
 export function estadoIdentidade(p) {
   if (p.confirmadoPeloUsuario || p.confirmadoPorImagem || (p.mesmoNome && p.a.ts === p.g.ts)) return 'confirmada';
+  // rajada resolvida pela imagem: a mais parecida, com folga sobre as outras
+  if (p.rajada && !p.disputado) return 'provavel';
   if (p.cls === 'confirmar' || p.parecida || p.disputado || (p.cls === 'reduzida' && !p.confirmadoPorImagem)) return 'incerta';
   return 'provavel';
 }
