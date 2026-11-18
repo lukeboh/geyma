@@ -10,7 +10,7 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 |---|---|
 | Versão | ver `VERSION` e o topo do [CHANGELOG](../CHANGELOG.md); tag `v0.2.0` marca o fim da prova de acesso |
 | Branch | `claude/icloud-google-photos-sync-y42lpa` (é também a principal) |
-| Etapas | 0.3 (inventário) concluída: "Continuar de onde parou" exercitado em 18/11. 0.4 (identidade), 0.5 (qualidade), 0.6 (classificação, marcação e a resposta em números) e 0.8 (duplicatas) com primeira versão; 0.7 (envio) aguarda a decisão do caminho em [ENVIO.md](ENVIO.md); ver [ROADMAP](../ROADMAP.md) |
+| Etapas | 0.3 (inventário) concluída: "Continuar de onde parou" exercitado em 18/11. 0.4 (identidade), 0.5 (qualidade), 0.6 (classificação, marcação e a resposta em números) e 0.8 (duplicatas) com primeira versão; 0.7 (envio) feito pelo próprio site de cada serviço, **aguardando o piloto do usuário** ([ENVIO.md](ENVIO.md), [TESTES-HUMANOS.md](TESTES-HUMANOS.md)); ver [ROADMAP](../ROADMAP.md) |
 | Testes | `node --test test/*.test.mjs`, todos passando |
 | Extensão | Carregada sem compactação no Chrome de automação e usada nos dois serviços |
 | Celular | Servidor local (`mobile/servidor.mjs`) pelo Tailscale; ver [mobile/README](../mobile/README.md) |
@@ -113,6 +113,20 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     - **0.3.0**: percurso iniciado do zero, parado em cerca de 22%, extensão
       recarregada, retomado por "Continuar de onde parou" exatamente na
       posição salva e concluído.
+20. **Manhã de 18/11 (0.3.3 a 0.3.11)**, com o usuário dormindo e a decisão
+    de enviar pelo próprio site, sem instalar nada:
+    - Categorias **documento** e **propaganda** (regras baratas; pegam pouco,
+      o grosso fica para o modelo visual). Gravações de tela deixam de contar
+      como câmera.
+    - **Envio pelo site** ([ENVIO.md](ENVIO.md)): a extensão baixa o original
+      e o entrega ao campo de envio do iCloud (`input.UploadHiddenInput`, no
+      iframe do app de Fotos) ou, no Google Fotos, como arquivos arrastados.
+      Botões no visualizador (notebook e celular), lote de 10 na revisão,
+      chegada conferida no cruzamento. Só ensaios foram feitos; o envio de
+      verdade é o piloto do usuário.
+    - **Placar de identidade** (provas e pontos de cada par) e **rajadas**
+      resolvidas pela imagem quando há folga.
+    - Roteiro de testes humanos em [TESTES-HUMANOS.md](TESTES-HUMANOS.md).
 
 ## 4. Decisões e motivos
 
@@ -278,10 +292,10 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 1. **Seguir o cartão "O que fazer agora"** (aba Proteção): conferências pelas
    miniaturas, arquivos do Google e os pares incertos para o usuário
    responder (atalhos M/D, passa sozinho para o próximo).
-2. **Envio curado (0.7):** o usuário decide o caminho em [ENVIO.md](ENVIO.md)
-   (proposta: pasta local + Drive para computador e iCloud para Windows,
-   com piloto de 10 fotos). Ocultas e itens fora da biblioteca principal
-   nunca entram.
+2. **Envio curado (0.7):** o usuário faz o piloto (casos E1 a E10 de
+   [TESTES-HUMANOS.md](TESTES-HUMANOS.md)). Pontos em aberto: data das fotos
+   sem EXIF no destino, Live Photo (HEIC + MOV) no Google, sessão do iCloud
+   depois de enviar. Depois: conferência de cota e envio contínuo.
 3. Revisar as categorias com as miniaturas e ajustar as regras com o que o
    usuário corrigir; modelo visual local para os indefinidos (0.6).
 4. **Qualidade (0.5):** recorte, edição e recompressão pela comparação de
@@ -317,7 +331,6 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
 
 ## 9. Pendências de decisão do usuário
 
-- Caminho do envio nos dois sentidos (etapa 0.7): ver [ENVIO.md](ENVIO.md).
 - Vídeos: concentram quase todo o volume do que falta no Google; decidir se
   entram no envio, e com qual prioridade.
 - Quando começar a remover duplicatas (0.8), sempre com confirmação explícita.
@@ -327,6 +340,8 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
   repositório privado antes da trilha de produto.
 
 ### Já decidido
+- Envio pelo próprio site de cada serviço, sem instalar nada no notebook
+  (18/11).
 - Fotos ocultas do iCloud ficam fora de qualquer envio (16/11).
 - Itens que o percurso completo não encontra também ficam fora (16/11).
 - Botões "São a mesma foto / São fotos diferentes": feitos na noite de 18/11,

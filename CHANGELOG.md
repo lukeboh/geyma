@@ -2,6 +2,12 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.12 — 18/11/2026
+
+- Documentação: HANDOFF atualizado com o trabalho da manhã de 18/11 (envio
+  pelo site, placar, rajadas, categorias novas), o envio aguardando o piloto
+  do usuário e a decisão de enviar pelo próprio site.
+
 ## 0.3.11 — 18/11/2026
 
 - "O que fazer agora" (painel e celular) ganha o passo do envio: quantas
