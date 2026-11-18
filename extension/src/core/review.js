@@ -1,11 +1,13 @@
 // Filtro da revisão, usado pelo painel e pela versão para celular.
 import { suggestDecision } from './classify.js';
+import { placarIdentidade } from './placar.js';
 
 /**
  * @param rows linhas do cruzamento
  * @param f {cls, cat, dec, year, kind}: cls '' = todas, 'dupGoogle'/'dupIcloud' = cópias,
  *   'melhorIcloud'/'melhorGoogle' = pares em que aquele lado guarda a melhor cópia,
  *   'idConfirmada'/'idProvavel'/'idIncerta' = pares pela certeza de que são a mesma foto;
+ *   'placarBaixo' = pares com poucas provas (placar até 3), para conferir primeiro;
  *   dec 'sugestao' = sem marcação; kind 'foto'|'video'
  * @returns linhas filtradas, da mais recente para a mais antiga
  */
@@ -17,7 +19,11 @@ const POR_CLS = {
   idConfirmada: (r) => r.ident === 'confirmada',
   idProvavel: (r) => r.ident === 'provavel',
   idIncerta: (r) => r.ident === 'incerta',
+  placarBaixo: (r) => (placarIdentidade(r)?.pontos ?? Infinity) <= PLACAR_BAIXO,
 };
+
+/** Até este placar, o par tem poucas provas (por exemplo, só instante e dimensões, com outra candidata). */
+export const PLACAR_BAIXO = 3;
 
 export function filterRows(rows, f = {}) {
   const { cls = '', cat = '', dec = '', year = '', kind = '' } = f;

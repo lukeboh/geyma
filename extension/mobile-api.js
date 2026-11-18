@@ -12,6 +12,7 @@ import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { getMeta, getThumb } from './src/core/db.js';
 import { podeEnviar } from './src/core/envio.js';
+import { placarIdentidade, textoPlacar } from './src/core/placar.js';
 import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 
 const THUMB_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(usercontent\.google\.com|googleusercontent\.com|icloud-content\.com)\//;
@@ -79,6 +80,7 @@ const compact = (r, envio = {}) => ({
   // veredito do usuário sobre o par (botões "São a mesma foto / São fotos diferentes")
   par: r.a?.id ? { a: r.a.id, g: r.g?.id || null, ja: vereditoDoPar(r.a, r.g?.id), recusados: r.a.diferenteDe?.length || 0 } : null,
   envio: envioDa(r, envio),
+  placar: textoPlacar(placarIdentidade(r)) || null,
   thumbs: thumbsOf(r),
 });
 

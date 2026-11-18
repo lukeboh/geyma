@@ -170,7 +170,8 @@ export function matchLibraries(google, icloud, opts = {}) {
     // vários candidatos que são a mesma imagem (duplicatas no Google) não são disputa
     const sameImage = c.length > 1 && c.every(({ g }) => samePicture(g, pick.g));
     const disputed = !imageConfirmed && ((c.length > 1 && !sameImage) || demand.get(pick.g.id) > 1);
-    const pair = { a, g: pick.g, dt: pick.dt };
+    // provas guardadas para o placar de identidade (placar.js)
+    const pair = { a, g: pick.g, dt: pick.dt, rel: pick.rel, dist: pick.d ?? distImagem(a, pick.g) };
     if (peloUsuario) pair.confirmadoPeloUsuario = true;
     else if (imageConfirmed) pair.confirmadoPorImagem = true;
     if (reused) pair.duplicataNoIcloud = true;
@@ -262,7 +263,7 @@ export function parearPorFuso(icloud, google) {
     const d = distImagem(a, g);
     if (d !== null && d >= DIFFERENT_MIN) { restantes.push(a); continue; }
     usados.add(g.id);
-    const pair = { a, g, dt: Math.abs(g.ts - a.ts), fuso: true, deslocamentoMs: g.ts - a.ts };
+    const pair = { a, g, dt: Math.abs(g.ts - a.ts), fuso: true, deslocamentoMs: g.ts - a.ts, rel: 'igual', dist: d };
     if (d !== null && d <= SAME_MAX) { pair.cls = 'ambos'; pair.confirmadoPorImagem = true; }
     else { pair.cls = 'confirmar'; if (d !== null) pair.parecida = true; }
     pairs.push(pair);

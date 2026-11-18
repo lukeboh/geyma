@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.3.7';
+import { abrirVisor } from './viewer.js?v=0.3.8';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -150,7 +150,7 @@ function preencherFiltros() {
   if (!cls.options.length) {
     cls.append(new Option('Todas', ''));
     for (const k of ORDEM) cls.append(new Option(s.labels.classes[k], k));
-    cls.append(new Option('Cópias no Google', 'dupGoogle'), new Option('Cópias no iCloud', 'dupIcloud'), new Option('Mesma foto: confirmada', 'idConfirmada'), new Option('Mesma foto: provável', 'idProvavel'), new Option('Mesma foto: incerta', 'idIncerta'), new Option('Melhor cópia no iCloud', 'melhorIcloud'), new Option('Melhor cópia no Google', 'melhorGoogle'));
+    cls.append(new Option('Cópias no Google', 'dupGoogle'), new Option('Cópias no iCloud', 'dupIcloud'), new Option('Mesma foto: confirmada', 'idConfirmada'), new Option('Mesma foto: provável', 'idProvavel'), new Option('Mesma foto: incerta', 'idIncerta'), new Option('Mesma foto: poucas provas', 'placarBaixo'), new Option('Melhor cópia no iCloud', 'melhorIcloud'), new Option('Melhor cópia no Google', 'melhorGoogle'));
     for (const [k, l] of Object.entries(s.labels.categories)) $('f-cat').append(new Option(l, k));
     for (const [k, l] of Object.entries(s.labels.decisions)) { $('f-dec').append(new Option(l, k)); $('sel-dec').append(new Option(l, k)); }
     $('sel-dec').value = 'descartar';
@@ -304,7 +304,7 @@ function vereditoDa(l) {
   const age = (tipo, g = p.g) => async () => { await post('/api/veredito', { a: p.a, g, tipo }); return RESPOSTA[tipo]; };
   if (p.g) {
     if (p.ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', aoClicar: age('desfazer') }] };
-    return { pergunta: 'Estas fotos são a mesma?', acoes: [{ rotulo: 'São a mesma foto', aoClicar: age('mesma') }, { rotulo: 'São fotos diferentes', aoClicar: age('diferente') }] };
+    return { pergunta: `Estas fotos são a mesma?${l.placar ? ` (${l.placar[0].toUpperCase()}${l.placar.slice(1)}.)` : ''}`, acoes: [{ rotulo: 'São a mesma foto', aoClicar: age('mesma') }, { rotulo: 'São fotos diferentes', aoClicar: age('diferente') }] };
   }
   if (p.recusados) return { pergunta: 'Você disse que esta foto é diferente da do Google.', acoes: [{ rotulo: 'Desfazer', aoClicar: age('desfazer', null) }] };
   return {};

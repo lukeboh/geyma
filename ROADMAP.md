@@ -72,8 +72,8 @@ amostra, com a taxa de falso positivo medida contra um controle.
   trocado): comparação e visualizador com a atual e o original (0.2.36)
 - [x] Botões "São a mesma foto / São fotos diferentes" nos pares, com a
   decisão do usuário valendo como evidência (0.2.37)
-- Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
-  houver, nome como evidência
+- [x] Placar de identidade: instante, dimensões, imagem, nome e disputa, com os
+  pontos de cada prova no visualizador e o filtro "poucas provas" (0.3.8)
 - [x] Fusos horários: segunda passada pela hora local, a confirmar pela
   imagem (0.2.42)
 - Tratamento de rajadas

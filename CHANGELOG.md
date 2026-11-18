@@ -2,6 +2,25 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.8 — 18/11/2026
+
+- Placar de identidade (0.4): cada par do cruzamento guarda as provas brutas
+  (diferença de instante, distância entre as imagens, relação das
+  dimensões, nome igual, outras candidatas no mesmo segundo), e o
+  visualizador mostra o placar com os pontos de cada prova: "Placar +3:
+  mesmo instante, ao milissegundo (+3), mesmas dimensões (+2), imagens ainda
+  não comparadas (0), 2 fotos do Google no mesmo segundo (-2)". O placar não
+  decide nada; explica a decisão do cruzamento.
+- Novo filtro **"Mesma foto: poucas provas (placar baixo)"**, no painel e no
+  celular: pares com placar até 3, para conferir primeiro.
+- Outro quadro de uma Live Photo (ou versão editada) com a imagem muito
+  diferente desconta pouco (-1), porque o cruzamento o aceita pelo mesmo nome
+  no mesmo milissegundo.
+
+Verificação: 170 testes passando. Uso real: cruzamento refeito em 25 s; 219
+pares com placar baixo (quase todos já "incertos"); os 7 "confirmados" com
+placar baixo eram quadros de Live Photo, o que levou ao ajuste acima.
+
 ## 0.3.7 — 18/11/2026
 
 - Envio pelo celular: o visualizador do celular ganha "Enviar ao …" e "Só

@@ -16,6 +16,7 @@ import { resumoProtecao } from './src/core/protecao.js';
 import { proximosPassos } from './src/core/passos.js';
 import { sugestoesDoGoogle } from './src/core/sugestoes.js';
 import { podeEnviar, DESTINOS } from './src/core/envio.js';
+import { placarIdentidade, textoPlacar } from './src/core/placar.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -72,6 +73,7 @@ export function initProtection() {
   cls.append(new Option('Mesma foto: confirmada', 'idConfirmada'));
   cls.append(new Option('Mesma foto: provável', 'idProvavel'));
   cls.append(new Option('Mesma foto: incerta', 'idIncerta'));
+  cls.append(new Option('Mesma foto: poucas provas (placar baixo)', 'placarBaixo'));
   cls.append(new Option('Melhor cópia no iCloud', 'melhorIcloud'));
   cls.append(new Option('Melhor cópia no Google', 'melhorGoogle'));
   cls.value = '';
@@ -861,7 +863,9 @@ function envioNoVisor(r) {
 function acoesDoVisor(r) {
   const v = vereditoNoVisor(r);
   const e = envioNoVisor(r);
-  return { ...v, pergunta: [v.pergunta, e.pergunta].filter(Boolean).join(' '), acoes: [...(v.acoes || []), ...e.acoes] };
+  // provas do par, com os pontos de cada uma (placar.js)
+  const pl = textoPlacar(placarIdentidade(r));
+  return { ...v, pergunta: [v.pergunta, pl && `(${pl[0].toUpperCase()}${pl.slice(1)}.)`, e.pergunta].filter(Boolean).join(' '), acoes: [...(v.acoes || []), ...e.acoes] };
 }
 
 /** Pergunta e botões do veredito para uma linha aberta no visualizador. */

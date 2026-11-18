@@ -173,6 +173,8 @@ self.onmessage = async (e) => {
         ...(p.parecida ? { parecida: true } : {}),
         ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
         ident: estadoIdentidade(p),
+        // provas brutas, para o placar no visualizador (placar.js)
+        prova: { dt: p.dt, dist: p.dist ?? null, rel: p.rel || null, ...(p.mesmoNome ? { nome: true } : {}), ...(p.disputado ? { cand: p.candidatos.length } : {}) },
         ...(p.fuso ? { fuso: p.deslocamentoMs } : {}),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...(p.versaoEditada ? { versaoEditada: true } : {}),
