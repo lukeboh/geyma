@@ -400,7 +400,7 @@ export function summarizeMatch({ pairs, soGoogle, soIcloud }) {
   let quadroDiferente = 0;
   // Live Photos do iCloud que estão nos dois: o Google tem o movimento? (só se a leitura do Google já trouxe esse dado)
   const live = { total: 0, comMovimento: 0, semMovimento: 0, naoLido: 0 };
-  const copia = { original: 0, convertida: 0, convertidaCheia: 0 };
+  const copia = { original: 0, convertida: 0, convertidaCheia: 0, recomprimida: 0 };
   const byYear = {};
   const bump = (ts, cls) => {
     const y = new Date(ts).getUTCFullYear();
@@ -457,16 +457,19 @@ export function googlePhashNeeded(pendingIds, pairs, hasHash) {
 }
 
 /**
- * Itens do Google cuja ficha do arquivo (formato, nome) ajuda: pares com
- * Live Photo do iCloud, cópias reduzidas e pares a confirmar.
+ * Itens do Google cuja ficha do arquivo (formato, tamanho, nome) ajuda: todos
+ * os pares de fotos, porque o tamanho diz se o Google recomprimiu (0.5).
+ * Primeiro os que também ajudam na identidade e no movimento: Live Photos do
+ * iCloud, cópias reduzidas, pares a confirmar e imagens só parecidas.
  */
 export function googleFileNeeded(pairs) {
-  const out = [];
+  const primeiro = [];
+  const depois = [];
   for (const p of pairs) {
     if (p.g.file || !p.g.thumb || p.a.video || p.g.video) continue;
-    if (isLive(p.a) || p.cls !== 'ambos' || p.parecida) out.push({ id: p.g.id, url: p.g.thumb });
+    (isLive(p.a) || p.cls !== 'ambos' || p.parecida ? primeiro : depois).push({ id: p.g.id, url: p.g.thumb });
   }
-  return out;
+  return [...primeiro, ...depois];
 }
 
 /**

@@ -3,6 +3,8 @@
 // - resolução: dimensões iguais ou "cópia reduzida" (um dos lados menor);
 // - formato: a ficha do arquivo do Google diz se ele guarda o original (HEIC
 //   do iPhone) ou uma cópia convertida (JPEG de exportação: recomprimida);
+// - recompressão: mesmo formato e dimensões, mas o arquivo do Google bem
+//   menor (provada por amostragem pelas tabelas de quantização);
 // - movimento: Live Photo no iCloud e, no Google, foto com ou sem o movimento.
 // A versão editada no iPhone não conta como perda: é a mesma foto com outra
 // escolha (o original continua no iCloud).
@@ -10,6 +12,7 @@
 export const MOTIVOS = {
   googleMenor: 'o Google guarda uma cópia menor',
   googleConvertida: 'o Google guarda uma cópia convertida (outro formato, recomprimida)',
+  googleRecomprimida: 'o Google guarda uma cópia recomprimida (mesmo formato e tamanho, arquivo bem menor)',
   googleSemMovimento: 'o Google guarda só a foto parada (sem o movimento da Live Photo)',
   icloudMenor: 'o iCloud guarda uma cópia menor',
   icloudSemMovimento: 'só o Google tem o movimento',
@@ -27,6 +30,7 @@ export function melhorCopia(r) {
   if (r.cls === 'reduzida' && r.menor === 'google') icloud.push('googleMenor');
   if (r.cls === 'reduzida' && r.menor === 'icloud') google.push('icloudMenor');
   if (r.copiaGoogle === 'convertida') icloud.push('googleConvertida');
+  if (r.copiaGoogle === 'recomprimida') icloud.push('googleRecomprimida');
   if (!r.a.video && r.g.extrasLidos) {
     if (r.a.live && !r.g.motionMs) icloud.push('googleSemMovimento');
     if (!r.a.live && r.g.motionMs) google.push('icloudSemMovimento');

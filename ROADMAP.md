@@ -94,8 +94,9 @@ revisada manualmente.
 - [x] Live Photos que no Google estão sem o movimento: candidatas a reenvio a
   partir do iCloud, com o botão de envio (0.3.5); a cópia antiga do Google
   sai depois, na limpeza (0.8)
-- [ ] Recorte, edição e recompressão pela comparação de miniaturas e, por
-  amostragem, dos originais
+- [x] Recompressão: pelo tamanho do arquivo no mesmo formato e dimensões,
+  provada por amostragem pelas tabelas de quantização dos originais (0.3.15)
+- [ ] Recorte e edição pela comparação de miniaturas
 
 ### 0.6 — Classificação e painel de proteção
 - [x] Regras baratas sobre metadados, com categoria, motivo e sugestão (0.2.8)

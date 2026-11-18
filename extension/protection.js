@@ -19,6 +19,7 @@ import { podeEnviar, filaDeEnvio, DESTINOS } from './src/core/envio.js';
 import { placarIdentidade, textoPlacar } from './src/core/placar.js';
 import { filaDoClip, classificarEmbed, registroClip, googleParaClip } from './src/core/clip.js';
 import { ICLOUD_URL_VALIDA_MS } from './src/core/viewer-src.js';
+import { compararCodificacao } from './src/core/jpeg.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -69,6 +70,8 @@ export function initProtection() {
   $('m-clip-stop').addEventListener('click', () => { if (clipJob) clipJob.stop = true; });
   $('m-ic-stop').addEventListener('click', () => { if (icJob) icJob.stop = true; });
   $('m-gf-run').addEventListener('click', runGoogleFiles);
+  $('m-rc-run').addEventListener('click', runProvaRecompressao);
+  $('m-rc-stop').addEventListener('click', () => { if (rcJob) rcJob.stop = true; });
   $('m-gf-stop').addEventListener('click', () => { if (gfJob) gfJob.stop = true; });
   $('m-phash-stop').addEventListener('click', () => chrome.runtime.sendMessage({ kind: 'stop', site: 'google' }));
   const cls = $('r-cls');
@@ -104,7 +107,7 @@ export function ensureComputed() {
       const recentes = (await getMeta('decisoesRecentes').catch(() => null))?.value;
       aplicarDecisoes(cache.rows, recentes, cache.lidoEm || 0);
       mostrar(cache);
-      if (desatualizado(cache, versao)) compute({ motivo: 'o inventário mudou depois do último cálculo; atualizando em segundo plano' });
+      if (desatualizado(cache, versao)) compute({ motivo: 'o inventário ou as regras mudaram depois do último cálculo; atualizando em segundo plano' });
       else setCalc(null);
     } else if (!data) compute();
     carregandoCache = null;
@@ -241,7 +244,7 @@ function renderGoogleFiles() {
   const need = data.googleFileNeeded || [];
   const { live, copia } = data.summary;
   const box = $('m-gf-box');
-  box.hidden = !live?.total && !need.length && !(copia?.original + copia?.convertida) && !data.qualidade?.pares;
+  box.hidden = !live?.total && !need.length && !(copia?.original + copia?.convertida + (copia?.recomprimida || 0)) && !data.qualidade?.pares;
   if (box.hidden) return;
   const partes = [];
   if (live?.total) {
@@ -250,14 +253,15 @@ function renderGoogleFiles() {
       + (lidos ? ` Delas, ${fmt.format(live.comMovimento)} têm o movimento no Google e <b>${fmt.format(live.semMovimento)}</b> estão lá só como foto parada.` : '')
       + (live.naoLido ? ` De ${fmt.format(live.naoLido)} ainda não se sabe: o dado vem na próxima leitura do Google (aba Inventário).` : ''));
   }
-  if (copia.original + copia.convertida) {
-    partes.push(`Arquivos conferidos: ${fmt.format(copia.original)} no mesmo formato do iCloud (original) e <b>${fmt.format(copia.convertida)}</b> em outro formato (em geral JPEG no lugar do HEIC), dos quais ${fmt.format(copia.convertidaCheia || 0)} no tamanho cheio e ${fmt.format(copia.convertida - (copia.convertidaCheia || 0))} também reduzidos.`);
+  const recomp = copia.recomprimida || 0;
+  if (copia.original + copia.convertida + recomp) {
+    partes.push(`Arquivos conferidos: ${fmt.format(copia.original)} iguais ao original do iCloud; <b>${fmt.format(recomp)}</b> recomprimidos (mesmo formato e tamanho, arquivo bem menor que o original); e <b>${fmt.format(copia.convertida)}</b> em outro formato (em geral JPEG no lugar do HEIC), dos quais ${fmt.format(copia.convertidaCheia || 0)} no tamanho cheio e ${fmt.format(copia.convertida - (copia.convertidaCheia || 0))} também reduzidos.`);
   }
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos do Google.` : 'Todos os arquivos que importam já foram conferidos.');
   const q = data.qualidade;
   if (q?.pares) {
     const m = q.motivos;
-    const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
+    const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleRecomprimida && `${fmt.format(m.googleRecomprimida)} recomprimidas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
     partes.push(`<br><b>Melhor cópia</b> das ${fmt.format(q.pares)} fotos que estão nos dois: equivalentes em ${fmt.format(q.iguais)}; `
       + `<a href="#rev" data-cls="melhorIcloud">no iCloud em <b>${fmt.format(q.icloud + q.misto)}</b></a>${det ? ` (no Google: ${det})` : ''}; `
       + `<a href="#rev" data-cls="melhorGoogle">no Google em ${fmt.format(q.google + q.misto)}</a>${q.misto ? ` (${fmt.format(q.misto)} com vantagem dos dois lados)` : ''}.`);
@@ -267,6 +271,58 @@ function renderGoogleFiles() {
     a.addEventListener('click', (e) => { e.preventDefault(); $('r-cls').value = a.dataset.cls; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
   }
   if (!gfJob) { $('m-gf-run').hidden = !need.length; $('m-gf-run').textContent = `Conferir os arquivos do Google (${fmt.format(need.length)})`; }
+  if (!rcJob) $('m-rc-run').hidden = !paraProvar().length;
+}
+
+// ---------- prova da recompressão pelos originais (amostragem) ----------
+let rcJob = null;
+const AMOSTRA_RC = 10;
+/** Pares JPEG dados como recomprimidos pelo tamanho e ainda não provados. */
+const paraProvar = () => data.rows.filter((r) => r.copiaGoogle === 'recomprimida' && r.a && /jpeg/i.test(r.a.type || '') && !r.g.file?.codificacao);
+
+/** Primeiros 256 KB de um arquivo (o cabeçalho do JPEG cabe com folga). */
+async function comecoDoArquivo(url, credentials) {
+  const res = await fetch(url, { credentials, headers: { Range: 'bytes=0-262143' } });
+  if (!res.ok) { const e = new Error(`HTTP ${res.status}`); e.status = res.status; throw e; }
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function runProvaRecompressao() {
+  if (rcJob || !data) return;
+  // sorteio, para a amostra não ficar presa a um ano ou a um aparelho
+  const lista = paraProvar().map((r) => [Math.random(), r]).sort((x, y) => x[0] - y[0]).map(([, r]) => r);
+  if (!lista.length) return;
+  const job = rcJob = { stop: false, recomprimida: 0, mesma: 0, falhas: [] };
+  $('m-rc-run').hidden = true;
+  $('m-rc-stop').hidden = false;
+  const show = (msg) => { $('m-rc-state').textContent = msg; };
+  const provadas = () => job.recomprimida + job.mesma;
+  for (const r of lista) {
+    if (job.stop || provadas() >= AMOSTRA_RC || job.falhas.length >= AMOSTRA_RC) break;
+    show(`provando… ${provadas()} de ${AMOSTRA_RC} (link novo no iCloud, uns 10 segundos)`);
+    try {
+      const ref = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id: r.a.id, forcar: true });
+      if (!ref?.ok) throw new Error(ref?.erro || 'sem link novo');
+      const [a, g] = await Promise.all([getItem(r.a.id), getItem(r.g.id)]);
+      if (!a?.orig || !g?.file) throw new Error('sem o link do original');
+      const [ba, bg] = await Promise.all([comecoDoArquivo(a.orig.replace('${f}', 'orig.jpg'), 'omit'), comecoDoArquivo(`${g.thumb}=d`, 'include')]);
+      const codificacao = compararCodificacao(ba, bg);
+      if (!codificacao) throw new Error('cabeçalho ilegível');
+      job[codificacao]++;
+      await patchItems([{ id: g.id, file: { ...g.file, codificacao, provadaEm: Date.now() } }]);
+    } catch (err) {
+      job.falhas.push(String(err.message || err));
+      // o Google recusando: para
+      if ([401, 403, 429].includes(err.status)) break;
+    }
+  }
+  const n = provadas();
+  const falhas = job.falhas.length ? ` ${fmt.format(job.falhas.length)} não deu para provar (${[...new Set(job.falhas)].join('; ')}).` : '';
+  show(n ? `${job.stop ? 'Parada por você' : 'Pronto'}: de ${fmt.format(n)} fotos provadas, ${fmt.format(job.recomprimida)} recomprimidas pelo Google (tabelas de quantização diferentes do original) e ${fmt.format(job.mesma)} com a mesma codificação.${falhas}` : `Nenhuma foto provada.${falhas}`);
+  rcJob = null;
+  $('m-rc-stop').hidden = true;
+  if (n) compute();
+  else renderGoogleFiles();
 }
 
 async function runGoogleFiles() {

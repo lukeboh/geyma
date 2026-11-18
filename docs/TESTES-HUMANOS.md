@@ -155,6 +155,20 @@ Observado:
 
 ---
 
+## 2b. Qualidade (0.5)
+
+### Q1 — Recompressão no Google ☐
+Proteção → "Como o Google guarda as suas fotos" → **Conferir os arquivos do
+Google** (só cabeçalhos; pode demorar) e depois **Provar numa amostra pelos
+originais**.
+**Esperado:** a amostra diz "recomprimidas pelo Google" para quase todas.
+Abra duas delas no visualizador (Google e iCloud lado a lado, com zoom): a
+do Google pode mostrar menos detalhe ou blocos em áreas lisas. As fotos
+"recomprimidas" aparecem com a melhor cópia no iCloud.
+Observado:
+
+---
+
 ## 3. Identidade (0.4)
 
 ### I1 — Taxa de erro do pareamento automático ☐

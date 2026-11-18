@@ -34,7 +34,7 @@ test('separa por serviço e zera quando o último sai', () => {
   assert.deepEqual(by.google, emptySummary());
 });
 
-import { aplicarDecisoes, juntarDecisoes, desatualizado } from '../extension/src/core/calc-cache.js';
+import { aplicarDecisoes, juntarDecisoes, desatualizado, CALCULO_VERSAO } from '../extension/src/core/calc-cache.js';
 
 test('marcações feitas depois do cálculo valem sobre o cruzamento guardado', () => {
   const rows = [{ ids: ['a:1', 'g:1'], decision: null }, { ids: ['g:2'], decision: 'manter' }, { ids: ['a:3'], decision: null }];
@@ -50,6 +50,9 @@ test('juntarDecisoes descarta as já lidas pelo cruzamento e mantém as novas', 
 
 test('desatualizado compara a versão do inventário', () => {
   assert.equal(desatualizado(null, 5), false);
-  assert.equal(desatualizado({ versao: 5 }, 5), false);
+  assert.equal(desatualizado({ versao: 5, calculo: CALCULO_VERSAO }, 5), false);
   assert.equal(desatualizado({ versao: 5 }, 7), true);
+  // regras novas (outra versão do cálculo) também refazem
+  assert.equal(desatualizado({ versao: 5, calculo: CALCULO_VERSAO }, 5), false);
+  assert.equal(desatualizado({ versao: 5, calculo: CALCULO_VERSAO - 1 }, 5), true);
 });

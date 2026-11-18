@@ -173,7 +173,13 @@
         <button id="m-gf-stop" hidden>Parar</button>
         <span class="muted" id="m-gf-state" role="status"></span>
       </div>
-      <p class="hint">Lê só o cabeçalho do download de cada foto (formato, tamanho e nome do arquivo); nenhuma foto é baixada. Com isso o Geyma diz se o Google tem o original (o HEIC do iPhone, por exemplo) ou uma cópia convertida (outro formato, às vezes reduzida), e o nome do arquivo ajuda a reconhecer a mesma foto. Até 4 por vez; para no primeiro erro do Google.</p>
+      <div class="actions">
+        <button id="m-rc-run" hidden>Provar numa amostra pelos originais</button>
+        <button id="m-rc-stop" hidden>Parar</button>
+        <span class="muted" id="m-rc-state" role="status"></span>
+      </div>
+      <p class="hint">Lê só o cabeçalho do download de cada foto (formato, tamanho e nome do arquivo); nenhuma foto é baixada. Com isso o Geyma diz se o Google tem o original (o HEIC do iPhone, por exemplo), uma cópia convertida (outro formato, às vezes reduzida) ou recomprimida (mesmo formato e tamanho, arquivo bem menor), e o nome do arquivo ajuda a reconhecer a mesma foto. Até 4 por vez; para no primeiro erro do Google.</p>
+      <p class="hint">A prova pelos originais pega até 10 fotos recomprimidas, pede ao iCloud um link novo de cada uma (a grade rola sozinha, uns 10 segundos por foto) e compara o começo dos dois arquivos: tabelas de quantização diferentes provam que o Google recodificou a foto. Lê só os primeiros 256 KB de cada arquivo.</p>
     </section>
   </main>
 

@@ -38,9 +38,19 @@ export function radical(nome) {
 /** As duas versões vêm do mesmo arquivo de origem (mesmo nome, extensões à parte)? */
 export const mesmoNome = (a, gFile) => Boolean(radical(a?.filename) && radical(a.filename) === radical(gFile?.nome));
 
+// Mesmo formato e mesmas dimensões, mas o arquivo do Google abaixo de 90% do
+// original: recomprimido. Medido em 18/11/2026 nos pares JPEG × JPEG: as
+// cópias fiéis ficam entre 99% e 101% (o Google só reescreve metadados) e as
+// recomprimidas, em geral, entre 50% e 70%; quase nada no meio.
+export const LIMIAR_RECOMPRESSAO = 0.9;
+
+const mesmasDims = (a, g) => Boolean(a?.w && g?.w) && ((a.w === g.w && a.h === g.h) || (a.w === g.h && a.h === g.w));
+
 /**
  * Como o Google guarda esta foto, comparada com o iCloud:
- * 'original' (mesmo formato e mesmas dimensões), 'convertida' (outro formato,
+ * 'original' (mesmo formato, arquivo do mesmo tamanho), 'recomprimida'
+ * (mesmo formato e dimensões, arquivo bem menor; ou provado pela comparação
+ * das tabelas de quantização com o original), 'convertida' (outro formato,
  * por exemplo HEIC no iCloud e JPEG no Google) ou null (sem ficha).
  */
 export function copiaNoGoogle(a, g) {
@@ -52,5 +62,11 @@ export function copiaNoGoogle(a, g) {
   if (!formatoA) return null;
   // HEIC e HEIF são o mesmo formato (o Google às vezes rotula o HEIC do iPhone como image/heif)
   const formatoG = f.formato === 'HEIF' ? 'HEIC' : f.formato;
-  return formatoA === formatoG ? 'original' : 'convertida';
+  if (formatoA !== formatoG) return 'convertida';
+  // conferida pelos originais (amostragem): a prova vale mais que o tamanho
+  if (f.codificacao === 'recomprimida') return 'recomprimida';
+  if (f.codificacao === 'mesma') return 'original';
+  // foto editada: o Google pode guardar a versão editada, de outro tamanho
+  if (!a.edited && mesmasDims(a, g) && a.size && f.bytes && f.bytes < LIMIAR_RECOMPRESSAO * a.size) return 'recomprimida';
+  return 'original';
 }

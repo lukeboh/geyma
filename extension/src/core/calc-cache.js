@@ -16,8 +16,17 @@ export const ETAPAS = [
 
 export const textoEtapa = (k) => ETAPAS.find((e) => e.k === k)?.txt || k;
 
-/** O cruzamento guardado ficou para trás? (o inventário mudou depois dele) */
-export const desatualizado = (cache, versaoAtual) => Boolean(cache) && (cache.versao || 0) !== (versaoAtual || 0);
+/**
+ * Versão das regras do cálculo: subir quando uma mudança de código muda o
+ * resultado (classificação, qualidade, identidade), para o cruzamento guardado
+ * ser refeito mesmo sem o inventário mudar.
+ * 2: classificação pela imagem (0.3.14) e recompressão (0.3.15).
+ */
+export const CALCULO_VERSAO = 2;
+
+/** O cruzamento guardado ficou para trás? (o inventário ou as regras mudaram depois dele) */
+export const desatualizado = (cache, versaoAtual) => Boolean(cache)
+  && ((cache.versao || 0) !== (versaoAtual || 0) || (cache.calculo || 1) !== CALCULO_VERSAO);
 
 /**
  * Aplica às linhas as marcações feitas depois da leitura do cruzamento.

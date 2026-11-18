@@ -2,7 +2,7 @@
 // e linhas compactas para a revisão, sem travar o painel.
 import { getItemsBySource, getMeta, setMeta, putCache, setInventorySummary, registrarDecisoes } from './core/db.js';
 import { summarize } from './core/normalize.js';
-import { ETAPAS } from './core/calc-cache.js';
+import { ETAPAS, CALCULO_VERSAO } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
 import { estadoIdentidade, matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive, paraCruzar } from './core/match.js';
 import { copiaNoGoogle } from './core/google-file.js';
@@ -208,6 +208,7 @@ self.onmessage = async (e) => {
       counts: { google: google.length, icloud: icloud.length, ocultas, marcadasOcultas: icloudTodo.filter((x) => x.hidden).length },
       rows,
       versao,
+      calculo: CALCULO_VERSAO,
       lidoEm,
       calculadoEm: Date.now(),
     };

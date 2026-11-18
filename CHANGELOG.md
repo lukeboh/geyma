@@ -2,6 +2,36 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.15 — 18/11/2026
+
+- Recompressão (etapa 0.5): o Geyma diz quando o Google guarda a foto no
+  mesmo formato e nas mesmas dimensões do original, mas recodificada. Pelo
+  tamanho: arquivo do Google abaixo de 90% do original do iCloud (as cópias
+  fiéis ficam entre 99% e 101%, porque o Google só reescreve metadados; as
+  recomprimidas, em geral, entre 50% e 70%). Fotos editadas no iPhone ficam
+  de fora (o Google pode ter a versão editada). Conta como vantagem do
+  iCloud na melhor cópia e no plano de envio.
+- Prova por amostragem pelos originais: o botão "Provar numa amostra pelos
+  originais" (Proteção → Como o Google guarda as suas fotos) sorteia até 10
+  fotos recomprimidas, pede ao iCloud um link novo de cada uma e compara os
+  primeiros 256 KB dos dois arquivos (`core/jpeg.js`): tabelas de
+  quantização diferentes provam a recodificação. A prova fica gravada na
+  ficha da foto e vale mais que o tamanho.
+- A ficha do arquivo do Google (só o cabeçalho do download) passa a ser
+  pedida para todos os pares de fotos, não só para os que ajudam na
+  identidade, que continuam indo primeiro.
+- O cruzamento guardado ganha a versão das regras do cálculo: quando uma
+  mudança de código muda o resultado, ele é refeito mesmo sem o inventário
+  mudar (antes, a classificação pela imagem e a recompressão só apareciam
+  depois de uma leitura nova).
+
+Verificação: 194 testes passando (7 novos). Na biblioteca real, cabeçalhos
+comparados com os originais: 10 de 10 recomprimidas pelo tamanho tinham
+outras tabelas de quantização (o Google recodificou), e 2 de 2 cópias de
+mesmo tamanho tinham cabeçalhos idênticos. A renovação do link do iCloud
+falhou em 5 de 15 tentativas ("não achei a foto na grade"), limitação já
+conhecida da renovação.
+
 ## 0.3.14 — 18/11/2026
 
 - Classificação pela imagem com o CLIP (etapa 0.6). Na aba Proteção, em
