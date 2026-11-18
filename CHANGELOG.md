@@ -2,6 +2,24 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.42 — 18/11/2026
+
+- Fuso horário (etapa 0.4, `parearPorFuso` em `match.js`): uma segunda
+  passada, só com o que sobrou do cruzamento, acha a mesma foto com o
+  instante deslocado porque um dos serviços guardou outro fuso: mesma hora
+  local nos dois lados, ou a hora local de um lado guardada como UTC no outro.
+  Exige dimensões iguais (ou giradas), um único candidato e um deslocamento
+  que um fuso explica (múltiplo de 15 min, até 14 h; fusos estranhos de
+  fotos antigas ficam de fora). O par fica "a confirmar" até a imagem
+  decidir: igual confirma, claramente diferente desfaz; a impressão digital
+  do Google desses pares entra na conferência. Etiqueta "fuso horário
+  (Google ±N h)" na lista, no visualizador e no detalhe do celular.
+
+Verificação: 142 testes passando (`ext-fuso`, novo). Uso real (simulação
+com o inventário, sem gravar): a segunda passada achou centenas de pares,
+quase todos com deslocamento de 1 a 3 h (horário de Brasília, com e sem
+horário de verão); o cruzamento inteiro levou cerca de 5 s.
+
 ## 0.2.41 — 18/11/2026
 
 - Documentação: [docs/ENVIO.md](docs/ENVIO.md) com os caminhos para o envio

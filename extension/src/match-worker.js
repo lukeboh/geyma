@@ -159,6 +159,7 @@ self.onmessage = async (e) => {
         ...(p.parecida ? { parecida: true } : {}),
         ...(p.confirmadoPeloUsuario ? { peloUsuario: true } : {}),
         ident: estadoIdentidade(p),
+        ...(p.fuso ? { fuso: p.deslocamentoMs } : {}),
         ...(p.quadroDiferente ? { quadroDiferente: true } : {}),
         ...(p.versaoEditada ? { versaoEditada: true } : {}),
         ...dupInfo(p.a, p.g),

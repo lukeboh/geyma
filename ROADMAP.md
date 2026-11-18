@@ -73,7 +73,9 @@ amostra, com a taxa de falso positivo medida contra um controle.
   decisão do usuário valendo como evidência (0.2.37)
 - Placar de identidade: instante, dimensões, hash perceptual, hash exato quando
   houver, nome como evidência
-- Tratamento de rajadas e fusos horários
+- [x] Fusos horários: segunda passada pela hora local, a confirmar pela
+  imagem (0.2.42)
+- Tratamento de rajadas
 - [x] Estado "confirmada / provável / incerta", com resumo e filtro (0.2.39)
 
 **Critério:** falso positivo abaixo de um limite definido na 0.2, numa amostra

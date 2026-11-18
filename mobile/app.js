@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.39';
+import { abrirVisor } from './viewer.js?v=0.2.42';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -311,6 +311,7 @@ function abrirDetalhe(i) {
     l.a?.live && ['Live Photo', !l.g ? 'só no iCloud' : !l.g.extrasLidos ? 'movimento no Google ainda não conferido' : l.g.motionMs ? 'o Google também tem o movimento' : 'no Google só a foto parada, sem o movimento'],
     l.copiaGoogle === 'convertida' && ['Cópia do Google', `convertida para ${l.g.file.formato} (não é o original)`],
     l.melhor && ['Melhor cópia', `${l.melhor.lado === 'icloud' ? 'no iCloud' : l.melhor.lado === 'google' ? 'no Google' : 'cada lado tem uma vantagem'}: ${[...l.melhor.icloud, ...l.melhor.google].map((k) => MOTIVOS_Q[k] || k).join('; ')}`],
+    l.fuso && ['Fuso horário', `mesma hora local, instante deslocado (Google ${l.fuso > 0 ? '+' : '−'}${(Math.abs(l.fuso) / 3600000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} h): falta comparar as imagens`],
     l.quadroDiferente && ['Quadro', 'mesmo clique da Live Photo, com o quadro principal diferente'],
     l.versaoEditada && ['Versão', 'mesmo arquivo de origem, imagem editada'],
     l.parecida && ['Imagens', 'parecidas, mas não iguais: confira'],

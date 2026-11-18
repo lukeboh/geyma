@@ -572,6 +572,7 @@ function renderList() {
       + (r.a?.live && r.g?.extrasLidos ? (r.g.motionMs ? ' <span class="tag" title="Live Photo: o Google também tem o movimento.">Live completa no Google</span>' : ' <span class="tag" title="Live Photo no iCloud, mas no Google só a foto parada (sem o movimento).">Google sem o movimento</span>') : '')
       + (r.copiaGoogle === 'convertida' ? ` <span class="tag" title="${escHtml(textoFicha(r.g.file))}">Google: cópia em ${escHtml(r.g.file.formato)}</span>` : '')
       + (etiquetaQualidade(r.melhor) ? ` <span class="tag" title="${escHtml(porqueQualidade(r.melhor))}">${etiquetaQualidade(r.melhor)}</span>` : '')
+      + (r.fuso ? ` <span class="tag" title="Mesma hora local, instante deslocado: um dos serviços guardou a foto com outro fuso horário. Fica a confirmar até as imagens serem comparadas.">fuso horário (${textoFuso(r.fuso)})</span>` : '')
       + (r.peloUsuario ? ' <span class="tag" title="Você disse no visualizador que são a mesma foto.">mesma foto, por você</span>' : '')
       + (!r.g && r.a?.diferenteDe?.length ? ' <span class="tag" title="Você disse no visualizador que esta foto é diferente da que o Google tinha no mesmo instante.">diferente, por você</span>' : '')
       + (r.parecida ? ' <span class="tag" title="As imagens foram comparadas: são parecidas, mas não iguais. Pode ser outro quadro da mesma Live Photo ou uma foto de rajada.">imagens só parecidas</span>' : '')
@@ -673,6 +674,8 @@ function renovarIcloud(id) {
 const RENOVANDO = 'buscando um link novo no iCloud (alguns segundos)…';
 
 const SEM_ICLOUD = 'Não deu para trazer esta foto do iCloud agora (o link da Apple expirou e a renovação falhou). Confira se a aba do iCloud Fotos está aberta no notebook.';
+/** Deslocamento do Google em relação ao iCloud, em horas ("Google +3 h"). */
+const textoFuso = (ms) => `Google ${ms > 0 ? '+' : '−'}${(Math.abs(ms) / 3600000).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} h`;
 const dimsTxt = (it) => (it?.w && it?.h ? `${it.w}×${it.h}` : '');
 
 // miniatura inicial no visualizador quando a linha não está na tela (aberta por link)
@@ -733,7 +736,7 @@ function verFotos(r, td) {
   try { history.replaceState(null, '', link); } catch {}
   const PROVA = { identico: 'mesmos dados do arquivo', imagem: 'imagens quase iguais' };
   const evid = [...new Set([r.dupEvidence, r.dupEvidenceIcloud].filter(Boolean))].map((k) => PROVA[k] || k).join(' · ');
-  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.peloUsuario ? ' · mesma foto, por você' : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
+  abrirVisor(fotos, `${when(r.ts)} · ${CLASSES[r.cls]}${r.semConferencia ? ' · imagem ainda não conferida' : ''}${r.peloUsuario ? ' · mesma foto, por você' : ''}${r.fuso ? ` · instante deslocado por fuso horário (${textoFuso(r.fuso)})` : ''}${r.parecida ? ' · imagens só parecidas, não iguais' : ''}${r.quadroDiferente ? ' · Live Photo, mesmo clique com quadro diferente' : ''}${r.dup || r.dupIcloud ? ' · cópia repetida' : ''}${evid ? ` (${evid})` : ''}`, {
     link,
     ...vereditoNoVisor(r),
     aoFechar: () => { try { history.replaceState(null, '', antes.includes('foto=') ? '#rev' : antes || '#rev'); } catch {} },

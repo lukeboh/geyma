@@ -197,8 +197,77 @@ export function matchLibraries(google, icloud, opts = {}) {
     if (sameImage) pair.duplicatasNoGoogle = c.length - 1;
     pairs.push(pair);
   }
+  const fuso = parearPorFuso(soIcloud, G.filter((g) => !usedG.has(g.id)));
+  for (const p of fuso.pairs) { usedG.add(p.g.id); pairs.push(p); }
   const soGoogle = G.filter((g) => !usedG.has(g.id));
-  return { pairs, soGoogle, soIcloud };
+  return { pairs, soGoogle, soIcloud: fuso.restantes };
+}
+
+/**
+ * Segunda passada, só com o que sobrou: a mesma foto com o instante deslocado
+ * por fuso horário. Medido no inventário real: a maior parte das sobras com
+ * par deslocado tem a mesma hora local nos dois serviços (instante + fuso
+ * guardado) e o instante diferente; outra parte tem a hora local de um lado
+ * guardada como se fosse UTC do outro. Só com dimensões iguais (ou giradas) e
+ * um único candidato; o par fica "a confirmar" até a imagem decidir:
+ * imagens iguais confirmam, imagens claramente diferentes desfazem o par.
+ */
+/**
+ * Deslocamento que um fuso horário explica: múltiplo de 15 min (com 2 s de
+ * folga, pelo Google sem milissegundos) e até 14 h. Fusos estranhos guardados
+ * em fotos antigas dão deslocamentos de minutos quebrados, que não servem.
+ */
+export function deslocamentoDeFuso(ms) {
+  const q = 15 * 60000;
+  const abs = Math.abs(ms);
+  if (abs < q - 2000 || abs > 14 * 3600000 + 2000) return false;
+  const resto = abs % q;
+  return Math.min(resto, q - resto) <= 2000;
+}
+
+export function parearPorFuso(icloud, google) {
+  const local = (x) => (x.tzOffset ? x.ts + x.tzOffset : null);
+  const porSeg = new Map();
+  const add = (s, g) => { let l = porSeg.get(s); if (!l) porSeg.set(s, (l = [])); if (!l.includes(g)) l.push(g); };
+  for (const g of google) {
+    // instante do Google, e também a hora local dele (para o caso inverso)
+    add(Math.floor(g.ts / 1000), g);
+    const lg = local(g);
+    if (lg != null) add(Math.floor(lg / 1000), g);
+  }
+  const usados = new Set();
+  const pairs = [];
+  const restantes = [];
+  for (const a of icloud) {
+    const la = local(a);
+    const recusadas = a.diferenteDe?.length ? new Set(a.diferenteDe) : null;
+    const achados = new Map();
+    // hora local do iCloud contra a hora local do Google ou o instante do Google;
+    // instante do iCloud contra a hora local do Google
+    for (const t of [la, a.ts]) {
+      if (t == null) continue;
+      const s = Math.floor(t / 1000);
+      for (const k of [s - 1, s, s + 1]) {
+        for (const g of porSeg.get(k) || []) {
+          if (usados.has(g.id) || recusadas?.has(g.id) || Math.abs(g.ts - a.ts) <= TOLERANCE_MS) continue;
+          const lg = local(g);
+          const bate = (t === la && (Math.abs(g.ts - la) <= TOLERANCE_MS || (lg != null && Math.abs(lg - la) <= TOLERANCE_MS)))
+            || (t === a.ts && lg != null && Math.abs(lg - a.ts) <= TOLERANCE_MS);
+          if (bate && deslocamentoDeFuso(g.ts - a.ts) && dimRelation(a, g) === 'igual') achados.set(g.id, g);
+        }
+      }
+    }
+    if (achados.size !== 1) { restantes.push(a); continue; }
+    const [g] = achados.values();
+    const d = distImagem(a, g);
+    if (d !== null && d >= DIFFERENT_MIN) { restantes.push(a); continue; }
+    usados.add(g.id);
+    const pair = { a, g, dt: Math.abs(g.ts - a.ts), fuso: true, deslocamentoMs: g.ts - a.ts };
+    if (d !== null && d <= SAME_MAX) { pair.cls = 'ambos'; pair.confirmadoPorImagem = true; }
+    else { pair.cls = 'confirmar'; if (d !== null) pair.parecida = true; }
+    pairs.push(pair);
+  }
+  return { pairs, restantes };
 }
 
 /**
@@ -327,6 +396,8 @@ export function googlePhashNeeded(pendingIds, pairs, hasHash) {
   for (const p of pairs) {
     for (const id of p.candidatos || []) if (!hasHash.has(id)) need.add(id);
     if (p.cls === 'reduzida' && !p.confirmadoPorImagem && !p.confirmadoPeloUsuario && !hasHash.has(p.g.id)) need.add(p.g.id);
+    // par por fuso horário: a imagem decide
+    if (p.fuso && !p.confirmadoPorImagem && !hasHash.has(p.g.id)) need.add(p.g.id);
   }
   return [...need].map((id) => id.slice(2));
 }
