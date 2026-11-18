@@ -135,6 +135,12 @@ button, select { font: inherit; color: inherit; }
 .sub { margin: 8px 0 0; font-size: 13px; color: var(--texto-2); }
 
 .cartoes { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* o que fazer agora: lista num cartão só */
+.passos-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.passos-lista > * { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; line-height: 1.35; color: inherit; background: none; border: 0; padding: 0; }
+.passos-lista button { cursor: pointer; }
+.passos-lista small { display: block; color: var(--texto-2, inherit); opacity: 0.8; font-size: 12px; }
+.passos-lista button small { color: var(--acento, inherit); opacity: 1; }
 .cartao {
   position: relative;
   border-radius: 18px;

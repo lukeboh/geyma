@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.47';
+import { abrirVisor } from './viewer.js?v=0.2.50';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -97,13 +97,20 @@ async function carregarResumo() {
   const NO_CELULAR = { responderPares: () => irParaRevisar({ cls: 'idIncerta' }), revisarPendentes: () => $('categorias').scrollIntoView({ behavior: 'smooth' }) };
   const ps = s.passos || [];
   $('passos-tit').hidden = !ps.length;
-  $('passos').replaceChildren(...ps.map((p) => cartao({
-    rot: NO_CELULAR[p.id] ? 'Aqui no celular' : 'No notebook',
-    num: p.id === 'percorrerIcloud' && p.n === 1 ? '—' : fmt.format(p.n),
-    det: esc(p.texto),
-    onClick: NO_CELULAR[p.id],
-    largo: true,
-  })));
+  // uma lista compacta: os passos do celular primeiro, tocáveis; os do notebook depois
+  const lista = document.createElement('ol');
+  lista.className = 'passos-lista';
+  for (const p of [...ps.filter((x) => NO_CELULAR[x.id]), ...ps.filter((x) => !NO_CELULAR[x.id])]) {
+    const li = document.createElement(NO_CELULAR[p.id] ? 'button' : 'li');
+    if (NO_CELULAR[p.id]) { li.type = 'button'; li.addEventListener('click', NO_CELULAR[p.id]); }
+    const num = p.id === 'percorrerIcloud' && p.n === 1 ? '' : `<b>${fmt.format(p.n)}</b> `;
+    li.innerHTML = `${num}${esc(p.texto.replace(/ \(atalhos M e D; (.*)\)$/, ' ($1)'))} <small>${NO_CELULAR[p.id] ? 'aqui no celular ›' : 'no notebook'}</small>`;
+    lista.append(li);
+  }
+  const caixa = document.createElement('article');
+  caixa.className = 'cartao largo-2 passos-caixa';
+  caixa.append(lista);
+  $('passos').replaceChildren(...(ps.length ? [caixa] : []));
 
   const pr = s.protecao;
   if (pr) {
@@ -308,6 +315,15 @@ async function verGrande(l) {
   if (!l.thumbs.length) return;
   $('detalhe').hidden = true;
   const link = await linkDa(l).catch(() => null);
+  // só no iCloud: fotos do Google que podem ser a mesma (parear à mão)
+  const sugs = l.cls === 'soIcloud' && l.par ? await get(`/api/sugestoes?id=${encodeURIComponent(l.par.a)}`).catch(() => []) : [];
+  const sugestoes = sugs.map((s) => ({
+    src: thumbUrl({ url: s.url }),
+    rotulo: `${dia(s.ts)} · ${s.dims}`,
+    aoEscolher: async () => { await post('/api/veredito', { a: l.par.a, g: s.g, tipo: 'mesma' }); return RESPOSTA.mesma; },
+  }));
+  const ver = vereditoDa(l);
+  if (sugestoes.length) Object.assign(ver, { pergunta: [ver.pergunta, 'Está no Google com outro horário? Toque na foto, se for uma destas:'].filter(Boolean).join(' '), sugestoes });
   abrirVisor(l.thumbs.map((t) => ({
     src: thumbUrl(t),
     rotulo: NOMES[t.side] || t.side,
@@ -321,7 +337,7 @@ async function verGrande(l) {
         return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
       } : null,
     carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,
-  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link, ...vereditoDa(l), ...navegacaoDa(l) });
+  })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link, ...ver, ...navegacaoDa(l) });
 }
 
 function abrirDetalhe(i) {

@@ -844,9 +844,13 @@ function vereditoNoVisor(r) {
 
 // fotos só do Google, por instante, para sugerir pares à mão (refeito a cada cruzamento)
 let soGoogleCache = null;
-function sugestoesParaParear(r) {
+/** Fotos só do Google que podem ser a mesma de uma linha só do iCloud (também para o celular). */
+export function candidatosDoGoogle(r) {
   if (soGoogleCache?.data !== data) soGoogleCache = { data, lista: data.rows.filter((x) => x.cls === 'soGoogle' && !x.dup && x.g?.thumb).map((x) => ({ ...x.g, ts: x.ts })) };
-  return sugestoesDoGoogle({ ...r.a, ts: r.ts }, soGoogleCache.lista).map((g) => ({
+  return sugestoesDoGoogle({ ...r.a, ts: r.ts }, soGoogleCache.lista);
+}
+function sugestoesParaParear(r) {
+  return candidatosDoGoogle(r).map((g) => ({
     src: googleThumb(g.thumb),
     rotulo: `${when(g.ts)} · ${dimsTxt(g)}`,
     aoEscolher: async () => { await registrarVeredito(r.a.id, g.id, 'mesma'); return RESPOSTA.mesma; },

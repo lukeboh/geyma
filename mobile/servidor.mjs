@@ -192,6 +192,11 @@ const server = createServer(async (req, res) => {
       const f = { cls: q.get('cls') || '', cat: q.get('cat') || '', dec: q.get('dec') || '', year: q.get('year') || '', kind: q.get('kind') || '' };
       return json(res, 200, await api('rows', f, Number(q.get('page')) || 0, Number(q.get('size')) || 30));
     }
+    if (url.pathname === '/api/sugestoes') {
+      const id = url.searchParams.get('id') || '';
+      if (!/^a:[A-Za-z0-9-]{1,80}$/.test(id)) return json(res, 400, { erro: 'item inválido' });
+      return json(res, 200, await api('sugestoes', id));
+    }
     if (url.pathname === '/api/icloud-grande') {
       const id = url.searchParams.get('id') || '';
       if (!/^a:[A-Za-z0-9-]{1,80}$/.test(id)) return json(res, 400, { erro: 'item inválido' });

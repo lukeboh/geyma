@@ -2,7 +2,7 @@
 // chama estas funções pela porta de depuração do Chrome de automação; a
 // extensão continua sendo a única fonte de verdade (inventário, cruzamento,
 // marcações). Nada aqui altera os serviços: marcar só grava a decisão.
-import { getData, whenComputed, decideRows, recomputeAndWait, isBusy, calcProgress, registrarVeredito } from './protection.js';
+import { getData, whenComputed, decideRows, recomputeAndWait, isBusy, calcProgress, registrarVeredito, candidatosDoGoogle } from './protection.js';
 import { vereditoDoPar } from './src/core/veredito.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { sendPlan } from './src/core/plan.js';
@@ -121,6 +121,14 @@ window.geymaApi = {
     const n = Math.max(1, Math.min(120, Number(size) || 30));
     const p = Math.max(0, Number(page) || 0);
     return { total: all.length, page: p, size: n, rows: all.slice(p * n, (p + 1) * n).map(compact) };
+  },
+
+  /** Fotos só do Google que podem ser a mesma de uma foto só do iCloud (para parear à mão). */
+  async sugestoes(aId) {
+    const data = await whenComputed();
+    const r = rowIndex(data).get(aId);
+    if (!r || r.cls !== 'soIcloud') return [];
+    return candidatosDoGoogle(r).map((g) => ({ g: g.id, ts: g.ts, dims: `${g.w}×${g.h}`, url: `${g.thumb}=w320-h320-c` }));
   },
 
   /** Veredito sobre um par: 'mesma', 'diferente' ou 'desfazer' (gId null desfaz tudo do item). */

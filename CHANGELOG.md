@@ -2,6 +2,18 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.50 — 18/11/2026
+
+- Celular: sugestões para parear à mão também no visualizador (foto só no
+  iCloud mostra as fotos do Google que podem ser a mesma; um toque grava "São
+  a mesma foto"), pela rota nova `/api/sugestoes`. "O que fazer agora" vira
+  uma lista compacta num cartão só, com os passos do celular primeiro e
+  tocáveis.
+
+Verificação: 150 testes passando. Uso real: página do celular aberta no
+Chrome em tamanho de celular, com a lista de passos; a rota de sugestões
+devolve o par de exemplo.
+
 ## 0.2.49 — 18/11/2026
 
 - Parear à mão: ao abrir uma foto que ficou só no iCloud, o visualizador
