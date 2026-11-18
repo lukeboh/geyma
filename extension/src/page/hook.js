@@ -93,7 +93,9 @@
     return { status: res.status, text: await res.text() };
   }
 
-  async function googleCrawl() {
+  // ate (ms): leitura só das novidades. A listagem vem da captura mais recente
+  // para a mais antiga; para na primeira página toda anterior a `ate`.
+  async function googleCrawl(ate = 0) {
     let cursor = null;
     let pages = 0;
     for (;;) {
@@ -104,7 +106,13 @@
       post('google-batch', { body: text, page: pages });
       const line = text.split('\n').find((l) => l.startsWith('[["wrb.fr"'));
       let next = null;
-      try { next = JSON.parse(JSON.parse(line)[0][2])[1] || null; } catch {}
+      let ts = [];
+      try {
+        const data = JSON.parse(JSON.parse(line)[0][2]);
+        next = data[1] || null;
+        ts = (data[0] || []).map((x) => Number(x[2])).filter(Number.isFinite);
+      } catch {}
+      if (ate && ts.length && Math.max(...ts) < ate) { post('progress', { task: 'google', state: 'concluido', pages, novidades: true }); return; }
       if (!next) { post('progress', { task: 'google', state: 'concluido', pages }); return; }
       cursor = next;
       if (pages % 10 === 0) post('progress', { task: 'google', state: 'lendo', pages });
@@ -295,7 +303,7 @@
 
   window.addEventListener('message', (e) => {
     if (e.source !== window || !e.data?.__geymaCmd) return;
-    const { cmd, startFrac, keys } = e.data;
+    const { cmd, startFrac, keys, ate } = e.data;
     if (cmd === 'stop') { stopRequested = true; wakeWaiter?.(); return; }
     // O app de Fotos do iCloud roda num iframe (/applications/photos…); o script
     // é injetado em todos os frames, mas só o frame do app percorre a grade.
@@ -303,7 +311,7 @@
     if (cmd === 'icloud-goto' && running) { post('goto-done', { erro: 'percurso em andamento' }); return; }
     if (running) { post('progress', { task: SITE, state: 'ocupado' }); return; }
     stopRequested = false;
-    const job = cmd === 'google-crawl' && SITE === 'google' ? googleCrawl()
+    const job = cmd === 'google-crawl' && SITE === 'google' ? googleCrawl(Number(ate) || 0)
       : cmd === 'google-thumbs' && SITE === 'google' ? googleThumbs(keys || [])
       : cmd === 'icloud-walk' && SITE === 'icloud' ? icloudWalk(Number(startFrac) || 0)
       : cmd === 'icloud-goto' && SITE === 'icloud' ? icloudGoto(Number(startFrac) || 0)

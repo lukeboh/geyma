@@ -7,6 +7,7 @@ import { patchVeredito, vereditoDoPar } from './src/core/veredito.js';
 import { textoEtapa, desatualizado, aplicarDecisoes } from './src/core/calc-cache.js';
 import { sendPlan, effectiveDecision, espacoDasLinhas, bytesPerPixel, bytesDoEnvio } from './src/core/plan.js';
 import { cabeNaCota, COTA_VALIDA_MS } from './src/core/cota.js';
+import { CICLO_MS, continuoPadrao, cicloDevido, googleAte, filaContinua } from './src/core/continuo.js';
 import { TAMANHOS_LOTE, novoLote, proximoDoLote, registrarNoLote, pausarLote, pararLote, retomarLote, loteAberto } from './src/core/lote.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { phashFromBlob } from './src/core/phash-image.js';
@@ -93,6 +94,8 @@ export function initProtection() {
   $('r-envio-stop').addEventListener('click', pararOuDescartarLote);
   $('r-envio-pause').addEventListener('click', () => { lotePausar = true; $('r-envio-pause').disabled = true; });
   $('r-envio-resume').addEventListener('click', continuarLote);
+  for (const id of ['m-cont-on', 'm-cont-g', 'm-cont-a', 'm-cont-desde']) $(id).addEventListener('change', mudarContinuo);
+  $('m-cont-agora').addEventListener('click', () => verificarCiclo({ agora: true }));
   for (const n of TAMANHOS_LOTE) $('r-envio-n').append(new Option(`até ${n}`, n));
   $('r-envio-n').append(new Option('todos', ''));
   $('r-envio-n').addEventListener('change', () => renderEnvioLote());
@@ -272,6 +275,8 @@ function renderProtection() {
   renderIcloudCheck();
   renderGoogleFiles();
   renderVideos();
+  renderContinuo();
+  verificarCiclo();
 }
 
 // ---------- arquivos do Google (formato, nome; só cabeçalhos) ----------
@@ -1393,6 +1398,121 @@ function continuarLote() {
   lote = retomarLote(lote);
   salvarLote().then(rodarLote);
 }
+
+// ---------- envio contínuo do que é novo (0.7) ----------
+// Com o painel aberto: a cada CICLO_MS, lê as novidades do Google, recarrega
+// a aba do iCloud, refaz o cruzamento e envia em lote o que é novo e está num
+// serviço só (core/continuo.js). Usa o mesmo lote (pausa, erro, cota).
+let continuo = null;
+let cicloRodando = false;
+const salvarContinuo = () => setMeta('envioContinuo', continuo).catch(() => {});
+const dataIso = (ts) => new Date(ts).toISOString().slice(0, 10);
+getMeta('envioContinuo').then((m) => { continuo = { ...continuoPadrao(), ...(m?.value || {}) }; renderContinuo(); }, () => {});
+
+function renderContinuo() {
+  if (!continuo) return;
+  $('m-cont-box').hidden = !data;
+  $('m-cont-on').checked = Boolean(continuo.ativo);
+  $('m-cont-g').checked = Boolean(continuo.google);
+  $('m-cont-a').checked = Boolean(continuo.icloud);
+  $('m-cont-desde').value = dataIso(continuo.desde);
+  if (cicloRodando) return;
+  const partes = [];
+  if (data) {
+    const f = filaContinua(data.rows, continuo, envioEstado);
+    partes.push(`Novos desde ${day(continuo.desde)} que iriam agora: ${fmt.format(f.google.length)} ao Google e ${fmt.format(f.icloud.length)} ao iCloud.`);
+  }
+  const u = continuo.ultimo;
+  if (u) partes.push(`Último ciclo em ${local(u.at)}: ${u.texto}`);
+  if (continuo.ativo) partes.push(`Próximo ciclo por volta de ${local((continuo.ultimoCiclo || Date.now()) + CICLO_MS)} (com este painel aberto).`);
+  $('m-cont-state').textContent = partes.join(' ');
+}
+
+function mudarContinuo() {
+  continuo = {
+    ...continuo,
+    ativo: $('m-cont-on').checked,
+    google: $('m-cont-g').checked,
+    icloud: $('m-cont-a').checked,
+    desde: Date.parse(`${$('m-cont-desde').value}T00:00:00Z`) || continuo.desde,
+  };
+  // ao ligar, o primeiro ciclo é logo
+  if (continuo.ativo && !continuo.ultimoCiclo) continuo.ultimoCiclo = 0;
+  salvarContinuo();
+  renderContinuo();
+  verificarCiclo();
+}
+
+/** Espera a leitura do Google terminar (concluída, parada, erro ou ocupada). */
+function esperarGoogle(limiteMs = 15 * 60 * 1000) {
+  return new Promise((ok) => {
+    const fim = (estado) => { chrome.runtime.onMessage.removeListener(ouvir); clearTimeout(t); ok(estado); };
+    const ouvir = (msg) => {
+      if (msg?.kind !== 'status' || msg.site !== 'google' || msg.event !== 'progress' || msg.progress?.task !== 'google') return;
+      if (['concluido', 'parado', 'erro', 'ocupado'].includes(msg.progress.state)) fim(msg.progress.state);
+    };
+    const t = setTimeout(() => fim('demorou'), limiteMs);
+    chrome.runtime.onMessage.addListener(ouvir);
+  });
+}
+
+async function cicloContinuo() {
+  cicloRodando = true;
+  continuo.ultimoCiclo = Date.now();
+  await salvarContinuo();
+  const avisos = [];
+  const estado = (t) => { $('m-cont-state').textContent = t; };
+  let enviados = 0;
+  try {
+    if (continuo.icloud) {
+      estado('Lendo as novidades do Google…');
+      const fim = esperarGoogle();
+      const r = await chrome.runtime.sendMessage({ kind: 'start', site: 'google', ate: googleAte(continuo) }).catch(() => null);
+      const st = r?.ok ? await fim : 'não começou';
+      if (st !== 'concluido') avisos.push(`a leitura do Google ${st === 'ocupado' ? 'esperou outra tarefa do Google' : `não terminou (${st})`}`);
+    }
+    if (continuo.google) {
+      estado('Recarregando a aba do iCloud Fotos (o site traz as fotos recentes)…');
+      const r = await chrome.runtime.sendMessage({ kind: 'icloud-recarregar' }).catch(() => null);
+      if (r?.ok) await new Promise((ok) => setTimeout(ok, 90000));
+      else avisos.push(`o iCloud não foi relido (${r?.reason || 'sem resposta'})`);
+    }
+    estado('Refazendo o cruzamento…');
+    await recomputeAndWait();
+    await lerEnvio();
+    const f = filaContinua(data.rows, continuo, envioEstado);
+    for (const destino of ['google', 'icloud']) {
+      const fila = f[destino];
+      if (!fila.length) continue;
+      const bytes = bytesDoEnvio(fila, destino, bytesPerPixel(data.rows));
+      const cotas = await chrome.runtime.sendMessage({ kind: 'cota' }).catch(() => null);
+      let cota = cotas?.[destino] || null;
+      if (cota && Date.now() - (cota.at || 0) > COTA_VALIDA_MS) cota = null;
+      if (cabeNaCota(cota, bytes).ok === false) { avisos.push(`${itens(fila.length)} não cabem no ${DESTINOS[destino]}`); continue; }
+      lote = novoLote(destino, fila.map((r) => idDeOrigem(r, destino)));
+      await salvarLote();
+      await rodarLote();
+      enviados += lote.feitos - lote.pulados;
+      // lote pausado ou com erro: o ciclo para aqui (a barra da Revisão mostra o lote)
+      if (loteAberto(lote)) { avisos.push(`o lote ao ${DESTINOS[destino]} ${lote.estado === 'erro' ? `parou no erro: ${lote.erro}` : 'ficou pausado'}`); break; }
+    }
+  } catch (err) {
+    avisos.push(String(err.message || err));
+  } finally {
+    cicloRodando = false;
+  }
+  continuo.ultimo = { at: Date.now(), enviados, texto: `${fmt.format(enviados)} enviados${avisos.length ? `; ${avisos.join('; ')}` : ''}.` };
+  await salvarContinuo();
+  renderContinuo();
+}
+
+/** Começa um ciclo quando é hora (e nada mais está enviando). */
+function verificarCiclo({ agora = false } = {}) {
+  if (!continuo || cicloRodando || loteRodando || loteAberto(lote) || busy || !data) return;
+  if (!(agora ? continuo.ativo : cicloDevido(continuo))) return;
+  cicloContinuo();
+}
+setInterval(verificarCiclo, 10 * 60 * 1000);
 
 /** Junta as perguntas e os botões do veredito e do envio. */
 function acoesDoVisor(r) {

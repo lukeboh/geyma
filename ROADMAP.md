@@ -127,7 +127,8 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - [ ] Piloto do usuário ([docs/TESTES-HUMANOS.md](docs/TESTES-HUMANOS.md), E3–E9)
 - [x] Envio em lote, com pausa, retomada e parada no primeiro erro (0.3.22)
 - [x] Conferência de cota antes de enviar, nos dois serviços (0.3.22)
-- [ ] Envio contínuo do que é novo (substitui o backup automático do celular)
+- [x] Envio contínuo do que é novo (substitui o backup automático do celular)
+  (0.3.23)
 
 ### 0.8 — Sanitização guiada
 - [x] Deduplicação nos dois serviços (0.2.15): arquivos idênticos pela

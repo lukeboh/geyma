@@ -2,6 +2,24 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.23 — 18/11/2026
+
+- Envio contínuo do que é novo (etapa 0.7), no lugar do backup automático
+  do celular: bloco na Proteção, desligado de início, com os sentidos
+  (iCloud → Google, Google → iCloud) e a data de captura a partir da qual
+  vale. Com o painel aberto, a cada 6 horas: lê só as novidades do Google
+  (a listagem vem da captura mais recente para a mais antiga e a leitura
+  para na primeira página anterior à data), recarrega a aba do iCloud
+  Fotos (o próprio site traz as fotos recentes; nunca durante um
+  percurso), refaz o cruzamento e envia pelo mesmo lote (cota conferida
+  antes, para no primeiro erro, pausável). Só vai o que está Pessoal ou
+  Manter, sem repetidas. "Verificar agora" adianta o ciclo.
+
+Verificação: 238 testes passando. Na biblioteca real, a leitura das
+novidades do Google desde o começo do mês levou 2 páginas e 11 s (a
+completa percorre o catálogo inteiro); o bloco mostra quantos itens novos
+iriam. O envio contínuo não foi ligado (fica para depois do piloto).
+
 ## 0.3.22 — 18/11/2026
 
 - Envio em lote (etapa 0.7): o tamanho do lote é escolhido (até 10, 50,

@@ -126,6 +126,18 @@ lote** volta à barra normal. Faça o mesmo no sentido Google → iCloud (recarr
 a aba do iCloud antes, para o Geyma ver o espaço livre).
 Observado:
 
+### E12 — Envio contínuo (só depois de E11) ☐
+1. Proteção → **Envio contínuo do que é novo** → deixe a data de hoje e
+   marque **Ligado**.
+2. Tire duas fotos no iPhone e espere elas aparecerem no iCloud.com.
+3. **Verificar agora** e acompanhe o texto do bloco.
+
+**Esperado:** "Lendo as novidades do Google…", "Recarregando a aba do
+iCloud Fotos…", "Refazendo o cruzamento…" e o envio das duas fotos ao
+Google; o último ciclo diz quantas foram. Nada anterior à data vai.
+Desligue ao fim, se não quiser deixar ligado.
+Observado:
+
 ---
 
 ## 2. Classificação (0.6)

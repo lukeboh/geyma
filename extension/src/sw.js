@@ -420,6 +420,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     })().catch((err) => sendResponse({ ok: false, reason: String(err.message || err) }));
     return true;
   }
+  // envio contínuo: recarrega a aba do iCloud para o próprio site trazer as
+  // fotos recentes (o mesmo que a pessoa apertar F5). Não durante um percurso.
+  if (msg?.kind === 'icloud-recarregar') {
+    (async () => {
+      const [tab] = await chrome.tabs.query({ url: SITES.icloud.match });
+      if (!tab) return { ok: false, reason: 'a aba do iCloud Fotos não está aberta' };
+      const p = (await getMeta('icloudProgress'))?.value;
+      if (p?.state === 'lendo') return { ok: false, reason: 'percurso do iCloud em andamento' };
+      await chrome.tabs.reload(tab.id);
+      return { ok: true };
+    })().then(sendResponse, (err) => sendResponse({ ok: false, reason: String(err.message || err) }));
+    return true;
+  }
   if (msg?.kind === 'start' || msg?.kind === 'stop') {
     (async () => {
       const tab = await findOrOpenTab(msg.site);
@@ -445,7 +458,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // início de um percurso do zero: o que ele não vir até o fim está fora da biblioteca principal
       if (msg.kind === 'start' && msg.site === 'icloud' && !msg.resume) await setMeta('icloudWalkStart', Date.now());
       const cmd = msg.kind === 'stop' ? 'stop' : msg.site === 'google' ? 'google-crawl' : 'icloud-walk';
-      await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd, startFrac });
+      // Google com `ate`: só as novidades (envio contínuo)
+      await chrome.tabs.sendMessage(tab.id, { kind: 'command', cmd, startFrac, ate: Number(msg.ate) || 0 });
       sendResponse({ ok: true });
     })().catch((err) => sendResponse({ ok: false, reason: String(err.message || err) }));
     return true;

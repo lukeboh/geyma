@@ -183,6 +183,11 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     link `quotamanagement`). Cota do iCloud: `hook.js` observa a resposta
     de `storageUsageInfo` (evento `icloud-cota`, meta `cotaIcloud`).
     Vídeo do Google sem arquivo: `fileV: {indisponivel: true}`.
+29. **Envio contínuo (0.3.23):** `core/continuo.js` (meta `envioContinuo`);
+    o ciclo roda no painel (`cicloContinuo` em protection.js, verificado a
+    cada 10 min). Google: `start` com `ate` (`googleCrawl(ate)` no hook
+    para na primeira página toda anterior). iCloud: mensagem
+    `icloud-recarregar` (recarrega a aba; recusa durante um percurso).
 
 ## 4. Decisões e motivos
 

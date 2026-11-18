@@ -119,6 +119,19 @@
       <p class="hint" id="m-plan-note"></p>
     </section>
 
+    <section class="panel" id="m-cont-box" hidden>
+      <h2>Envio contínuo do que é novo</h2>
+      <p class="hint">No lugar do backup automático do celular. Com este painel aberto, a cada 6 horas o Geyma lê as novidades do Google, recarrega a aba do iCloud Fotos (o próprio site traz as fotos recentes), refaz o cruzamento e envia ao outro serviço o que foi capturado a partir da data escolhida e só está num lado. Só vai o que está Pessoal ou Manter (pela sua marcação ou pela sugestão), sem repetidas; confere o espaço livre antes e para no primeiro erro. Faça antes o piloto de envio (docs/TESTES-HUMANOS.md).</p>
+      <div class="actions">
+        <label><input type="checkbox" id="m-cont-on"> Ligado</label>
+        <label><input type="checkbox" id="m-cont-g"> iCloud → Google</label>
+        <label><input type="checkbox" id="m-cont-a"> Google → iCloud</label>
+        <label>Capturados a partir de <input type="date" id="m-cont-desde"></label>
+        <button id="m-cont-agora">Verificar agora</button>
+      </div>
+      <p class="muted" id="m-cont-state" role="status"></p>
+    </section>
+
     <section class="panel" id="m-cat-box" hidden>
       <h2>Pessoal ou lixo?</h2>
       <p class="muted">Classificação por regras sobre os metadados, contando cada foto uma vez (o par conta como uma).</p>
