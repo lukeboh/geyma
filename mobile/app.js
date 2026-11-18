@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.2.43';
+import { abrirVisor } from './viewer.js?v=0.2.45';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -92,6 +92,18 @@ async function carregarResumo() {
 
   const cl = $('classes');
   cl.replaceChildren(...ORDEM.map((k) => cartao({ rot: s.labels.classes[k], num: fmt.format(s.totals[k]), cor: COR[k], onClick: () => irParaRevisar({ cls: k }) })));
+
+  const pr = s.protecao;
+  if (pr) {
+    const pc = (n) => `${Math.round((100 * n) / Math.max(1, pr.total))}%`;
+    $('protecao').replaceChildren(
+      cartao({ rot: 'Nos dois lugares, sem perda', num: pc(pr.protegidas), det: `${fmt.format(pr.protegidas)} de ${fmt.format(pr.total)} fotos marcadas ou sugeridas como Pessoal ou Manter`, largo: true }),
+      cartao({ rot: 'Melhor cópia num lugar só', num: fmt.format(pr.comPerda), det: 'nos dois, mas um lado guarda uma cópia pior', onClick: () => irParaRevisar({ cls: 'melhorIcloud' }) }),
+      cartao({ rot: 'A confirmar', num: fmt.format(pr.incertas), det: 'abra e responda São a mesma foto?', onClick: () => irParaRevisar({ cls: 'idIncerta' }) }),
+      cartao({ rot: 'Só no iCloud', num: fmt.format(pr.soIcloud), cor: '--icloud', onClick: () => irParaRevisar({ cls: 'soIcloud' }) }),
+      cartao({ rot: 'Só no Google', num: fmt.format(pr.soGoogle), cor: '--google', onClick: () => irParaRevisar({ cls: 'soGoogle' }) }),
+    );
+  }
 
   const p = s.plan;
   $('plano').replaceChildren(

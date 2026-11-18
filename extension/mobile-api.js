@@ -6,6 +6,7 @@ import { getData, whenComputed, decideRows, recomputeAndWait, isBusy, calcProgre
 import { vereditoDoPar } from './src/core/veredito.js';
 import { filterRows, decisionCounts } from './src/core/review.js';
 import { sendPlan } from './src/core/plan.js';
+import { resumoProtecao } from './src/core/protecao.js';
 import { CLASSES } from './src/core/match.js';
 import { CATEGORIES, DECISIONS, suggestDecision } from './src/core/classify.js';
 import { getMeta, getThumb } from './src/core/db.js';
@@ -102,6 +103,7 @@ window.geymaApi = {
       reduzidaMenor: data.summary.reduzidaMenor,
       dup: data.dup,
       plan: sendPlan(data.rows),
+      protecao: resumoProtecao(data.rows),
       categories: cats,
       decisions: decisionCounts(data.rows),
       years: Object.keys(data.summary.byYear).sort().reverse(),

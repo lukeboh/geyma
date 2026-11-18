@@ -101,6 +101,8 @@ revisada manualmente.
 - [x] Revisão pelo celular, pelo Tailscale
 - [x] Links copiáveis de cada foto, para mandar um caso e investigar (0.2.29)
 - [x] Fotos só do Google: movimento, vídeo e nome do arquivo nas regras (0.2.44)
+- [x] Resposta em números: fotos pessoais nos dois lugares sem perda, com a
+  melhor cópia num lugar só, a confirmar e num lugar só (0.2.45)
 - [ ] Modelo visual local para o que as regras deixam como indefinido
 - Marcações da Apple, regras baratas e modelo visual local (CLIP)
 - Categorias: pessoal, print, internet, propaganda, documento, indefinido

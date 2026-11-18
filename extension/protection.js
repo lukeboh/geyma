@@ -12,6 +12,7 @@ import { abrirVisor } from './viewer.js';
 import { googleGrande, icloudGrande, icloudOriginal, linkAtual, linkOriginal, temOriginal } from './src/core/viewer-src.js';
 import { fichaDoCabecalho } from './src/core/google-file.js';
 import { etiquetaQualidade, porqueQualidade } from './src/core/qualidade.js';
+import { resumoProtecao } from './src/core/protecao.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -354,9 +355,22 @@ async function runIcloudCheck() {
 
 const GB = (bytes) => `${(bytes / 1024 ** 3).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} GB`;
 
+/** A pergunta central: fotos pessoais guardadas nos dois lugares, sem perda (muda com as marcações). */
+function renderProtecao() {
+  const p = resumoProtecao(data.rows);
+  const el = $('m-protecao');
+  el.hidden = !p.total;
+  if (!p.total) return;
+  el.innerHTML = `Das <b>${fmt.format(p.total)}</b> fotos pessoais (Pessoal ou Manter, pela sua marcação ou pela sugestão), `
+    + `<b>${pct(p.protegidas, p.total)}</b> estão guardadas nos dois lugares sem perda (${fmt.format(p.protegidas)}). `
+    + `Faltam: ${fmt.format(p.comPerda)} nos dois, mas com a melhor cópia num lugar só; ${fmt.format(p.incertas)} a confirmar se são a mesma foto; `
+    + `${fmt.format(p.soIcloud)} só no iCloud e ${fmt.format(p.soGoogle)} só no Google.`;
+}
+
 /** Prévia do envio curado, a partir das marcações em vigor. */
 export function renderPlan() {
   if (!data) return;
+  renderProtecao();
   const plan = sendPlan(data.rows);
   $('m-plan-box').hidden = !data.rows.length;
   $('m-plan').innerHTML = [

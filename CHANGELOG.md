@@ -2,6 +2,19 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.2.45 — 18/11/2026
+
+- A pergunta central respondida em números (critério da etapa 0.6,
+  `resumoProtecao` em `protecao.js`): das fotos pessoais (Pessoal ou Manter,
+  pela marcação ou pela sugestão, sem contar cópias repetidas), quantas estão
+  nos dois lugares sem perda, quantas estão nos dois mas com a melhor cópia
+  num lugar só, quantas ainda a confirmar e quantas só no iCloud ou só no
+  Google. No topo da aba Proteção (muda na hora com as marcações) e em
+  cartões no celular, que levam à lista de cada caso.
+
+Verificação: 145 testes passando (`ext-protecao`, novo). Uso real: frase
+no topo da aba Proteção com os números da biblioteca.
+
 ## 0.2.44 — 18/11/2026
 
 - Classificação das fotos que só estão no Google (`classifyGoogle`): além das
