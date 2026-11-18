@@ -214,7 +214,8 @@ function ligarGestos(v, i) {
  * Abre o visualizador.
  * @param {{ src: string, grande?: () => Promise<string|null>, rotulo: string, info?: string|Promise<string>, link?: string, semImagem?: string, carregando?: string }[]} fotos
  *   src: imagem já disponível (miniatura); grande: busca a versão maior;
- *   semImagem: o que dizer se nenhuma imagem carregar.
+ *   semImagem: o que dizer se nenhuma imagem carregar; reserva: busca outra
+ *   versão grande se a primeira falhar ao carregar (link vencido).
  *   src pode ser uma Promise (miniatura que ainda está chegando).
  * @param {string} [titulo]
  * @param {{ link?: string, aoFechar?: () => void, pergunta?: string,
@@ -283,11 +284,24 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
       if (temImagem) carregando.textContent = 'versão grande indisponível; mostrando a miniatura';
       else { carregando.remove(); aviso.hidden = false; img.hidden = true; }
     };
-    f.grande().then((src) => {
+    f.grande().then((primeiro) => {
+      let src = primeiro;
       if (!src || !estado?.vistas.includes(v)) { semGrande(); return; }
       const pre = new Image();
       pre.onload = () => { img.src = src; carregando.remove(); };
-      pre.onerror = semGrande;
+      // o link falhou (por exemplo, link da Apple vencido): tenta a reserva uma vez
+      pre.onerror = () => {
+        if (!f.reserva) { semGrande(); return; }
+        const reserva = f.reserva;
+        f.reserva = null;
+        carregando.textContent = f.carregandoReserva || 'buscando um link novo (alguns segundos)…';
+        reserva().then((s2) => {
+          if (!s2 || !estado?.vistas.includes(v)) { semGrande(); return; }
+          pre.onerror = semGrande;
+          pre.src = s2;
+          src = s2;
+        }).catch(semGrande);
+      };
       pre.src = src;
     }).catch(semGrande);
   });

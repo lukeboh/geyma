@@ -17,3 +17,8 @@ test('iCloud: versão média só enquanto a URL vale', () => {
   assert.equal(icloudGrande({ thumbAt: agora }, agora), null);
   assert.equal(icloudGrande(null, agora), null);
 });
+
+test('iCloud: validade do link abaixo do vencimento medido (410 a partir de 15 min)', () => {
+  assert.ok(ICLOUD_URL_VALIDA_MS <= 15 * 60 * 1000);
+  assert.ok(ICLOUD_URL_VALIDA_MS >= 5 * 60 * 1000);
+});

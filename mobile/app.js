@@ -1,7 +1,7 @@
 // Geyma no celular: telas Resumo, Revisar, Cópias e Leituras, com dados vindos
 // do servidor local (que fala com a extensão no notebook).
 import { abrirGuia, talvezGuia } from './guia.js';
-import { abrirVisor } from './viewer.js?v=0.3.0';
+import { abrirVisor } from './viewer.js?v=0.3.1';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -336,6 +336,11 @@ async function verGrande(l) {
         const r = await (await fetch(`/api/icloud-grande?id=${encodeURIComponent(t.id)}${t.versao ? `&versao=${t.versao}` : ''}`)).json();
         return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
       } : null,
+    // link "válido" que falhou (a Apple vence os links em minutos): pede outro
+    reserva: t.full && t.id ? async () => {
+      const r = await (await fetch(`/api/icloud-grande?id=${encodeURIComponent(t.id)}${t.versao ? `&versao=${t.versao}` : ''}&forcar=1`)).json();
+      return r.ok ? `/api/thumb?u=${encodeURIComponent(r.url)}` : null;
+    } : null,
     carregando: !t.full && t.id ? 'buscando um link novo no iCloud (alguns segundos)…' : null,
   })), `${dia(l.ts)} · ${resumo.labels.classes[l.cls]}`, { link, ...ver, ...navegacaoDa(l) });
 }

@@ -125,10 +125,11 @@ function noteRefreshed(items) {
 const linksDe = (it) => ({ thumb: it.thumb, med: it.med || null, full: it.full || null, thumbOrig: it.thumbOrig || null, medOrig: it.medOrig || null, edited: Boolean(it.edited), thumbAt: it.thumbAt });
 const freshOf = (it, since) => it && it.thumbAt > since && linksDe(it);
 
-async function refreshIcloud(id) {
+async function refreshIcloud(id, { forcar = false } = {}) {
   const it = await getItem(id);
   if (!it || it.source !== 'icloud') return { ok: false, erro: 'foto não encontrada no inventário' };
-  if (it.thumbAt && Date.now() - it.thumbAt < ICLOUD_URL_VALIDA_MS) return { ok: true, ...linksDe(it) };
+  // forcar: o link "ainda válido" falhou ao carregar; busca outro mesmo assim
+  if (!forcar && it.thumbAt && Date.now() - it.thumbAt < ICLOUD_URL_VALIDA_MS) return { ok: true, ...linksDe(it) };
   if (shouldKeepAwake({ icloud: taskStates.icloud })) return { ok: false, erro: 'o percurso do iCloud está rodando; a foto ganha link novo quando ele passar por ela' };
   const [tab] = await chrome.tabs.query({ url: SITES.icloud.match });
   if (!tab) return { ok: false, erro: 'abra o iCloud Fotos no Chrome do notebook' };
@@ -239,7 +240,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return false;
   }
   if (msg?.kind === 'icloud-refresh') {
-    const job = refreshChain.then(() => refreshIcloud(String(msg.id)));
+    const job = refreshChain.then(() => refreshIcloud(String(msg.id), { forcar: Boolean(msg.forcar) }));
     refreshChain = job.catch(() => {});
     job.then(sendResponse, (err) => sendResponse({ ok: false, erro: String(err.message || err) }));
     return true;

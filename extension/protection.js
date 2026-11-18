@@ -700,16 +700,21 @@ function icloudGrandeOuRenova(it, { original = false } = {}) {
   const pronto = original ? icloudOriginal(it) : icloudGrande(it);
   if (pronto) return async () => pronto;
   if (!it.id) return null;
+  return icloudRenova(it, { original });
+}
+/** Link novo pelo percurso (rola a grade até a foto). forcar: o link guardado falhou mesmo parecendo válido. */
+function icloudRenova(it, { original = false, forcar = false } = {}) {
+  if (!it.id) return null;
   return async () => {
-    const r = await renovarIcloud(it.id);
+    const r = await renovarIcloud(it.id, forcar);
     return (original ? linkOriginal(r) : linkAtual(r)) || (r.thumb || '').replace('${f}', 'thumb.jpg') || null;
   };
 }
 // uma renovação por foto, mesmo com dois painéis (atual e original) pedindo
 const renovacoes = new Map();
-function renovarIcloud(id) {
+function renovarIcloud(id, forcar = false) {
   if (!renovacoes.has(id)) {
-    renovacoes.set(id, chrome.runtime.sendMessage({ kind: 'icloud-refresh', id }).then((r) => {
+    renovacoes.set(id, chrome.runtime.sendMessage({ kind: 'icloud-refresh', id, forcar }).then((r) => {
       if (!r?.ok) throw new Error(r?.erro || 'sem link novo');
       return r;
     }));
@@ -762,16 +767,16 @@ function verFotos(r, td, lista = null) {
     // dimensões da editada só quando mudaram (um corte); trocadas = só girada
     const mesmas = (r.a.editW === r.a.w && r.a.editH === r.a.h) || (r.a.editW === r.a.h && r.a.editH === r.a.w);
     const dimsEd = editada && r.a.editW && !mesmas ? `cortada: ${r.a.editW}×${r.a.editH} (original ${dimsTxt(r.a)})` : '';
-    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), carregando: icloudGrande(r.a) ? null : RENOVANDO });
+    fotos.push({ src: src(r.a, 'icloud'), rotulo: editada ? 'iCloud · como está agora (editada)' : 'iCloud', semImagem: SEM_ICLOUD, info: [dimsEd || dimsTxt(r.a), r.a.name].filter(Boolean).join(' · '), grande: icloudGrandeOuRenova(r.a), reserva: icloudGrande(r.a) ? icloudRenova(r.a, { forcar: true }) : null, carregando: icloudGrande(r.a) ? null : RENOVANDO });
     if (editada) {
       // o original fica ao lado: o Google pode ter guardado qualquer uma das duas
-      fotos.push({ src: icloudOriginal(r.a) || (r.a.thumbOrig || '').replace('${f}', 'thumb.jpg'), rotulo: 'iCloud · original, antes da edição', semImagem: SEM_ICLOUD, info: dimsTxt(r.a), grande: icloudGrandeOuRenova(r.a, { original: true }), carregando: icloudOriginal(r.a) ? null : RENOVANDO });
+      fotos.push({ src: icloudOriginal(r.a) || (r.a.thumbOrig || '').replace('${f}', 'thumb.jpg'), rotulo: 'iCloud · original, antes da edição', semImagem: SEM_ICLOUD, info: dimsTxt(r.a), grande: icloudGrandeOuRenova(r.a, { original: true }), reserva: icloudOriginal(r.a) ? icloudRenova(r.a, { original: true, forcar: true }) : null, carregando: icloudOriginal(r.a) ? null : RENOVANDO });
     } else if (r.a.edited) {
       fotos[fotos.length - 1].info = Promise.resolve(fotos[fotos.length - 1].info).then((t) => [t, 'editada no iPhone; o próximo percurso traz também o original'].filter(Boolean).join(' · '));
     }
   }
   if (r.dupOfIcloud?.thumb) {
-    fotos.push({ src: src(r.dupOfIcloud, 'icloud'), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: icloudGrandeOuRenova(r.dupOfIcloud), carregando: icloudGrande(r.dupOfIcloud) ? null : RENOVANDO });
+    fotos.push({ src: src(r.dupOfIcloud, 'icloud'), rotulo: 'iCloud (a que fica)', semImagem: SEM_ICLOUD, info: dimsTxt(r.dupOfIcloud), grande: icloudGrandeOuRenova(r.dupOfIcloud), reserva: icloudGrande(r.dupOfIcloud) ? icloudRenova(r.dupOfIcloud, { forcar: true }) : null, carregando: icloudGrande(r.dupOfIcloud) ? null : RENOVANDO });
   }
   if (r.dupOf?.thumb) {
     fotos.push({ src: src(r.dupOf, 'google'), rotulo: 'Google (a que fica)', info: dimsTxt(r.dupOf), grande: () => googleBlob(googleGrande(r.dupOf.thumb)), link: r.dupOf.key ? `https://photos.google.com/photo/${r.dupOf.key}` : null });

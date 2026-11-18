@@ -175,8 +175,9 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
   binária pela data em ~9 saltos.
 - **Regras de segurança:** não recarregar a aba repetidamente, não repetir
   consultas por conta própria, ritmo humano, parar no primeiro status ≥ 400.
-- URLs de miniatura e da versão média (`resJPEGMedRes`) expiram (410 depois
-  de ~6 h). A versão média falta em parte das fotos.
+- URLs de miniatura e da versão média (`resJPEGMedRes`) expiram: em 18/11
+  davam 410 a partir de 15 a 20 min depois de vistas (antes se medira ~6 h).
+  O servidor não aceita HEAD (501). A versão média falta em parte das fotos.
 - Campo `isHidden` = foto oculta. O álbum Ocultas, quando aberto no site,
   também passa pelo hook: as ocultas entram no inventário (agora com a marca).
 - Live Photo: `assetSubtypeV2` = 2 (conferido contra os tipos de arquivo) e

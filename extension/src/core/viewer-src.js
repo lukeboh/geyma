@@ -7,7 +7,9 @@
 //   medOrig/thumbOrig. Depois que expira, só a miniatura guardada (ou um link
 //   novo, pedido ao percurso).
 
-export const ICLOUD_URL_VALIDA_MS = 4 * 60 * 60 * 1000;
+// Medido em 18/11/2026: os links da Apple respondem até uns 10 min depois de
+// vistos e dão 410 a partir de 15 a 20 min (antes se supunha de 4 a 6 h).
+export const ICLOUD_URL_VALIDA_MS = 12 * 60 * 1000;
 
 export const googleGrande = (base, lado = 2400) => `${base}=w${lado}-h${lado}`;
 

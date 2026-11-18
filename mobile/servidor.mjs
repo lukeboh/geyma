@@ -201,7 +201,7 @@ const server = createServer(async (req, res) => {
       const id = url.searchParams.get('id') || '';
       if (!/^a:[A-Za-z0-9-]{1,80}$/.test(id)) return json(res, 400, { erro: 'item inválido' });
       const versao = url.searchParams.get('versao') === 'original' ? 'original' : 'atual';
-      return json(res, 200, await api('icloudRefresh', id, versao));
+      return json(res, 200, await api('icloudRefresh', id, versao, url.searchParams.get('forcar') === '1'));
     }
     if (url.pathname === '/api/thumb') {
       const u = url.searchParams.get('u') || '';

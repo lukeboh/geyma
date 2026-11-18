@@ -6,6 +6,7 @@ import { ETAPAS } from './core/calc-cache.js';
 import { classifyRow } from './core/classify.js';
 import { estadoIdentidade, matchLibraries, summarizeMatch, partialUntil, googlePhashNeeded, googleFileNeeded, isLive, paraCruzar } from './core/match.js';
 import { copiaNoGoogle } from './core/google-file.js';
+import { ICLOUD_URL_VALIDA_MS } from './core/viewer-src.js';
 import { melhorCopia, resumoQualidade } from './core/qualidade.js';
 import { analyzeDuplicates, candidateGroups, copiesBytes } from './core/dedup.js';
 
@@ -42,13 +43,19 @@ function versoesIcloud(a) {
  */
 export const faltaPhash = (a) => !a.phash || (a.edited && a.phashV !== 2);
 
-/** Itens do iCloud com miniatura e sem pHash que a imagem decidiria: pares disputados ou reduzidos e candidatas a duplicata. */
+/**
+ * Itens do iCloud sem pHash que a imagem decidiria (pares disputados ou
+ * reduzidos e candidatas a duplicata) e com o link da miniatura ainda válido;
+ * os outros são conferidos pelo próximo percurso, na hora em que ele os vê.
+ */
 function icloudPhashNeeded(pairs, dupPending, icloudById) {
   const need = new Map();
+  const agora = Date.now();
+  const vale = (a) => a.thumb && agora - (a.thumbAt || 0) < ICLOUD_URL_VALIDA_MS;
   for (const p of pairs) {
-    if ((p.cls === 'confirmar' || p.cls === 'reduzida' || p.parecida) && p.a.thumb && faltaPhash(p.a)) need.set(p.a.id, p.a);
+    if ((p.cls === 'confirmar' || p.cls === 'reduzida' || p.parecida) && vale(p.a) && faltaPhash(p.a)) need.set(p.a.id, p.a);
   }
-  for (const id of dupPending) { const a = icloudById.get(id); if (a?.thumb && !a.phash) need.set(id, a); }
+  for (const id of dupPending) { const a = icloudById.get(id); if (a && vale(a) && !a.phash) need.set(id, a); }
   return [...need.values()].map((a) => ({ id: a.id, url: a.thumb, urlOrig: a.thumbOrig || null, at: a.thumbAt || 0 }));
 }
 

@@ -169,9 +169,9 @@ window.geymaApi = {
   },
 
   /** Link novo de uma foto do iCloud (a extensão rola a grade do site até ela). Devolve a URL da versão maior disponível. */
-  async icloudRefresh(id, versao = 'atual') {
+  async icloudRefresh(id, versao = 'atual', forcar = false) {
     if (typeof id !== 'string' || !id.startsWith('a:')) throw new Error('item inválido');
-    const r = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id });
+    const r = await chrome.runtime.sendMessage({ kind: 'icloud-refresh', id, forcar: Boolean(forcar) });
     if (!r?.ok) return { ok: false, erro: r?.erro || 'sem link novo' };
     const url = (versao === 'original' ? linkOriginal(r) : linkAtual(r, { cheia: false })) || (r.thumb || '').replace('${f}', 'thumb.jpg');
     return url ? { ok: true, url } : { ok: false, erro: 'sem link novo' };

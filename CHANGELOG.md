@@ -2,6 +2,24 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.1 — 18/11/2026
+
+- Links do iCloud vencem em minutos, não em horas: medido depois do percurso
+  de 18/11, as miniaturas respondem até uns 10 min depois de vistas e dão 410
+  a partir de 15 a 20 min. A validade suposta caiu de 4 h para 12 min
+  (`ICLOUD_URL_VALIDA_MS`). Antes, o visualizador achava o link válido,
+  falhava e ficava na miniatura pequena sem pedir outro.
+- Visualizador (painel e celular): se a versão grande "ainda válida" falhar
+  ao carregar, ele pede um link novo na hora (`reserva`; a renovação aceita
+  `forcar`, que ignora a validade suposta).
+- A conferência pelas miniaturas do iCloud só oferece os itens com o link
+  ainda válido; os outros são conferidos pelo próximo percurso, que já faz
+  isso na hora em que vê cada foto.
+
+Verificação: 151 testes passando. Uso real: amostras por idade (5 a 55 min)
+mostraram o vencimento; renovação forçada de uma foto editada em cerca de
+7 s, com a versão cheia atual carregando.
+
 ## 0.3.0 — 18/11/2026
 
 Etapa 0.3 (extensão e inventário) concluída.
