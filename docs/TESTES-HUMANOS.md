@@ -10,6 +10,25 @@ Fotos e do Google Fotos abertas e carregadas, e um cruzamento recente.
 
 Legenda: ☐ não testado · ✅ passou · ❌ falhou · ➖ não se aplica.
 
+## Ordem sugerida
+
+Primeiro o que só olha (nada muda nos serviços), depois o que envia, e por
+último o que apaga. Cada etapa do roadmap fecha quando os casos dela passam.
+
+| Ordem | Casos | Muda algo nos serviços? | Fecha a etapa |
+|---|---|---|---|
+| 1 | V0 (chave Fotos, Vídeos e Tudo) | não | 0.9 |
+| 2 | I1 a I7 (identidade) | não (só as suas respostas no Geyma) | 0.4 (I1 é o critério) |
+| 3 | Q1, Q2 (qualidade) | não | 0.5 |
+| 4 | C1 a C5 (classificação) | não | 0.6 |
+| 5 | V1, V2, V4 (vídeos) | não | 0.9 |
+| 6 | E1, E2, L1 (ensaios) | não | 0.7 e 0.8 |
+| 7 | E3 a E9 (piloto: uma foto por vez) | **envia** | 0.7 |
+| 8 | V3 (piloto de vídeo) | **envia** | 0.9 |
+| 9 | E10 a E12 (lote, pausa, envio contínuo) | **envia** | 0.7 |
+| 10 | L2, L3 (lixeira) | **move para a lixeira** (recuperável) | 0.8 |
+| 11 | M1, M2, G1 (celular e Google) | M2 envia | — |
+
 ---
 
 ## 1. Envio pelo site (0.7)
@@ -104,14 +123,16 @@ Abra uma foto **Pendente** (por exemplo, uma captura de tela), uma marcada
 Observado:
 
 ### E10 — Envio em lote (só depois de E3 a E7 darem certo) ☐
-1. Revisão → Situação "Só no iCloud" (ou "Só no Google").
-2. A barra "Enviar ao … as próximas N fotos" aparece acima da lista.
-3. Clique **Enviar N** e depois **Confirmar o envio de N fotos**.
+1. Chave **Fotos**. Revisão → Situação "Só no iCloud" (ou "Só no Google").
+2. A barra "Enviar ao … os próximos 10 itens desta lista" aparece acima da
+   lista, com **Tamanho do lote** "até 10".
+3. Clique **Enviar 10**: o texto mostra o tamanho do lote e o espaço livre
+   do destino. Clique **Confirmar o envio de 10**.
 
-**Esperado:** "Enviando 1 de N…", uma foto a cada poucos segundos; o botão
-**Parar** interrompe entre uma foto e outra; ao fim, "N foto(s) entregue(s)".
-Nenhuma foto Pendente, vídeo ou repetida vai. No próximo cruzamento, as que
-chegaram somem da lista.
+**Esperado:** "Enviando 1 de 10…", um item a cada poucos segundos; **Parar**
+interrompe entre um e outro; ao fim, "N de 10 itens entregues". Nenhum item
+Pendente, Descartar ou repetido vai. No próximo cruzamento, os que chegaram
+somem da lista.
 Observado:
 
 ### E11 — Lote com pausa e cota ☐
@@ -154,7 +175,7 @@ Revisão → categoria **Propaganda**.
 Observado:
 
 ### C4 — Gravações de tela ☐
-Revisão → categoria "Captura de tela", Tipo "Só vídeos".
+Chave **Vídeos** → Revisão → categoria "Captura de tela".
 **Esperado:** as gravações de tela do iPhone (`ScreenRecording…`,
 `RPReplay…`) estão aqui, e não em "Pessoal (câmera)".
 Observado:
@@ -235,24 +256,28 @@ Observado:
 ### V4 — Quadros dos vídeos a confirmar ☐
 Deixe a aba do iCloud Fotos visível (outra janela). Bloco **Vídeos** →
 **Comparar quadros dos vídeos a confirmar**; depois de uns minutos,
-**Parar**. Abra pela Revisão ("Mesma foto: confirmada", chave em Vídeos)
-dois pares que acabaram de ser comparados.
-**Esperado:** o andamento conta "iguais" e "diferentes"; nos pares, o
-placar mostra "mesmos quadros"; assista os dois lados (▶ assistir): são o
-mesmo vídeo. Um par desfeito por quadros diferentes vira dois itens, cada
-um num serviço só.
+**Parar**. Chave **Vídeos** → Revisão → "Mesma foto: confirmada" → abra
+dois pares cujo placar mostra "mesmos quadros".
+**Esperado:** o andamento conta "iguais" e "diferentes"; assista os dois
+lados (▶ assistir): são o mesmo vídeo. Um par desfeito por quadros
+diferentes vira dois itens, cada um num serviço só. Se parar dizendo "deixe
+a aba do iCloud Fotos visível", traga a janela do iCloud para a frente e
+clique de novo (continua de onde parou).
 Observado:
 
-### V3 — Envio de um vídeo pequeno ☐
-Marque como Pessoal um vídeo só do iCloud com menos de 300 MB. No
-visualizador: **Ensaiar** e depois **Enviar ao Google**.
+### V3 — Envio de um vídeo (só depois de E3 e E6) ☐
+1. Chave **Vídeos** → Revisão → "Só no iCloud" → abra um vídeo curto
+   (menos de 1 minuto) marcado Pessoal.
+2. **Só baixar e conferir** e depois **Enviar ao Google Fotos**.
+3. Repita com um vídeo longo (mais de 300 MB) e com um vídeo só do Google
+   (**Enviar ao iCloud**).
+
 **Esperado:** o ensaio mostra o arquivo .MOV ou .MP4 com o tamanho do
-original; o envio aparece no Google Fotos com a data certa e toca; na
-próxima leitura do Google ele aparece como "chegou". Repita com um vídeo
-grande (mais de 300 MB): o ensaio mostra o andamento ("baixando o vídeo do
-iCloud", "conferindo o arquivo") e o notebook não fica lento. Faça também
-um vídeo só do Google ao iCloud (Enviar ao iCloud): ele aparece no iCloud
-com a data certa e toca.
+original; no vídeo longo, o andamento aparece ("baixando o vídeo",
+"conferindo o arquivo", "entregando ao site") e o notebook não fica lento.
+O vídeo aparece no destino com a data certa e toca; na próxima leitura do
+destino ele aparece como "chegou". Um vídeo só do Google sem o arquivo
+("o Google guarda só a capa") não mostra o botão de envio.
 Observado:
 
 ---
@@ -268,8 +293,9 @@ a página da foto abriu com o botão…". Nada some do Google.
 Observado:
 
 ### L2 — Mover uma cópia para a lixeira do Google ☐
-Com só uma cópia marcada Descartar: **Mover 1 para a lixeira do Google** →
-**Confirmar**.
+O botão move todas as marcadas Descartar (até 50 por vez): para o piloto,
+deixe **só uma** marcada (desmarque a outra do L1). Depois **Mover 1 para a
+lixeira do Google** → **Confirmar: mover 1 para a lixeira**.
 **Esperado:** "1 movidos para a lixeira do Google"; no Google Fotos, a cópia
 está na Lixeira (e pode ser restaurada), e a que fica continua na
 biblioteca. O bloco diz "Já na lixeira pelo Geyma: 1 no Google".
@@ -364,7 +390,10 @@ Observado:
 ## 5. Google
 
 ### G1 — Fichas dos arquivos do Google ☐
-Cartão "O que fazer agora" → ler as fichas dos arquivos que faltam.
-**Esperado:** a leitura avança; se o Google der erro, ela para e diz qual
-(a última parou num 500).
+Cartão "O que fazer agora" → ler as fichas dos arquivos que faltam (fotos
+na chave Fotos; vídeos na chave Vídeos).
+**Esperado:** a leitura avança até o fim; um erro do Google num arquivo só
+(404, 500) é pulado; vídeos que o Google não tem mais ficam anotados como
+"só a capa"; uma recusa do Google (401, 403, 429) ou cinco erros seguidos
+param a leitura, dizendo qual foi.
 Observado:

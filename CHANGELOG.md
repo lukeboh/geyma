@@ -2,6 +2,15 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.27 — 18/11/2026
+
+- Testes humanos revisados: ordem sugerida (primeiro o que só olha, depois
+  o que envia, por último o que apaga), com a etapa que cada caso fecha;
+  E10, C4, V3, V4, L2 e G1 atualizados para o lote com cota, a chave
+  Fotos | Vídeos, o envio de vídeos sem limite e as fichas que pulam erros.
+
+Verificação: só documentação.
+
 ## 0.3.26 — 18/11/2026
 
 - Documentação: próximos passos e pendências de decisão do HANDOFF
