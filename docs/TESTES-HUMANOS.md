@@ -17,6 +17,7 @@ Primeiro o que só olha (nada muda nos serviços), depois o que envia, e por
 
 | Ordem | Casos | Muda algo nos serviços? | Fecha a etapa |
 |---|---|---|---|
+| 0 | U1 (dicas dos controles) | não | — |
 | 1 | V0 (chave Fotos, Vídeos e Tudo) | não | 0.9 |
 | 2 | I1 a I7 (identidade) | não (só as suas respostas no Geyma) | 0.4 (I1 é o critério) |
 | 3 | Q1, Q2 (qualidade) | não | 0.5 |
@@ -28,6 +29,18 @@ Primeiro o que só olha (nada muda nos serviços), depois o que envia, e por
 | 9 | E10 a E12 (lote, pausa, envio contínuo) | **envia** | 0.7 |
 | 10 | L2, L3 (lixeira) | **move para a lixeira** (recuperável) | 0.8 |
 | 11 | M1, M2, G1 (celular e Google) | M2 envia | — |
+
+---
+
+## 0. Uso da tela
+
+### U1 — Dicas dos controles ☐
+Passe o mouse sobre os botões, seletores e caixas das três abas e do
+visualizador (abra uma foto).
+**Esperado:** cada um mostra uma dica que diz o que faz e se muda algo nos
+serviços; nenhuma dica confunde ou promete o que o botão não faz. Anote as
+que ficaram longas ou pouco claras.
+Observado:
 
 ---
 

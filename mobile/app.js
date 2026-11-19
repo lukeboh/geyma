@@ -303,10 +303,10 @@ function vereditoDa(l) {
   if (!p) return {};
   const age = (tipo, g = p.g) => async () => { await post('/api/veredito', { a: p.a, g, tipo }); return RESPOSTA[tipo]; };
   if (p.g) {
-    if (p.ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', aoClicar: age('desfazer') }] };
-    return { pergunta: `Estas fotos são a mesma?${l.placar ? ` (${l.placar[0].toUpperCase()}${l.placar.slice(1)}.)` : ''}`, acoes: [{ rotulo: 'São a mesma foto', aoClicar: age('mesma') }, { rotulo: 'São fotos diferentes', aoClicar: age('diferente') }] };
+    if (p.ja === 'mesma') return { pergunta: 'Você disse que são a mesma foto.', acoes: [{ rotulo: 'Desfazer', titulo: 'Volta para a decisão automática do Geyma', aoClicar: age('desfazer') }] };
+    return { pergunta: `Estas fotos são a mesma?${l.placar ? ` (${l.placar[0].toUpperCase()}${l.placar.slice(1)}.)` : ''}`, acoes: [{ rotulo: 'São a mesma foto', titulo: 'Conta como guardada nos dois serviços', aoClicar: age('mesma') }, { rotulo: 'São fotos diferentes', titulo: 'Desfaz o par: cada foto passa a contar só no seu serviço', aoClicar: age('diferente') }] };
   }
-  if (p.recusados) return { pergunta: 'Você disse que esta foto é diferente da do Google.', acoes: [{ rotulo: 'Desfazer', aoClicar: age('desfazer', null) }] };
+  if (p.recusados) return { pergunta: 'Você disse que esta foto é diferente da do Google.', acoes: [{ rotulo: 'Desfazer', titulo: 'Volta para a decisão automática do Geyma', aoClicar: age('desfazer', null) }] };
   return {};
 }
 
@@ -327,8 +327,8 @@ function envioDa(l) {
     return `Entregue ao site do ${nome} no notebook: ${arqs}. Veja lá se o envio terminou.`;
   };
   const acoes = [];
-  if (e.estado !== 'enviado' && e.estado !== 'chegou') acoes.push({ rotulo: `Enviar ao ${nome}`, seguir: false, aoClicar: pedir(false) });
-  acoes.push({ rotulo: 'Só baixar e conferir', seguir: false, aoClicar: pedir(true) });
+  if (e.estado !== 'enviado' && e.estado !== 'chegou') acoes.push({ rotulo: `Enviar ao ${nome}`, titulo: `Envia de verdade: o notebook baixa o original e o entrega ao botão de envio do site do ${nome}`, seguir: false, aoClicar: pedir(false) });
+  acoes.push({ rotulo: 'Só baixar e conferir', titulo: 'Ensaio: o notebook baixa o arquivo e confere, sem enviar nada', seguir: false, aoClicar: pedir(true) });
   const pergunta = e.estado ? `Envio ao ${nome}: ${ESTADO_ENVIO[e.estado] || e.estado}${e.erro ? ` (${e.erro})` : ''}.` : '';
   return { pergunta, acoes };
 }
@@ -403,6 +403,7 @@ function abrirDetalhe(i) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = lab;
+    b.title = `Marca esta foto como ${lab}. Muda só a decisão no Geyma.`;
     if (l.decision === k) b.classList.add('atual');
     b.addEventListener('click', async () => { $('detalhe').hidden = true; await marcar([l], k); });
     return b;

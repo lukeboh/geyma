@@ -269,6 +269,7 @@ function renderProtection() {
     card.innerHTML = `<h3><i class="swatch c-${k}"></i>${CLASSES[k]}</h3><p class="big">${fmt.format(t[k])}</p><p class="hint">${expl[k]}</p>${extra}`;
     const btn = document.createElement('button');
     btn.textContent = 'Ver lista';
+    btn.title = `Abre a Revisão com só os itens "${CLASSES[k]}", para ver e marcar um a um. Só muda a vista.`;
     btn.disabled = !t[k];
     btn.addEventListener('click', () => { $('r-cls').value = k; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' })); });
     card.append(btn);
@@ -326,8 +327,8 @@ function renderGoogleFiles() {
     const m = q.motivos;
     const det = [m.googleMenor && `${fmt.format(m.googleMenor)} menores`, m.googleConvertida && `${fmt.format(m.googleConvertida)} convertidas`, m.googleRecomprimida && `${fmt.format(m.googleRecomprimida)} recomprimidas`, m.googleRecortada && `${fmt.format(m.googleRecortada)} recortadas`, m.googleSemMovimento && `${fmt.format(m.googleSemMovimento)} sem o movimento`].filter(Boolean).join(', ');
     partes.push(`<br><b>Melhor cópia</b> dos ${fmt.format(q.pares)} itens que estão nos dois: equivalentes em ${fmt.format(q.iguais)}; `
-      + `<a href="#rev" data-cls="melhorIcloud">no iCloud em <b>${fmt.format(q.icloud + q.misto)}</b></a>${det ? ` (no Google: ${det})` : ''}; `
-      + `<a href="#rev" data-cls="melhorGoogle">no Google em ${fmt.format(q.google + q.misto)}</a>${q.misto ? ` (${fmt.format(q.misto)} com vantagem dos dois lados)` : ''}.`);
+      + `<a href="#rev" data-cls="melhorIcloud" title="Abre a Revisão com os pares em que o iCloud guarda a melhor cópia (o Google tem uma menor, convertida, recomprimida ou sem o movimento)">no iCloud em <b>${fmt.format(q.icloud + q.misto)}</b></a>${det ? ` (no Google: ${det})` : ''}; `
+      + `<a href="#rev" data-cls="melhorGoogle" title="Abre a Revisão com os pares em que o Google guarda a melhor cópia">no Google em ${fmt.format(q.google + q.misto)}</a>${q.misto ? ` (${fmt.format(q.misto)} com vantagem dos dois lados)` : ''}.`);
   }
   $('m-gf').innerHTML = partes.join(' ');
   for (const a of $('m-gf').querySelectorAll('a[data-cls]')) {
@@ -355,7 +356,7 @@ function renderVideos() {
   const semDur = v.pares.semDuracao + v.soIcloud.semDuracao;
   const partes = [
     `<b>${fmt.format(v.pares.n)}</b> vídeos estão nos dois serviços (${horas(v.pares)}, ${GB(v.pares.bytes)} no iCloud); <b>${fmt.format(v.soIcloud.n)}</b> só no iCloud (${horas(v.soIcloud)}, ${GB(v.soIcloud.bytes)}) e <b>${fmt.format(v.soGoogle.n)}</b> só no Google (${horas(v.soGoogle)}).`,
-    `Mesmo vídeo: ${fmt.format(v.identidade.confirmada)} confirmados, ${fmt.format(v.identidade.provavel)} prováveis e <a href="#rev" data-vid="confirmar"><b>${fmt.format(v.identidade.incerta)}</b> a confirmar</a>.`,
+    `Mesmo vídeo: ${fmt.format(v.identidade.confirmada)} confirmados, ${fmt.format(v.identidade.provavel)} prováveis e <a href="#rev" data-vid="confirmar" title="Abre a Revisão com os pares de vídeo a confirmar, para assistir os dois lados e responder"><b>${fmt.format(v.identidade.incerta)}</b> a confirmar</a>.`,
     `Pela duração: ${fmt.format(v.duracao.igual)} iguais, ${fmt.format(v.duracao.lenta)} em câmera lenta (o Google conta o tempo em câmera lenta), ${fmt.format(v.duracao.proxima)} próximas e <b>${fmt.format(v.duracao.diferente)}</b> diferentes${v.duracao.semDuracao ? `; ${fmt.format(v.duracao.semDuracao)} pares ainda sem a duração do iCloud` : ''}.`,
   ];
   if (semDur) partes.push('A duração dos vídeos do iCloud chega no próximo percurso da biblioteca (aba Inventário).');
@@ -365,7 +366,7 @@ function renderVideos() {
   }
   if (v.soGoogleIndisponivel) partes.push(`<b>${fmt.format(v.soGoogleIndisponivel)}</b> vídeos só do Google não têm mais o arquivo lá (o Google guarda só a capa): não há o que enviar ao iCloud.`);
   partes.push(need.length ? `Faltam conferir ${fmt.format(need.length)} arquivos de vídeo do Google.` : 'Todos os arquivos de vídeo do Google já foram conferidos.');
-  if (v.melhorIcloud) partes.push(`<a href="#rev" data-vid="melhorIcloud">Melhor cópia no iCloud em <b>${fmt.format(v.melhorIcloud)}</b> vídeos</a>.`);
+  if (v.melhorIcloud) partes.push(`<a href="#rev" data-vid="melhorIcloud" title="Abre a Revisão com os vídeos cuja melhor cópia está no iCloud">Melhor cópia no iCloud em <b>${fmt.format(v.melhorIcloud)}</b> vídeos</a>.`);
   if (v.movimentoLive) partes.push(`${fmt.format(v.movimentoLive)} vídeos curtos só do Google são o movimento de uma Live Photo do iCloud, enviado à parte (ficam Pendentes).`);
   if (v.misturados) partes.push(`${fmt.format(v.misturados)} pares juntam uma foto e um vídeo (decididos por você ou de leituras antigas do Google).`);
   $('m-vid').innerHTML = partes.join(' ');
@@ -802,14 +803,14 @@ const irPara = (filtro) => {
   page = 0; renderList(); document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'rev' }));
 };
 const PASSO = {
-  conferirGoogle: { botao: 'Conferir', fazer: () => $('m-phash').click() },
-  conferirIcloud: { botao: 'Conferir', fazer: () => $('m-ic-run').click() },
-  arquivosGoogle: { botao: 'Conferir', fazer: () => $('m-gf-run').click() },
-  arquivosVideo: { botao: 'Conferir', fazer: () => $('m-vf-run').click() },
-  responderPares: { botao: 'Começar', fazer: () => { irPara({ cls: 'idIncerta' }); const l = filtered(); for (const r of l) if (verFotos(r, null, l)) break; } },
-  percorrerIcloud: { botao: 'Ir ao Inventário', fazer: () => document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'inv' })) },
-  enviar: { botao: 'Ver a lista', fazer: () => irPara({ cls: 'soIcloud' }) },
-  revisarPendentes: { botao: 'Ver categorias', fazer: () => $('m-cat-box').scrollIntoView({ behavior: 'smooth', block: 'start' }) },
+  conferirGoogle: { botao: 'Conferir', dica: 'Começa a comparação das miniaturas do Google (bloco Duplicatas). Só leitura; leva alguns minutos.', fazer: () => $('m-phash').click() },
+  conferirIcloud: { botao: 'Conferir', dica: 'Começa o desempate pelas miniaturas do iCloud. Só leitura.', fazer: () => $('m-ic-run').click() },
+  arquivosGoogle: { botao: 'Conferir', dica: 'Começa a conferência dos arquivos de foto do Google (só os cabeçalhos, nada é baixado).', fazer: () => $('m-gf-run').click() },
+  arquivosVideo: { botao: 'Conferir', dica: 'Começa a conferência dos arquivos de vídeo do Google (só os cabeçalhos, nada é baixado).', fazer: () => $('m-vf-run').click() },
+  responderPares: { botao: 'Começar', dica: 'Abre o primeiro par incerto no visualizador. Responda com M (mesma) ou D (diferentes); ele passa sozinho para o próximo. Muda só o cruzamento no Geyma.', fazer: () => { irPara({ cls: 'idIncerta' }); const l = filtered(); for (const r of l) if (verFotos(r, null, l)) break; } },
+  percorrerIcloud: { botao: 'Ir ao Inventário', dica: 'Vai à aba Inventário, onde fica o botão do percurso do iCloud.', fazer: () => document.dispatchEvent(new CustomEvent('geyma-tab', { detail: 'inv' })) },
+  enviar: { botao: 'Ver a lista', dica: 'Abre a Revisão com os itens só do iCloud. Lá, cada item tem "Enviar" no visualizador, e a barra de lote envia vários. Abrir a lista não envia nada.', fazer: () => irPara({ cls: 'soIcloud' }) },
+  revisarPendentes: { botao: 'Ver categorias', dica: 'Rola até o bloco "Pessoal ou lixo?", onde cada categoria abre a sua lista para marcar em lote.', fazer: () => $('m-cat-box').scrollIntoView({ behavior: 'smooth', block: 'start' }) },
 };
 async function renderPassos() {
   const [concl, prog] = await Promise.all([getMeta('icloudCompleted'), getMeta('phashProgress')]);
@@ -821,6 +822,7 @@ async function renderPassos() {
     if (p.id === 'percorrerIcloud' && p.n === 1) li.querySelector('b').remove();
     const b = document.createElement('button');
     b.textContent = PASSO[p.id].botao;
+    b.title = PASSO[p.id].dica;
     b.addEventListener('click', PASSO[p.id].fazer);
     li.append(b);
     return li;
@@ -867,6 +869,7 @@ function renderCategories() {
     el.innerHTML = `<span>${label}</span><span class="n">${fmt.format(counts[k] || 0)}</span><span class="hint">sugestão: ${sug}</span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Revisar';
+    btn.title = `Abre a Revisão com só a categoria "${label}", para conferir e marcar em lote. A sugestão desta categoria é ${sug}.`;
     btn.disabled = !counts[k];
     btn.addEventListener('click', () => {
       $('r-cls').value = ''; $('r-cat').value = k; $('r-dec').value = ''; page = 0; renderList();
@@ -887,6 +890,7 @@ function renderDup() {
       + `<span class="hint">${tipo === 'video' ? 'vídeos diferentes' : tipo === 'foto' ? 'fotos diferentes' : 'itens diferentes'} no mesmo segundo: ${fmt.format(d.diferentes)} · incertos: ${fmt.format(d.incertos)} · ainda sem conferir: ${fmt.format(d.pendentes)}${pend}</span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Ver cópias';
+    btn.title = `Abre a Revisão com as cópias repetidas do ${title}, cada uma ao lado da que fica. Marque Descartar as que quiser tirar; nada é apagado sem o bloco Lixeira.`;
     btn.disabled = !d.copias;
     btn.addEventListener('click', () => {
       $('r-cls').value = filter; $('r-cat').value = ''; $('r-dec').value = ''; page = 0; renderList();
@@ -1075,6 +1079,7 @@ function renderList() {
     if (r.why) cat.title = r.why;
     const sel = document.createElement('select');
     sel.setAttribute('aria-label', 'Marcação');
+    sel.title = 'Sua decisão para este item: Pessoal e Manter podem ir para o outro serviço; Pendente espera; Descartar nunca é copiado. "sugestão" deixa a decisão do Geyma. Grava na hora, só no Geyma.';
     sel.append(new Option(`sugestão: ${DECISIONS[suggestDecision(r.cat)]}`, ''));
     for (const [k, l] of Object.entries(DECISIONS)) sel.append(new Option(l, k));
     sel.value = r.decision || '';
@@ -1807,6 +1812,7 @@ function renderGrid() {
     tile.className = 'tile';
     const box = document.createElement('input');
     box.type = 'checkbox';
+    box.title = 'Seleciona este item para marcar junto com os outros pela barra de seleção.';
     box.addEventListener('change', () => {
       if (box.checked) selected.add(r); else selected.delete(r);
       tile.classList.toggle('on', box.checked);

@@ -16,16 +16,16 @@
       <button class="icone-btn" id="ajuda" type="button" aria-label="Ver o guia passo a passo desta etapa" title="Ver o guia passo a passo desta etapa">?</button>
       <button class="icone-btn" id="tema" type="button" aria-label="Trocar tema claro/escuro" title="Trocar tema claro/escuro">◐</button>
     </div>
-    <p class="note">Tudo fica neste navegador. Nada é copiado, alterado ou apagado nos serviços.</p>
+    <p class="note">Tudo fica neste navegador. Ler, conferir e marcar não muda nada nos serviços; só os botões de <b>enviar</b> e de <b>lixeira</b> mudam, e sempre depois do seu clique e da sua confirmação. Passe o mouse sobre qualquer botão para saber o que ele faz.</p>
     <nav class="steps" role="tablist" aria-label="Etapas">
-      <button role="tab" id="tab-inv" aria-controls="view-inv" aria-selected="true"><span class="n">1</span>Inventário</button>
-      <button role="tab" id="tab-prot" aria-controls="view-prot" aria-selected="false"><span class="n">2</span>Proteção</button>
-      <button role="tab" id="tab-rev" aria-controls="view-rev" aria-selected="false"><span class="n">3</span>Revisão</button>
+      <button role="tab" id="tab-inv" title="Etapa 1, Inventário: ler o que existe em cada serviço. Mostra quantas fotos e vídeos o Geyma já conhece no Google e no iCloud." aria-controls="view-inv" aria-selected="true"><span class="n">1</span>Inventário</button>
+      <button role="tab" id="tab-prot" title="Etapa 2, Proteção: o cruzamento dos dois serviços. O que está nos dois, o que está num só, cópias repetidas, qualidade e o que enviar." aria-controls="view-prot" aria-selected="false"><span class="n">2</span>Proteção</button>
+      <button role="tab" id="tab-rev" title="Etapa 3, Revisão: a lista item a item, com filtros, para marcar Pessoal, Manter, Pendente ou Descartar e abrir cada foto lado a lado." aria-controls="view-rev" aria-selected="false"><span class="n">3</span>Revisão</button>
     </nav>
     <div class="tipo-chave" id="tipo-chave" role="radiogroup" aria-label="Mostrar fotos ou vídeos">
-      <button type="button" role="radio" data-tipo="foto" aria-checked="true">Fotos</button>
-      <button type="button" role="radio" data-tipo="video" aria-checked="false">Vídeos</button>
-      <button type="button" role="radio" data-tipo="" aria-checked="false">Tudo</button>
+      <button type="button" role="radio" data-tipo="foto" aria-checked="true" title="Mostra só as fotos em todas as etapas (Inventário, Proteção e Revisão). Os vídeos continuam guardados; só saem da vista.">Fotos</button>
+      <button type="button" role="radio" data-tipo="video" aria-checked="false" title="Mostra só os vídeos em todas as etapas, com o bloco Vídeos na Proteção (duração, arquivos do Google, quadros).">Vídeos</button>
+      <button type="button" role="radio" data-tipo="" aria-checked="false" title="Mostra fotos e vídeos juntos.">Tudo</button>
     </div>
   </header>
 
@@ -41,10 +41,10 @@
           <dt>Situação</dt><dd id="g-state">não iniciado</dd>
         </dl>
         <div class="actions">
-          <button id="g-start" class="primary">Ler catálogo</button>
-          <button id="g-stop">Parar</button>
+          <button id="g-start" title="Lê o catálogo inteiro do Google Fotos pela aba do Google (só leitura, como rolar a biblioteca). Leva alguns minutos e roda mesmo com a aba em segundo plano. Nada muda no Google." class="primary">Ler catálogo</button>
+          <button id="g-stop" title="Para a leitura do Google entre uma página e outra. O que já foi lido fica guardado.">Parar</button>
         </div>
-        <p class="hint">A leitura roda na aba do Google Fotos, mesmo em segundo plano.</p>
+        <p class="hint"><b>Ler catálogo</b> pede ao Google, pela aba do Google Fotos, a lista das suas fotos e vídeos, página por página (só leitura; roda mesmo com a aba em segundo plano). Depois, o painel conta tudo aqui e a Proteção refaz o cruzamento.</p>
       </article>
 
       <article class="card" data-site="icloud">
@@ -57,13 +57,13 @@
           <dt>Situação</dt><dd id="a-state">não iniciado</dd>
         </dl>
         <div class="actions">
-          <button id="a-start" class="primary">Percorrer biblioteca</button>
-          <button id="a-resume">Continuar de onde parou</button>
-          <button id="a-stop">Parar</button>
+          <button id="a-start" title="Percorre a biblioteca do iCloud do começo: o Geyma rola a grade de fotos como uma pessoa e guarda o que o próprio site mostra. Só leitura; para no primeiro erro da Apple. O notebook não pode dormir até acabar." class="primary">Percorrer biblioteca</button>
+          <button id="a-resume" title="Continua o percurso do iCloud do ponto em que parou, sem começar de novo.">Continuar de onde parou</button>
+          <button id="a-stop" title="Para o percurso do iCloud. O que já foi visto fica guardado; depois dá para continuar de onde parou.">Parar</button>
         </div>
         <p class="hint">O Geyma rola a grade como uma pessoa e para no primeiro erro do servidor. Funciona com a janela coberta ou a tela bloqueada (aparece o aviso de depuração do Chrome enquanto roda); o notebook só não pode dormir.</p>
         <details id="a-counts-box" hidden>
-          <summary>Contagens informadas pela Apple</summary>
+          <summary title="Os totais que o próprio site do iCloud informa (para conferir se o percurso viu tudo).">Contagens informadas pela Apple</summary>
           <ul id="a-counts"></ul>
         </details>
       </article>
@@ -80,7 +80,7 @@
       <div id="chart" class="chart" role="img" aria-label="Barras por ano comparando Google Fotos e iCloud Fotos"></div>
       <div id="tooltip" class="tooltip" hidden></div>
       <details>
-        <summary>Ver como tabela</summary>
+        <summary title="Mostra os mesmos números do gráfico numa tabela, ano a ano.">Ver como tabela</summary>
         <table id="year-table">
           <thead><tr><th>Ano</th><th>Google</th><th>iCloud</th></tr></thead>
           <tbody></tbody>
@@ -89,7 +89,8 @@
     </section>
 
     <section class="panel tools">
-      <button id="export">Exportar inventário (JSON)</button>
+      <span class="hint">O arquivo exportado traz só os dados lidos (datas, tamanhos, nomes), nunca as fotos.</span>
+      <button id="export" title="Baixa um arquivo JSON com o inventário dos dois serviços (só os dados lidos: datas, tamanhos, nomes; nenhuma foto). O arquivo fica no notebook.">Exportar inventário (JSON)</button>
       <span class="muted" id="msg" role="status"></span>
     </section>
   </main>
@@ -101,12 +102,14 @@
       <p class="muted" id="m-sub"></p>
       <p class="muted" id="m-ident" hidden></p>
       <p id="m-protecao" hidden></p>
-      <div class="actions"><button id="m-refresh">Recalcular</button><span class="muted" id="m-time"></span></div>
+      <div class="actions"><button id="m-refresh" title="Refaz o cruzamento com o inventário de agora: compara os dois serviços e atualiza todos os números desta aba e da Revisão. Roda no notebook; nada muda nos serviços.">Recalcular</button><span class="muted" id="m-time"></span></div>
       <p class="calc-prog" id="m-prog" role="status" hidden><progress max="7"></progress> <span></span></p>
+      <p class="hint">O cruzamento compara os dois inventários aqui no notebook: o mesmo instante, as mesmas dimensões e, quando há, a imagem, o nome do arquivo e a duração dizem que é a mesma foto. Ele é refeito sozinho quando o inventário muda; <b>Recalcular</b> força agora. Nada muda nos serviços.</p>
     </section>
 
     <section class="panel" id="m-passos-box" hidden>
       <h2>O que fazer agora</h2>
+      <p class="hint">Os próximos passos que dependem de você, em ordem, com quantos itens cada um envolve. O botão de cada passo só leva ao lugar certo ou começa uma conferência de leitura; nenhum deles envia nem apaga.</p>
       <ol id="m-passos" class="passos"></ol>
     </section>
 
@@ -123,11 +126,11 @@
       <h2>Envio contínuo do que é novo</h2>
       <p class="hint">No lugar do backup automático do celular. Com este painel aberto, a cada 6 horas o Geyma lê as novidades do Google, recarrega a aba do iCloud Fotos (o próprio site traz as fotos recentes), refaz o cruzamento e envia ao outro serviço o que foi capturado a partir da data escolhida e só está num lado. Só vai o que está Pessoal ou Manter (pela sua marcação ou pela sugestão), sem repetidas; confere o espaço livre antes e para no primeiro erro. Faça antes o piloto de envio (docs/TESTES-HUMANOS.md).</p>
       <div class="actions">
-        <label><input type="checkbox" id="m-cont-on"> Ligado</label>
-        <label><input type="checkbox" id="m-cont-g"> iCloud → Google</label>
-        <label><input type="checkbox" id="m-cont-a"> Google → iCloud</label>
-        <label>Capturados a partir de <input type="date" id="m-cont-desde"></label>
-        <button id="m-cont-agora">Verificar agora</button>
+        <label title="Liga ou desliga o envio contínuo. Ligado, com este painel aberto, a cada 6 horas o Geyma lê as novidades, refaz o cruzamento e envia o que é novo e está num lado só (Pessoal ou Manter). Isso envia de verdade."><input type="checkbox" id="m-cont-on"> Ligado</label>
+        <label title="Envia ao Google as fotos e vídeos novos que estão só no iCloud."><input type="checkbox" id="m-cont-g"> iCloud → Google</label>
+        <label title="Envia ao iCloud as fotos e vídeos novos que estão só no Google."><input type="checkbox" id="m-cont-a"> Google → iCloud</label>
+        <label title="Só entra no envio contínuo o que foi capturado a partir desta data. Nada mais antigo vai.">Capturados a partir de <input type="date" id="m-cont-desde"></label>
+        <button id="m-cont-agora" title="Roda um ciclo do envio contínuo agora (só com ele ligado): lê as novidades do Google, recarrega a aba do iCloud, refaz o cruzamento e envia o que for novo.">Verificar agora</button>
       </div>
       <p class="muted" id="m-cont-state" role="status"></p>
     </section>
@@ -139,8 +142,8 @@
       <h3>Pela imagem</h3>
       <p id="m-clip"></p>
       <div class="actions">
-        <button id="m-clip-run" class="primary" hidden>Classificar pela imagem</button>
-        <button id="m-clip-stop" hidden>Parar</button>
+        <button id="m-clip-run" title="Classifica pela imagem: um modelo visual (CLIP) olha a miniatura de cada foto, aqui no notebook, e diz se parece foto pessoal, captura de tela, documento ou propaganda. Muda só a sugestão no Geyma; nada sai do notebook nem muda nos serviços." class="primary" hidden>Classificar pela imagem</button>
+        <button id="m-clip-stop" title="Para a classificação. O que já foi olhado fica guardado; clicar de novo continua de onde parou." hidden>Parar</button>
         <span class="muted" id="m-clip-state" role="status"></span>
       </div>
       <p class="hint">Um modelo visual (CLIP) olha a miniatura de cada foto, aqui no notebook, e diz se parece foto pessoal, captura de tela, documento, propaganda ou imagem da internet. Decide as indefinidas e tira das pessoais o que é claramente outra coisa, que fica Pendente para você. Na primeira vez baixa o modelo (89 MB, uma vez só); nenhuma foto sai do notebook. Pode parar e continuar depois: o que já foi olhado fica guardado.</p>
@@ -153,7 +156,7 @@
       </div>
       <div id="m-chart" class="chart" role="img" aria-label="Colunas empilhadas por ano com a situação de cada foto"></div>
       <details>
-        <summary>Ver como tabela</summary>
+        <summary title="Mostra os mesmos números do gráfico numa tabela, ano a ano.">Ver como tabela</summary>
         <table id="m-table"><thead></thead><tbody></tbody></table>
       </details>
     </section>
@@ -166,8 +169,8 @@
         <article id="m-dup-a"></article>
       </div>
       <div class="actions">
-        <button id="m-phash" class="primary" hidden>Conferir pelas miniaturas</button>
-        <button id="m-phash-stop" hidden>Parar</button>
+        <button id="m-phash" title="Compara as miniaturas do Google (pHash, uma impressão da imagem) para dizer se duas fotos do mesmo segundo são a mesma imagem. Baixa só miniaturas; nada muda no Google." class="primary" hidden>Conferir pelas miniaturas</button>
+        <button id="m-phash-stop" title="Para a comparação das miniaturas do Google. O que já foi comparado fica guardado." hidden>Parar</button>
         <span class="muted" id="m-phash-state" role="status"></span>
       </div>
       <p class="hint">Provas, da mais forte para a mais fraca: arquivo idêntico (impressão digital do original), mesma imagem pelo pHash da miniatura, e só então mesmo segundo com as mesmas dimensões, que sozinho não basta (fotos em sequência também caem aí). Marcar uma cópia como Descartar só registra a decisão; remover dos serviços será uma etapa à parte, sempre com a sua confirmação.</p>
@@ -177,10 +180,10 @@
       <h2>Lixeira: o que você marcou Descartar</h2>
       <p id="m-lix"></p>
       <div class="actions">
-        <button id="m-lix-ensaio">Ensaiar com 1 no Google</button>
-        <button id="m-lix-go" class="primary"></button>
-        <button id="m-lix-stop" hidden>Parar</button>
-        <button id="m-lix-csv">Lista para apagar no iCloud (CSV)</button>
+        <button id="m-lix-ensaio" title="Ensaio da lixeira: abre a página da primeira foto marcada Descartar numa aba em segundo plano e confere que o botão &quot;Mover para a lixeira&quot; está lá. Não clica em nada; nada muda no Google.">Ensaiar com 1 no Google</button>
+        <button id="m-lix-go" title="Move para a lixeira do Google as fotos que você marcou Descartar (até 50 por vez), uma por vez, pelo próprio botão do site. Pede confirmação no primeiro clique. A lixeira do Google guarda por 60 dias e dá para restaurar." class="primary"></button>
+        <button id="m-lix-stop" title="Para de mover para a lixeira, entre uma foto e outra." hidden>Parar</button>
+        <button id="m-lix-csv" title="Baixa uma planilha (CSV) com a data, o nome e o tamanho dos itens do iCloud marcados Descartar, para você apagar no app Fotos. O Geyma não apaga nada no iCloud.">Lista para apagar no iCloud (CSV)</button>
         <span class="muted" id="m-lix-state" role="status"></span>
       </div>
       <p class="hint">Só vai o que você marcou Descartar (a sugestão nunca basta); de uma cópia repetida, só quando a melhor fica. Nada é apagado de vez: no Google, o Geyma usa o próprio botão "Mover para a lixeira" de cada foto, um por vez, depois da sua confirmação, e a lixeira guarda por 60 dias. No iCloud, o Geyma não apaga (só lê o iCloud); a lista traz a data e o nome de cada item para você apagar no app Fotos, e o próximo percurso confere o que saiu. O ensaio só confere que a página da foto abre com o botão, sem clicar.</p>
@@ -190,8 +193,8 @@
       <h2>Desempate com as miniaturas do iCloud</h2>
       <p id="m-ic"></p>
       <div class="actions">
-        <button id="m-ic-run" class="primary">Conferir pelas miniaturas do iCloud</button>
-        <button id="m-ic-stop" hidden>Parar</button>
+        <button id="m-ic-run" title="Desempata pares pela miniatura do iCloud: compara a imagem do iCloud com as candidatas do Google para achar qual é a mesma foto. Baixa só miniaturas; nada muda nos serviços." class="primary">Conferir pelas miniaturas do iCloud</button>
+        <button id="m-ic-stop" title="Para o desempate pelas miniaturas do iCloud. O que já foi comparado fica guardado." hidden>Parar</button>
         <span class="muted" id="m-ic-state" role="status"></span>
       </div>
       <p class="hint">Pares "a confirmar" e cópias reduzidas: a miniatura do iCloud diz qual foto do Google é a mesma. As URLs das miniaturas do iCloud são temporárias e vêm do percurso da biblioteca; se tiverem expirado, a conferência para e pede um novo percurso. Baixa só miniaturas (não consulta a Apple por conta própria), até 8 por vez.</p>
@@ -201,18 +204,18 @@
       <h2>Como o Google guarda as suas fotos</h2>
       <p id="m-gf"></p>
       <div class="actions">
-        <button id="m-gf-run" class="primary">Conferir os arquivos do Google</button>
-        <button id="m-gf-stop" hidden>Parar</button>
+        <button id="m-gf-run" title="Confere como o Google guarda cada foto: lê só o cabeçalho do download (formato, tamanho, nome), sem baixar a foto. Diz se é o original, uma cópia convertida ou recomprimida. Nada muda no Google." class="primary">Conferir os arquivos do Google</button>
+        <button id="m-gf-stop" title="Para a conferência dos arquivos do Google. O que já foi conferido fica guardado." hidden>Parar</button>
         <span class="muted" id="m-gf-state" role="status"></span>
       </div>
       <div class="actions">
-        <button id="m-rc-run" hidden>Provar numa amostra pelos originais</button>
-        <button id="m-rc-stop" hidden>Parar</button>
+        <button id="m-rc-run" title="Prova a recompressão numa amostra de até 10 fotos: lê o começo do arquivo nos dois serviços e compara as tabelas de compressão. Pede links novos ao iCloud pela grade (rola sozinha). Só leitura." hidden>Provar numa amostra pelos originais</button>
+        <button id="m-rc-stop" title="Para a prova pelos originais." hidden>Parar</button>
         <span class="muted" id="m-rc-state" role="status"></span>
       </div>
       <div class="actions">
-        <button id="m-mc-run" hidden>Comparar recortes e edições pelas miniaturas</button>
-        <button id="m-mc-stop" hidden>Parar</button>
+        <button id="m-mc-run" title="Compara miniaturas para achar recortes (uma foto é pedaço da outra) e edições (a mesma foto com outro tom). Usa as miniaturas já guardadas; nada sai do notebook nem muda nos serviços." hidden>Comparar recortes e edições pelas miniaturas</button>
+        <button id="m-mc-stop" title="Para a comparação de recortes e edições. O que já foi comparado fica guardado." hidden>Parar</button>
         <span class="muted" id="m-mc-state" role="status"></span>
       </div>
       <p class="hint">Lê só o cabeçalho do download de cada foto (formato, tamanho e nome do arquivo); nenhuma foto é baixada. Com isso o Geyma diz se o Google tem o original (o HEIC do iPhone, por exemplo), uma cópia convertida (outro formato, às vezes reduzida) ou recomprimida (mesmo formato e tamanho, arquivo bem menor), e o nome do arquivo ajuda a reconhecer a mesma foto. Até 4 por vez; um erro do Google num arquivo só (400, 404, 500) pula esse arquivo; uma recusa do Google, ou cinco erros seguidos, param a conferência.</p>
@@ -224,13 +227,13 @@
       <h2>Vídeos</h2>
       <p id="m-vid"></p>
       <div class="actions">
-        <button id="m-vf-run" class="primary" hidden>Conferir os arquivos de vídeo do Google</button>
-        <button id="m-vf-stop" hidden>Parar</button>
+        <button id="m-vf-run" title="Confere os arquivos de vídeo do Google: lê só o cabeçalho do download de cada vídeo (formato, tamanho, nome), sem baixar. Diz se o Google tem o original, uma cópia recomprimida, reduzida, cortada, ou só a capa. Nada muda no Google." class="primary" hidden>Conferir os arquivos de vídeo do Google</button>
+        <button id="m-vf-stop" title="Para a conferência dos vídeos do Google. O que já foi conferido fica guardado." hidden>Parar</button>
         <span class="muted" id="m-vf-state" role="status"></span>
       </div>
       <div class="actions">
-        <button id="m-qd-run" hidden>Comparar quadros dos vídeos a confirmar</button>
-        <button id="m-qd-stop" hidden>Parar</button>
+        <button id="m-qd-run" title="Compara quadros dos vídeos ainda sem confirmação: lê cinco instantes de cada vídeo nos dois serviços (só alguns trechos, não o vídeo inteiro) e compara as imagens. Quadros iguais confirmam o par; diferentes o desfazem. Deixe a aba do iCloud visível." hidden>Comparar quadros dos vídeos a confirmar</button>
+        <button id="m-qd-stop" title="Para a comparação de quadros. O que já foi comparado fica guardado; clicar de novo continua." hidden>Parar</button>
         <span class="muted" id="m-qd-state" role="status"></span>
       </div>
       <p class="hint">Um vídeo é o mesmo nos dois serviços quando o instante, as dimensões e a duração batem; duração diferente fica a confirmar (outro vídeo, ou um deles foi cortado). Foto e vídeo nunca formam par. A conferência lê só o cabeçalho do download de cada vídeo do Google (formato, tamanho e nome do arquivo; nada é baixado) e diz se o Google guarda o arquivo original ou uma cópia recomprimida, reduzida ou cortada. Até 4 por vez; um erro do Google num arquivo só (404, 500) pula esse arquivo, e um vídeo que o Google não serve mais (400: só a capa) fica anotado; uma recusa do Google, ou cinco erros seguidos, param a conferência. A comparação de quadros, para os pares ainda sem confirmação, decodifica cinco instantes de cada vídeo (poucas centenas de KB no Google, alguns MB no iCloud) e compara as imagens; quadros iguais confirmam o par, mesmo de um vídeo cortado, e quadros claramente diferentes o desfazem. O link de vídeo do iCloud vale poucos minutos: deixe a aba do iCloud Fotos visível para o Geyma renovar.</p>
@@ -242,45 +245,47 @@
       <p class="calc-prog" id="r-prog" role="status" hidden><progress max="7"></progress> <span></span></p>
       <p class="muted" id="r-summary"></p>
       <div class="filters">
-        <label>Situação <select id="r-cls"></select></label>
-        <label>Categoria <select id="r-cat"><option value="">Todas</option></select></label>
-        <label>Marcação <select id="r-dec"><option value="">Todas</option><option value="sugestao">Sem marcação (sugestão)</option></select></label>
-        <label>Ano <select id="r-year"><option value="">Todos</option></select></label>
+        <label title="Situação: filtra pelo resultado do cruzamento (nos dois serviços, só num, a confirmar, cópias repetidas, certeza de ser a mesma foto, melhor cópia).">Situação <select id="r-cls"></select></label>
+        <label title="Categoria: filtra pelo que a foto parece ser (pessoal, captura de tela, documento, recebida, propaganda...), pelas regras e pela imagem. Passe o mouse na categoria de cada linha para ver o motivo.">Categoria <select id="r-cat"><option value="">Todas</option></select></label>
+        <label title="Marcação: filtra pela sua decisão (Pessoal, Manter, Pendente, Descartar) ou pelo que ainda está só com a sugestão do Geyma.">Marcação <select id="r-dec"><option value="">Todas</option><option value="sugestao">Sem marcação (sugestão)</option></select></label>
+        <label title="Ano: filtra pelo ano de captura.">Ano <select id="r-year"><option value="">Todos</option></select></label>
         <span class="muted" id="r-count" role="status"></span>
       </div>
+      <p class="hint">Os filtros só mudam o que aparece; a chave Fotos | Vídeos | Tudo, no topo, também vale aqui. Clique numa miniatura para ver as fotos dos dois serviços lado a lado, com as provas e as perguntas.</p>
       <div class="batch" id="r-batch">
         <span>Marcar os <b id="r-batch-n">0</b> itens filtrados como:</span>
-        <button data-dec="pessoal">Pessoal</button>
-        <button data-dec="manter">Manter</button>
-        <button data-dec="pendente">Pendente</button>
-        <button data-dec="descartar">Descartar</button>
-        <button id="r-csv">Exportar lista (CSV)</button>
+        <button data-dec="pessoal" title="Marca todos os itens filtrados como Pessoal: podem ir para o outro serviço. Pede confirmação; muda só a marcação no Geyma.">Pessoal</button>
+        <button data-dec="manter" title="Marca todos os itens filtrados como Manter (não é foto pessoal, mas você quer guardar): podem ir para o outro serviço. Pede confirmação.">Manter</button>
+        <button data-dec="pendente" title="Marca todos os itens filtrados como Pendente: ficam esperando a sua decisão e não são copiados. Pede confirmação.">Pendente</button>
+        <button data-dec="descartar" title="Marca todos os itens filtrados como Descartar: nunca são copiados e podem ir para a lixeira depois, só com a sua confirmação no bloco Lixeira. Pede confirmação.">Descartar</button>
+        <span class="hint">Marcar muda só a decisão guardada no Geyma; pede confirmação antes.</span>
+        <button id="r-csv" title="Baixa a lista filtrada como planilha (CSV), com data, situação, categoria, marcação e nomes. Fica no notebook.">Exportar lista (CSV)</button>
       </div>
       <div class="batch" id="r-envio" hidden>
         <span id="r-envio-txt"></span>
-        <label>Tamanho do lote <select id="r-envio-n"></select></label>
-        <button id="r-envio-go"></button>
-        <button id="r-envio-pause" hidden>Pausar</button>
-        <button id="r-envio-resume" hidden class="primary">Continuar</button>
-        <button id="r-envio-stop" hidden>Parar</button>
+        <label title="Quantos itens da lista vão neste lote. Comece com poucos; depois do piloto, aumente.">Tamanho do lote <select id="r-envio-n"></select></label>
+        <button id="r-envio-go" title="Envia ao outro serviço os próximos itens desta lista que podem ir (Pessoal ou Manter, sem repetidos). O primeiro clique confere o tamanho e o espaço livre do destino e pede confirmação; o segundo começa, um item por vez. Isso envia de verdade."></button>
+        <button id="r-envio-pause" title="Pausa o lote depois do item em andamento. Dá para continuar depois, até com o painel fechado e reaberto." hidden>Pausar</button>
+        <button id="r-envio-resume" title="Continua o lote de onde parou. Depois de um erro, tenta o mesmo item de novo." hidden class="primary">Continuar</button>
+        <button id="r-envio-stop" title="Para o lote depois do item em andamento (ou descarta um lote pausado). O que já foi enviado continua no destino." hidden>Parar</button>
       </div>
       <div class="confirm" id="r-confirm" hidden>
         <span id="r-confirm-text"></span>
-        <button id="r-confirm-yes" class="primary">Confirmar</button>
-        <button id="r-confirm-no">Cancelar</button>
+        <button id="r-confirm-yes" title="Confirma a marcação em lote mostrada ao lado. Muda só a marcação no Geyma; nada muda nos serviços." class="primary">Confirmar</button>
+        <button id="r-confirm-no" title="Cancela a marcação em lote. Nada é alterado.">Cancelar</button>
       </div>
       <p class="muted" id="r-msg" role="status"></p>
       <div class="view-toggle" role="group" aria-label="Modo de exibição">
-        <button id="r-view-list" aria-pressed="true">Lista</button>
-        <button id="r-view-grid" aria-pressed="false">Grade</button>
+        <button id="r-view-list" title="Mostra a lista em linhas, com os detalhes de cada item." aria-pressed="true">Lista</button>
+        <button id="r-view-grid" title="Mostra a lista como grade de miniaturas, para marcar várias de uma vez pela seleção." aria-pressed="false">Grade</button>
       </div>
-      <div class="selbar" id="r-selbar" hidden>
+      <div class="selbar" id="r-selbar" hidden title="Na grade, marque as caixas das miniaturas e aplique uma marcação a todas de uma vez.">
         <span><b id="r-sel-n">0</b> selecionados nesta página.</span>
-        <label>Marcar <select id="r-sel-which"><option value="sel">os selecionados</option><option value="unsel">os não selecionados desta página</option></select></label>
-        <label>como <select id="r-sel-dec"></select></label>
-        <button id="r-sel-apply">Aplicar</button>
-        <button id="r-sel-all">Selecionar todos</button>
-        <button id="r-sel-none">Limpar seleção</button>
+        <label title="Escolhe se a marcação vale para os itens selecionados ou para os não selecionados desta página.">Marcar <select id="r-sel-which"><option value="sel">os selecionados</option><option value="unsel">os não selecionados desta página</option></select></label>
+        <label title="A marcação a aplicar: Pessoal e Manter podem ir para o outro serviço; Pendente espera você; Descartar nunca é copiado e pode ir para a lixeira depois.">como <select id="r-sel-dec"></select></label>
+        <button id="r-sel-apply" title="Aplica a marcação escolhida aos itens escolhidos desta página. Muda só a marcação no Geyma.">Aplicar</button>
+        <button id="r-sel-all" title="Seleciona todos os itens desta página da grade.">Selecionar todos</button>
+        <button id="r-sel-none" title="Tira a seleção de todos os itens desta página.">Limpar seleção</button>
       </div>
       <div class="grid-view" id="r-grid" hidden></div>
       <div class="table-wrap" id="r-list">
@@ -289,8 +294,8 @@
           <tbody></tbody>
         </table>
       </div>
-      <div class="pager"><button id="r-prev">Anteriores</button><span class="muted" id="r-page"></span><button id="r-next">Próximos</button></div>
-      <p class="hint">A categoria vem de regras sobre os metadados (passe o mouse sobre ela para ver o motivo). Só o que é claramente pessoal é sugerido como Pessoal; o resto fica Pendente até você decidir, e nada Pendente ou para Descartar é copiado. Marcar não altera nada nos serviços. Em breve: miniaturas lado a lado.</p>
+      <div class="pager"><button id="r-prev" title="Volta para a página anterior da lista.">Anteriores</button><span class="muted" id="r-page"></span><button id="r-next" title="Vai para a próxima página da lista.">Próximos</button></div>
+      <p class="hint">A categoria vem de regras sobre os metadados (passe o mouse sobre ela para ver o motivo). Só o que é claramente pessoal é sugerido como Pessoal; o resto fica Pendente até você decidir, e nada Pendente ou para Descartar é copiado. Marcar não altera nada nos serviços. Quando a Situação é "Só no iCloud" ou "Só no Google", aparece a barra de envio em lote: o primeiro clique confere o espaço livre e pede confirmação; o segundo envia, um item por vez.</p>
     </section>
   </main>
 

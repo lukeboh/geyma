@@ -19,8 +19,8 @@
   <header class="topo">
     <h1 class="marca">Geyma</h1>
     <div class="topo-btns">
-      <button class="icone-btn" id="ajuda" type="button" aria-label="Ver o guia desta tela">?</button>
-      <button class="icone-btn" id="atualizar" type="button" aria-label="Atualizar">↻</button>
+      <button class="icone-btn" id="ajuda" type="button" aria-label="Ver o guia desta tela" title="Mostra o guia passo a passo desta tela">?</button>
+      <button class="icone-btn" id="atualizar" type="button" aria-label="Atualizar os números" title="Busca no notebook os números mais recentes (não recalcula o cruzamento)">↻</button>
     </div>
   </header>
 
@@ -47,15 +47,15 @@
   <!-- Revisar -->
   <section class="tela" id="t-revisar" hidden aria-labelledby="nav-revisar">
     <div class="vidro filtros">
-      <label>Situação <select id="f-cls"></select></label>
-      <label>Categoria <select id="f-cat"><option value="">Todas</option></select></label>
-      <label>Marcação <select id="f-dec"><option value="">Todas</option><option value="sugestao">Sem marcação</option></select></label>
-      <label>Ano <select id="f-year"><option value="">Todos</option></select></label>
+      <label title="Filtra pelo resultado do cruzamento: nos dois serviços, só num, a confirmar, cópias repetidas">Situação <select id="f-cls"></select></label>
+      <label title="Filtra pelo que a foto parece ser: pessoal, captura de tela, documento, recebida, propaganda">Categoria <select id="f-cat"><option value="">Todas</option></select></label>
+      <label title="Filtra pela sua decisão, ou pelo que ainda está só com a sugestão do Geyma">Marcação <select id="f-dec"><option value="">Todas</option><option value="sugestao">Sem marcação</option></select></label>
+      <label title="Filtra pelo ano de captura">Ano <select id="f-year"><option value="">Todos</option></select></label>
     </div>
     <p class="contagem" id="r-total"></p>
     <div class="grade" id="grade"></div>
-    <div class="paginas"><button id="r-ant" type="button">‹ Anteriores</button><span id="r-pag"></span><button id="r-prox" type="button">Próximos ›</button></div>
-    <p class="nota">Toque nas fotos para selecionar. Borda azul: Google; laranja: iCloud; tracejada: a cópia que fica. Marcar não apaga nada.</p>
+    <div class="paginas"><button id="r-ant" type="button" aria-label="Página anterior" title="Página anterior">‹ Anteriores</button><span id="r-pag"></span><button id="r-prox" type="button" aria-label="Próxima página" title="Próxima página">Próximos ›</button></div>
+    <p class="nota">Os filtros só mudam o que aparece. Toque nas fotos para selecionar. Borda azul: Google; laranja: iCloud; tracejada: a cópia que fica. Marcar não apaga nada.</p>
   </section>
 
   <!-- Cópias -->
@@ -70,16 +70,17 @@
     <h2 class="secao">Leituras no notebook</h2>
     <div class="cartoes" id="leituras"></div>
     <p class="nota">As leituras rodam no Chrome do notebook. Tudo funciona com a tela do notebook bloqueada; ele só não pode ser desligado. Esta tela se atualiza sozinha.</p>
-    <button class="largo" id="recalcular" type="button">Recalcular o cruzamento</button>
+    <p class="nota">Recalcular compara de novo os dois inventários no notebook (leva até um minuto). Nada muda nos serviços.</p>
+    <button class="largo" id="recalcular" type="button" title="Refaz o cruzamento no notebook com o inventário de agora. Nada muda nos serviços.">Recalcular o cruzamento</button>
   </section>
 
   <!-- barra de seleção (Revisar) -->
   <div class="selecao vidro" id="selecao" hidden>
     <span id="sel-n">0 selecionadas</span>
     <div class="sel-acoes">
-      <select id="sel-quais" aria-label="Quais marcar"><option value="sel">Selecionadas</option><option value="resto">O resto da página</option></select>
-      <select id="sel-dec" aria-label="Marcação"></select>
-      <button class="primario" id="sel-aplicar" type="button">Marcar</button>
+      <select id="sel-quais" aria-label="Quais marcar" title="Marcar as fotos selecionadas, ou as não selecionadas desta página"><option value="sel">Selecionadas</option><option value="resto">O resto da página</option></select>
+      <select id="sel-dec" aria-label="Marcação a aplicar" title="Pessoal e Manter podem ir ao outro serviço; Pendente espera; Descartar nunca é copiado"></select>
+      <button class="primario" id="sel-aplicar" type="button" title="Aplica a marcação às fotos escolhidas. Pede confirmação; muda só a decisão no Geyma">Marcar</button>
     </div>
   </div>
 
@@ -88,7 +89,7 @@
     <div class="folha vidro" role="dialog" aria-modal="true" aria-labelledby="folha-titulo">
       <h3 id="folha-titulo">Confirmar</h3>
       <p id="folha-texto"></p>
-      <div class="folha-acoes"><button id="folha-nao" type="button">Cancelar</button><button class="primario" id="folha-sim" type="button">Confirmar</button></div>
+      <div class="folha-acoes"><button id="folha-nao" type="button" title="Cancela; nada é alterado">Cancelar</button><button class="primario" id="folha-sim" type="button" title="Confirma o que está escrito acima">Confirmar</button></div>
     </div>
   </div>
 
@@ -96,22 +97,22 @@
   <div class="folha-fundo" id="detalhe" hidden>
     <div class="folha vidro detalhe" role="dialog" aria-modal="true" aria-labelledby="det-titulo">
       <div class="det-fotos" id="det-fotos"></div>
-      <button class="largo" id="det-ver" type="button">Ver em tamanho grande</button>
-      <button class="largo" id="det-link" type="button">Copiar link desta foto</button>
+      <button class="largo" id="det-ver" type="button" title="Abre as fotos dos dois serviços em tamanho grande, lado a lado">Ver em tamanho grande</button>
+      <button class="largo" id="det-link" type="button" title="Copia um link que abre esta foto no painel (para mandar a quem vai investigar)">Copiar link desta foto</button>
       <h3 id="det-titulo"></h3>
       <dl id="det-info"></dl>
       <div class="det-marcar" id="det-marcar"></div>
-      <button class="largo" id="det-fechar" type="button">Fechar</button>
+      <button class="largo" id="det-fechar" type="button" title="Fecha os detalhes e volta à lista">Fechar</button>
     </div>
   </div>
 
   <p class="toast" id="toast" role="status" hidden></p>
 
   <nav class="abas vidro" aria-label="Seções">
-    <button id="nav-resumo" data-tela="resumo" aria-current="page"><span class="ic">◎</span>Resumo</button>
-    <button id="nav-revisar" data-tela="revisar"><span class="ic">▦</span>Revisar</button>
-    <button id="nav-copias" data-tela="copias"><span class="ic">⧉</span>Cópias</button>
-    <button id="nav-leituras" data-tela="leituras"><span class="ic">↻</span>Leituras</button>
+    <button id="nav-resumo" data-tela="resumo" aria-current="page" title="Resumo: quanto está nos dois serviços e o que fazer agora"><span class="ic">◎</span>Resumo</button>
+    <button id="nav-revisar" data-tela="revisar" title="Revisar: a lista de fotos com filtros, para marcar"><span class="ic">▦</span>Revisar</button>
+    <button id="nav-copias" data-tela="copias" title="Cópias: as fotos guardadas mais de uma vez no mesmo serviço"><span class="ic">⧉</span>Cópias</button>
+    <button id="nav-leituras" data-tela="leituras" title="Leituras: o andamento das leituras e conferências no notebook"><span class="ic">↻</span>Leituras</button>
   </nav>
 
   <script type="module" src="/app.js?v=0.3.8"></script>

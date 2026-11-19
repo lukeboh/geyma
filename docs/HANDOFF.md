@@ -202,6 +202,11 @@ Estado do projeto para quem retomar o trabalho (pessoa ou IA). Leia também
     false` e confirma com `iguais: true` (`porQuadros`). Fila:
     `quadrosNeeded` (video.js), na ordem do instante (os links do iCloud,
     de 12 minutos, são renovados pela grade).
+32. **Dicas (0.3.28):** todo controle tem `title` (nele ou no `<label>`
+    que o envolve) dizendo o que faz e se muda algo nos serviços;
+    `test/ext-dicas.test.mjs` falha se um controle de `dashboard.html` ou
+    `mobile/index.html` ficar sem. Controle criado pelo código: pôr o
+    `title` na criação (ações do visualizador: `titulo`).
 
 ## 4. Decisões e motivos
 

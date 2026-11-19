@@ -60,15 +60,15 @@ function build() {
   root.innerHTML = `
     <div class="tour-spot" aria-hidden="true"></div>
     <div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-text">
-      <div class="tour-top"><span class="tour-count"></span><button class="tour-close" type="button" aria-label="Fechar o guia">×</button></div>
+      <div class="tour-top"><span class="tour-count"></span><button class="tour-close" type="button" aria-label="Fechar o guia" title="Fechar o guia (Esc). Ele volta pelo botão ? no topo.">×</button></div>
       <h3 id="tour-title"></h3>
       <p id="tour-text"></p>
       <div class="tour-dots" aria-hidden="true"></div>
       <div class="tour-actions">
-        <button class="tour-skip" type="button">Pular guia</button>
+        <button class="tour-skip" type="button" title="Fecha o guia desta etapa. Ele volta pelo botão ? no topo.">Pular guia</button>
         <span class="tour-gap"></span>
-        <button class="tour-back" type="button">Voltar</button>
-        <button class="tour-next primary" type="button">Próximo</button>
+        <button class="tour-back" type="button" title="Volta ao passo anterior do guia">Voltar</button>
+        <button class="tour-next primary" type="button" title="Vai ao próximo passo do guia">Próximo</button>
       </div>
     </div>`;
   document.body.append(root);

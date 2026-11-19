@@ -32,11 +32,11 @@ function montar() {
       <div class="visor-acoes">
         <span class="visor-nav" hidden><button type="button" class="visor-btn" data-nav="-1" aria-label="Anterior" title="Anterior (Page Up)">‹</button><span class="visor-pos"></span><button type="button" class="visor-btn" data-nav="1" aria-label="Próxima" title="Próxima (Page Down)">›</button></span>
         <button type="button" class="visor-btn visor-link" hidden title="Copiar um link que abre estas fotos (para mandar a quem vai investigar)">Copiar link</button>
-        <label class="visor-sync" title="Ampliar e mover todas as fotos juntas"><input type="checkbox" checked> Mover juntas</label>
-        <button type="button" class="visor-btn" data-z="-" aria-label="Reduzir">−</button>
-        <button type="button" class="visor-btn" data-z="0" aria-label="Caber na tela">1:1</button>
-        <button type="button" class="visor-btn" data-z="+" aria-label="Ampliar">+</button>
-        <button type="button" class="visor-btn visor-fechar" aria-label="Fechar">×</button>
+        <label class="visor-sync" title="Ligado: ampliar ou mover uma foto faz o mesmo nas outras, para comparar o mesmo pedaço lado a lado. Desligado: cada foto se move sozinha."><input type="checkbox" checked> Mover juntas</label>
+        <button type="button" class="visor-btn" data-z="-" aria-label="Reduzir" title="Reduzir o zoom (tecla −)">−</button>
+        <button type="button" class="visor-btn" data-z="0" aria-label="Caber na tela" title="Voltar ao tamanho que cabe na tela (tecla 0)">1:1</button>
+        <button type="button" class="visor-btn" data-z="+" aria-label="Ampliar" title="Ampliar (tecla +). Ao ampliar, a foto em tamanho grande é carregada.">+</button>
+        <button type="button" class="visor-btn visor-fechar" aria-label="Fechar" title="Fechar o visualizador e voltar à lista (Esc)">×</button>
       </div>
     </div>
     <div class="visor-paineis"></div>
@@ -234,6 +234,7 @@ function botaoAssistir(f, area, img) {
   b.type = 'button';
   b.className = 'visor-assistir';
   b.textContent = '▶ assistir';
+  b.title = 'Toca o vídeo aqui, no lugar da imagem (iCloud em 720 linhas, Google em 360). Só assiste; nada é baixado para o notebook nem muda no serviço.';
   b.addEventListener('click', async () => {
     b.disabled = true;
     b.textContent = 'carregando o vídeo…';
@@ -312,6 +313,7 @@ export function abrirVisor(fotos, titulo = '', opcoes = {}) {
       a.target = '_blank';
       a.rel = 'noopener';
       a.textContent = 'abrir no serviço';
+      a.title = 'Abre esta foto no site do serviço, numa aba nova (para conferir lá).';
       leg.append(' ', a);
     }
     // vídeo: "assistir" troca a imagem pelo vídeo (f.video devolve o link)

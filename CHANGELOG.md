@@ -2,6 +2,27 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.28 — 19/11/2026
+
+- Dicas em todos os controles: cada botão, seletor, caixa de marcação,
+  campo e link do painel, do visualizador, do guia e da versão para celular
+  diz, ao passar o mouse, o que é, o que acontece ao clicar e se muda algo
+  nos serviços (só leitura, só a marcação no Geyma, envia de verdade, vai
+  para a lixeira). Os botões criados pelo código (próximos passos, "Ver
+  lista", "Revisar", "Ver cópias", marcação de cada linha, seleção da
+  grade, links das contagens, "abrir no serviço", "▶ assistir") também.
+- Explicações na tela: o aviso do topo agora diz que ler, conferir e
+  marcar não mudam os serviços e que só os botões de enviar e de lixeira
+  mudam, sempre depois do seu clique e da sua confirmação; textos curtos
+  sobre o que fazem o cruzamento, os próximos passos, os filtros, a
+  marcação em lote e o lote de envio na Revisão, a leitura do Google e a
+  exportação; na versão para celular, sobre os filtros e o Recalcular.
+- Teste novo: toda página falha no teste se algum controle ficar sem dica.
+
+Verificação: 249 testes passando. No painel real, todos os controles
+visíveis do Inventário, da Proteção, da Revisão (lista e grade) e do
+visualizador aberto têm dica.
+
 ## 0.3.27 — 18/11/2026
 
 - Testes humanos revisados: ordem sugerida (primeiro o que só olha, depois
