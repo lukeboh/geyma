@@ -2,6 +2,31 @@
 
 Formato: versão, data (America/Sao_Paulo), mudanças e verificação.
 
+## 0.3.29 — 23/11/2026
+
+- Pasta local como terceira fonte (início da etapa 0.10): novo cartão
+  "Pasta local (HD ou NAS)" no Inventário. Escolhe-se um diretório do
+  notebook, de um HD externo ou de um NAS na rede (unidade mapeada ou
+  compartilhamento) e o Geyma lê, com as subpastas, só o começo de cada
+  foto e vídeo: EXIF de JPEG e HEIC (instante, fuso, dimensões) e mvhd de
+  MOV/MP4 (instante e duração). Pastas de sistema e de NAS (`@eaDir`,
+  `#recycle`, lixeiras) ficam de fora. Só leitura; nada sai do notebook.
+- Comparação da pasta com o Google e o iCloud (`core/local.js`): na pasta
+  e nos dois serviços, só no Google, só no iCloud, só na pasta e sem data
+  de captura; mais quantos itens dos serviços, no período da pasta, não têm
+  cópia nela. Provas: nome e tamanho do original do iCloud, ou o mesmo
+  segundo (instante, ou hora local quando o EXIF não traz o fuso) com
+  dimensões compatíveis, foto com foto e vídeo com vídeo.
+- Lista em CSV do que só está na pasta ou ficou sem data.
+- A pasta fica fora do cruzamento Google × iCloud: ler a pasta não faz o
+  painel refazer o cruzamento (`putItems`/`clearSource` com `versao: false`).
+
+Verificação: 258 testes passando (9 novos em `ext-local.test.mjs`, com
+JPEG, HEIC e MOV sintéticos). Extensão carregada no Chromium com uma pasta
+simulada: leitura, contagens, comparação com um item do Google e o
+resultado guardado depois de recarregar, sem erros no console. Ainda não
+exercitado com a pasta real nem com um NAS.
+
 ## 0.3.28 — 19/11/2026
 
 - Dicas em todos os controles: cada botão, seletor, caixa de marcação,

@@ -165,6 +165,16 @@ nada ([docs/ENVIO.md](docs/ENVIO.md)).
 - [x] Quadros amostrados (pHash de quadros) para vídeos sem duração ou cortados
   (0.3.25)
 
+### 0.10 — Pasta local (HD ou NAS)
+- [x] Terceira fonte: diretório local, HD externo ou NAS na rede, lido pelo
+  navegador (só leitura), com EXIF de JPEG/HEIC e data de MOV/MP4 (0.3.29)
+- [x] Comparação pasta × Google × iCloud e lista do que só está na pasta (0.3.29)
+- [ ] Piloto com a pasta real e com o NAS (desempenho pela rede, HEIC do iPhone)
+- [ ] Prova pelo conteúdo: SHA-1 dos arquivos da pasta contra o SHA-1 do
+  original guardado pelo Google (opcional, lê o arquivo inteiro)
+- [ ] Pasta no painel de Proteção ("guardada em dois lugares" contando a pasta)
+  e no gráfico por ano
+
 ### 1.0 — Uso pessoal completo
 - Biblioteca pessoal protegida e sanitizada, rotina de manutenção funcionando
 

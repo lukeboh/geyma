@@ -3,6 +3,7 @@ import { initProtection, ensureComputed, compute, hasData, showPhashProgress, ab
 import { inventarioPorTipo, nomeDoTipo, TIPOS } from './src/core/tipo.js';
 import { startTour, maybeTour } from './tour.js';
 import { visorAberto } from './viewer.js';
+import { initPastaLocal } from './pasta-local.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = new Intl.NumberFormat('pt-BR');
@@ -258,6 +259,7 @@ $('ajuda').addEventListener('click', () => startTour(current));
 for (const k of Object.keys(TABS)) $(`tab-${k}`).addEventListener('click', () => showTab(k));
 document.addEventListener('geyma-tab', (e) => showTab(e.detail));
 initProtection();
+initPastaLocal();
 escolherTipo(tipo);
 
 // ---------- tema ----------

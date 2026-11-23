@@ -67,6 +67,33 @@
           <ul id="a-counts"></ul>
         </details>
       </article>
+
+      <article class="card" data-site="local">
+        <h2><span class="swatch local" aria-hidden="true"></span>Pasta local (HD ou NAS)</h2>
+        <p class="big" id="l-total">0</p>
+        <p class="muted">fotos e vídeos na pasta</p>
+        <dl class="facts">
+          <dt>Pasta</dt><dd id="l-dir">—</dd>
+          <dt>Fotos e vídeos</dt><dd id="l-tipos">—</dd>
+          <dt>Período</dt><dd id="l-range">—</dd>
+          <dt>Sem data</dt><dd id="l-semdata">—</dd>
+          <dt>Situação</dt><dd id="l-state">nenhuma pasta escolhida</dd>
+        </dl>
+        <div class="actions">
+          <button id="l-pick" class="primary" title="Escolhe uma pasta do notebook, de um HD externo ou de um NAS na rede (unidade mapeada ou compartilhamento) e lê as fotos e vídeos dela, com as subpastas. Só leitura: nada na pasta muda e nada sai do notebook.">Escolher pasta</button>
+          <button id="l-reread" hidden title="Lê de novo a mesma pasta (o navegador pode pedir para confirmar o acesso). Arquivos apagados da pasta saem do inventário; os novos entram.">Ler de novo</button>
+          <button id="l-stop" title="Para a leitura da pasta. O que já foi lido fica guardado; Ler de novo recomeça do início.">Parar</button>
+          <button id="l-compare" hidden title="Compara a pasta com o inventário do Google e do iCloud guardado no Geyma: o que está nos três, em só um serviço ou só na pasta. Roda no notebook; nada muda.">Comparar</button>
+        </div>
+        <p class="hint">O Geyma lê só o começo de cada arquivo (a data da foto no EXIF, ou a do vídeo) e compara pelo instante e pelas dimensões, ou pelo nome e tamanho do original no iCloud. Para um NAS, mapeie o compartilhamento como unidade (ou abra-o pela rede) e escolha a pasta.</p>
+        <div id="l-result-box" hidden>
+          <ul class="local-result" id="l-result"></ul>
+          <div class="actions">
+            <button id="l-csv" hidden title="Baixa um arquivo CSV (abre no Excel) com o caminho de cada arquivo da pasta que não está em nenhum serviço ou que ficou sem data. Só a lista; nenhuma foto.">Baixar lista do que só está na pasta (CSV)</button>
+            <span class="muted" id="l-msg" role="status"></span>
+          </div>
+        </div>
+      </article>
     </section>
 
     <section class="panel">

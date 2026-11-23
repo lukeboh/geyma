@@ -61,8 +61,10 @@ const CAMPOS_CRUZAMENTO = ['source', 'ts', 'w', 'h', 'video', 'size', 'phash', '
  * Grava itens mesclando com o registro existente: campos calculados depois
  * (como o pHash) sobrevivem a uma nova leitura, e seenAt guarda a primeira vez
  * em que o item foi visto. Mantém o resumo do inventário em dia.
+ * versao: false para fontes fora do cruzamento Google × iCloud (pasta local),
+ * que não devem fazer o painel refazer o cruzamento.
  */
-export function putItems(items) {
+export function putItems(items, { versao = true } = {}) {
   const now = Date.now();
   return openDb().then((db) => new Promise((resolve, reject) => {
     const t = db.transaction(['items', 'meta'], 'readwrite');
@@ -72,7 +74,7 @@ export function putItems(items) {
     const fim = () => {
       // links novos da Apple (a cada passada) não mudam o cruzamento
       const relevantes = trocas.filter(([a, d]) => !a || CAMPOS_CRUZAMENTO.some((k) => a[k] !== d[k]));
-      if (relevantes.length) touchInventory(t.objectStore('meta'), (resumo) => { for (const [a, d] of relevantes) applyChange(resumo, a, d); });
+      if (versao && relevantes.length) touchInventory(t.objectStore('meta'), (resumo) => { for (const [a, d] of relevantes) applyChange(resumo, a, d); });
     };
     for (const it of items) {
       const req = store.get(it.id);
@@ -196,12 +198,12 @@ export function getMeta(key) {
   return tx('meta', 'readonly', (store) => store.get(key)).then((r) => r || null);
 }
 
-export function clearSource(source) {
+export function clearSource(source, { versao = true } = {}) {
   return openDb().then(
     (db) =>
       new Promise((resolve, reject) => {
         const t = db.transaction(['items', 'meta'], 'readwrite');
-        touchInventory(t.objectStore('meta'), (resumo) => { delete resumo[source]; });
+        if (versao) touchInventory(t.objectStore('meta'), (resumo) => { delete resumo[source]; });
         const idx = t.objectStore('items').index('source');
         idx.openCursor(IDBKeyRange.only(source)).onsuccess = (e) => {
           const c = e.target.result;

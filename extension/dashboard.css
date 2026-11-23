@@ -39,6 +39,7 @@
   /* séries (paleta validada no fundo claro) */
   --series-google: #2a78d6;
   --series-icloud: #eb6834;
+  --series-local: #2f9e6e;
   --c-ambos: #1baf7a;
   --c-confirmar: #eda100;
   --c-reduzida: #e87ba4;
@@ -72,6 +73,7 @@
     --reflexo: rgba(255, 255, 255, 0.10);
     --series-google: #3987e5;
     --series-icloud: #d95926;
+    --series-local: #3fb983;
     --c-ambos: #199e70;
     --c-confirmar: #c98500;
     --c-reduzida: #d55181;
@@ -103,6 +105,7 @@
   --reflexo: rgba(255, 255, 255, 0.10);
   --series-google: #3987e5;
   --series-icloud: #d95926;
+  --series-local: #3fb983;
   --c-ambos: #199e70;
   --c-confirmar: #c98500;
   --c-reduzida: #d55181;
@@ -366,6 +369,9 @@ select option { background: var(--fundo-2); color: var(--texto); }
 .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 4px; flex: none; }
 .swatch.google { background: var(--series-google); }
 .swatch.icloud { background: var(--series-icloud); }
+.swatch.local { background: var(--series-local); }
+.local-result { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 4px; }
+.local-result b { font-variant-numeric: tabular-nums; }
 .swatch.c-ambos { background: var(--c-ambos); }
 .swatch.c-confirmar { background: var(--c-confirmar); }
 .swatch.c-reduzida { background: var(--c-reduzida); }
